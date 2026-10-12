@@ -47,6 +47,7 @@ export { SectionHeading, type SectionHeadingProps } from "./molecules/section-he
 export { SheetPreview, type SheetPreviewProps } from "./molecules/sheet-preview";
 export { StepCaption, type StepCaptionProps } from "./molecules/step-caption";
 export { type StepDotItem, StepDots, type StepDotsProps } from "./molecules/step-dots";
+export { StepRuler, type StepRulerProps } from "./molecules/step-ruler";
 export { TermEntry, type TermEntryProps } from "./molecules/term-entry";
 export { WhatIfSwitch, type WhatIfSwitchProps } from "./molecules/what-if-switch";
 export { Wordmark, type WordmarkProps } from "./molecules/wordmark";

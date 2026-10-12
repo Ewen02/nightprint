@@ -18,6 +18,11 @@ export interface StoryTemplateProps {
   readonly label: string;
   /** What stays in view while the beats scroll past: the drawing sheet. */
   readonly sheet: ReactNode;
+  /**
+   * From wide screens up, laid over the sheet's top edge and above the beats, so the
+   * text scrolls under it: the sheet's `StepRuler`. Phones keep it in the sheet.
+   */
+  readonly ruler?: ReactNode;
   /** Beats before the steps: the opening, then what the steps are about. */
   readonly before: readonly StoryBeat[];
   /** The steps, in order: read as an ordered list. */
@@ -47,6 +52,7 @@ export function StoryTemplate({
   id,
   label,
   sheet,
+  ruler,
   before,
   steps,
   after = [],
@@ -60,29 +66,42 @@ export function StoryTemplate({
         </div>
       </div>
       {/* Transparent to the pointer except over the beats: the stage takes drags beside them. */}
-      <div className="pointer-events-none relative z-10 mx-auto max-w-300 px-4 sm:px-6">
-        <div ref={columnRef} className="flex flex-col pt-[40dvh] lg:pt-0">
-          {before.map((beat, index) => (
-            <div key={beat.key} data-beat={index} className={beatClass(beat.size)}>
-              {beat.content}
-            </div>
-          ))}
-          <ol className="flex flex-col">
-            {steps.map((beat, index) => (
-              <li key={beat.key} data-beat={before.length + index} className={beatClass(beat.size)}>
+      <div className="pointer-events-none relative z-10">
+        {ruler && (
+          // Zero height, so it takes no room: it only rides the top of the screen,
+          // inside the sheet's frame (8 or 12 px in, plus the frame's 1 px border).
+          <div className="sticky top-0 z-20 hidden h-0 lg:block">
+            <div className="absolute inset-x-[13px] top-[13px]">{ruler}</div>
+          </div>
+        )}
+        <div className="mx-auto max-w-300 px-4 sm:px-6">
+          <div ref={columnRef} className="flex flex-col pt-[40dvh] lg:pt-0">
+            {before.map((beat, index) => (
+              <div key={beat.key} data-beat={index} className={beatClass(beat.size)}>
                 {beat.content}
-              </li>
+              </div>
             ))}
-          </ol>
-          {after.map((beat, index) => (
-            <div
-              key={beat.key}
-              data-beat={before.length + steps.length + index}
-              className={beatClass(beat.size)}
-            >
-              {beat.content}
-            </div>
-          ))}
+            <ol className="flex flex-col">
+              {steps.map((beat, index) => (
+                <li
+                  key={beat.key}
+                  data-beat={before.length + index}
+                  className={beatClass(beat.size)}
+                >
+                  {beat.content}
+                </li>
+              ))}
+            </ol>
+            {after.map((beat, index) => (
+              <div
+                key={beat.key}
+                data-beat={before.length + steps.length + index}
+                className={beatClass(beat.size)}
+              >
+                {beat.content}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

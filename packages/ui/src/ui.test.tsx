@@ -14,12 +14,12 @@ import { PartCallout } from "./molecules/part-callout";
 import { PlanView } from "./molecules/plan-view";
 import { SheetPreview } from "./molecules/sheet-preview";
 import { StepDots } from "./molecules/step-dots";
+import { StepRuler } from "./molecules/step-ruler";
 import { WhatIfSwitch } from "./molecules/what-if-switch";
 import { BillOfParts } from "./organisms/bill-of-parts";
 import { ConceptArticle } from "./organisms/concept-article";
 import { DrawingLegend } from "./organisms/drawing-legend";
 import { DrawingRegister } from "./organisms/drawing-register";
-import { DrawingSheet } from "./organisms/drawing-sheet";
 import { HomeHeader } from "./organisms/home-header";
 import { HomeIntro } from "./organisms/home-intro";
 import { MachineCatalogue } from "./organisms/machine-catalogue";
@@ -449,10 +449,9 @@ describe("home page story", () => {
     expect(note).toMatch(/<ol[^>]*><li[^>]*>.*lines &gt; 0 OK.*<\/li><\/ol>/s);
   });
 
-  it("draws the run's zones on the sheet for the eye only", () => {
-    const sheet = html(
-      <DrawingSheet
-        stage={null}
+  it("rules the run's zones for the eye only, on an opaque ground", () => {
+    const ruler = html(
+      <StepRuler
         steps={[
           { key: "a", flow: "request" },
           { key: "b", flow: "write" },
@@ -461,8 +460,8 @@ describe("home page story", () => {
         current={1}
       />,
     );
-    expect(sheet).toMatch(/<div aria-hidden="true"[^>]*><ol/);
-    expect(sheet.match(/<li/g)).toHaveLength(3);
+    expect(ruler).toMatch(/^<ol aria-hidden="true" class="[^"]*\bbg-bg\b/);
+    expect(ruler.match(/<li/g)).toHaveLength(3);
   });
 
   it("reads the steps as an ordered list and numbers every beat in order", () => {

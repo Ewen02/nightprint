@@ -5,6 +5,7 @@ import { usePlayerSnapshot } from "@nightprint/scene/use-player";
 import {
   Cartouche,
   DrawingSheet,
+  StepRuler,
   type StoryBeat,
   StoryNote,
   StoryTemplate,
@@ -152,6 +153,10 @@ export function RunStory({ slug, opening, intro, cases, closing }: RunStoryProps
     return () => window.clearTimeout(timer);
   }, [player, free, snapshot.finished]);
 
+  const ruler = {
+    steps: snapshot.scenario.steps.map((s) => ({ key: s.step.id, flow: s.flow })),
+    current: snapshot.state.stepIndex,
+  };
   const steps: StoryBeat[] = notes.map(({ moment: _, switch: toggle, ...note }, index) => ({
     key: note.id,
     content: (
@@ -176,6 +181,7 @@ export function RunStory({ slug, opening, intro, cases, closing }: RunStoryProps
       id="run"
       label={`${machine.code} ${machine.title}, step by step`}
       columnRef={column}
+      ruler={<StepRuler {...ruler} />}
       before={[
         { key: "opening", size: "opening", content: opening },
         { key: "intro", size: "intro", content: intro },
@@ -184,8 +190,7 @@ export function RunStory({ slug, opening, intro, cases, closing }: RunStoryProps
       after={[{ key: "closing", content: closing }]}
       sheet={
         <DrawingSheet
-          steps={snapshot.scenario.steps.map((s) => ({ key: s.step.id, flow: s.flow }))}
-          current={snapshot.state.stepIndex}
+          ruler={<StepRuler {...ruler} className="lg:hidden" />}
           cartouche={<Cartouche {...cartoucheProps(machine)} />}
           stage={
             <Stage

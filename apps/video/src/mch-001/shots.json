@@ -1,6 +1,6 @@
 {
   "url": "https://nightprint.dev/m/hexagonal-architecture/",
-  "frames": 520,
+  "frames": 620,
   "scale": 1.5,
   "actions": [
     { "frame": 0, "kind": "button", "name": "Step 1:" },
@@ -10,6 +10,7 @@
     { "frame": 182, "kind": "button", "name": "Next step" },
     { "frame": 230, "kind": "button", "name": "Next step" },
     { "frame": 300, "kind": "switch", "name": "Swap Postgres for InMemory" },
-    { "frame": 396, "kind": "switch", "name": "Import Postgres in the core" }
+    { "frame": 396, "kind": "switch", "name": "Import Postgres in the core" },
+    { "frame": 506, "kind": "button", "name": "Unplug the adapters", "cursor": true }
   ]
 }

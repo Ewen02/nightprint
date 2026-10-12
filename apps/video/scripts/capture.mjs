@@ -228,7 +228,9 @@ const started = Date.now();
 for (let frame = 0; frame < frames; frame++) {
   for (const action of shots.actions.filter((a) => a.frame === frame)) {
     const { box, at } = await click(action.kind, action.name);
-    if (action.kind === "switch") clicks.push({ frame, name: action.name, box, at });
+    // The transport is driven blind; a switch or a stage tool is where the video's cursor goes.
+    if (action.kind === "switch" || action.cursor)
+      clicks.push({ frame, name: action.name, box, at });
   }
   await renderAt(1000 / FPS);
   // A layout change or an adaptive pixel ratio resizes the canvas, which clears it until the next

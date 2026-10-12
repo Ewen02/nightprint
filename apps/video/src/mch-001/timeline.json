@@ -1,7 +1,7 @@
 {
   "source": "https://nightprint.dev/m/hexagonal-architecture/",
   "footage": {
-    "frames": 520,
+    "frames": 620,
     "fps": 30,
     "width": 1920,
     "height": 1080,
@@ -92,6 +92,20 @@
       "at": {
         "x": 1615,
         "y": 505.15625
+      }
+    },
+    {
+      "frame": 506,
+      "name": "Unplug the adapters",
+      "box": {
+        "x": 1340.265625,
+        "y": 72,
+        "w": 202.734375,
+        "h": 44
+      },
+      "at": {
+        "x": 1441.6328125,
+        "y": 94
       }
     }
   ]

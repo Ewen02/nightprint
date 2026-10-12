@@ -33,6 +33,9 @@ import { useMediaQuery } from "./use-media-query";
 import { useOpeningMoment } from "./use-opening-moment";
 import { useReducedMotion } from "./use-reduced-motion";
 
+/** Room the title block takes over the stage, from wide screens up, in px. */
+const TITLE_ROOM = 140;
+
 const INTERACTIVE = "button, a, input, select, textarea, summary, [role='switch']";
 
 /** ← → change step, space plays or pauses, unless a control has focus. */
@@ -128,6 +131,8 @@ export function MachineView({
           callouts={stageCallouts(snapshot, selected, hovered, wide ? 2 : 1)}
           onSelect={setSelected}
           onHover={setHovered}
+          // From wide screens up, the title block sits over the stage's top left.
+          insetTop={wide ? TITLE_ROOM : 0}
         />
       }
       legend={

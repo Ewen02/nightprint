@@ -61,7 +61,7 @@ export function StoryTemplate({
   return (
     <section id={id} aria-label={label} className="relative">
       <div className="pointer-events-none absolute inset-0">
-        <div className="pointer-events-auto sticky top-0 z-20 h-[40dvh] border-b border-line-muted lg:z-0 lg:h-dvh lg:border-b-0">
+        <div className="pointer-events-auto sticky top-0 z-20 h-[min(40dvh,72vw)] border-b border-line-muted lg:z-0 lg:h-dvh lg:border-b-0">
           {sheet}
         </div>
       </div>
@@ -75,7 +75,7 @@ export function StoryTemplate({
           </div>
         )}
         <div className="mx-auto max-w-300 px-4 sm:px-6">
-          <div ref={columnRef} className="flex flex-col pt-[40dvh] lg:pt-0">
+          <div ref={columnRef} className="flex flex-col pt-[min(40dvh,72vw)] lg:pt-0">
             {before.map((beat, index) => (
               <div key={beat.key} data-beat={index} className={beatClass(beat.size)}>
                 {beat.content}

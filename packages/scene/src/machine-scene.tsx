@@ -29,8 +29,10 @@ export interface MachineSceneProps {
   readonly onHover?: ((partId: string | null) => void) | undefined;
   /** The camera leans towards each step's parts. */
   readonly follows: boolean;
-  /** Width kept clear on the left of the canvas for text over it, in CSS px. */
+  /** Room kept clear along the canvas' edges for what is laid over it, in CSS px. */
   readonly insetLeft?: number;
+  readonly insetRight?: number;
+  readonly insetTop?: number;
   /** The stage is shown: the machine starts assembling. */
   readonly revealed: boolean;
   /** Each step of the first display, for what lives outside the canvas (the labels). */
@@ -47,6 +49,8 @@ export function MachineScene({
   onHover,
   follows,
   insetLeft = 0,
+  insetRight = 0,
+  insetTop = 0,
   revealed,
   onPhase,
 }: MachineSceneProps) {
@@ -139,6 +143,8 @@ export function MachineScene({
         follow={follow}
         reducedMotion={state.reducedMotion}
         insetLeft={insetLeft}
+        insetRight={insetRight}
+        insetTop={insetTop}
       />
       <Plate size={plate.size} center={plate.center} />
       <Zones zones={resolved.machine.stage.zones} centreX={plate.center[0]} labels={labels} />

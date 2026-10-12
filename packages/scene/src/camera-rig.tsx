@@ -71,11 +71,20 @@ export interface CameraRigProps {
   readonly follow: Vec3 | null;
   readonly reducedMotion: boolean;
   /**
-   * Width kept clear on the left of the canvas, in CSS px, for text laid over it: the
-   * machine is framed and centred in what remains. The view is shifted, not cropped,
-   * so the plate can still reach under the text.
+   * Room kept clear along the canvas' edges, in CSS px, for what is laid over it: text
+   * on the left, labels on the right, a ruler or a title on top. The machine is framed
+   * and centred in what remains. The view is shifted, not cropped, so the plate can
+   * still reach under the overlays.
    */
   readonly insetLeft?: number;
+  readonly insetRight?: number;
+  readonly insetTop?: number;
+}
+
+interface Insets {
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
 }
 
 /**
@@ -88,7 +97,15 @@ export interface CameraRigProps {
  * the parts of each step and zooms in a little, then settles back on the whole
  * machine when the scenario ends. Never with reduced motion.
  */
-export function CameraRig({ size, center, follow, reducedMotion, insetLeft = 0 }: CameraRigProps) {
+export function CameraRig({
+  size,
+  center,
+  follow,
+  reducedMotion,
+  insetLeft = 0,
+  insetRight = 0,
+  insetTop = 0,
+}: CameraRigProps) {
   const camera = useThree((s) => s.camera);
   const element = useThree((s) => s.gl.domElement);
   // Width and height only: R3F's size also carries the canvas' page offset, and a
@@ -99,15 +116,15 @@ export function CameraRig({ size, center, follow, reducedMotion, insetLeft = 0 }
     fit: Fit | null;
     following: boolean;
     follow: Vec3 | null;
-    /** The inset applied now: it eases towards the prop, so the machine glides aside. */
-    inset: number;
+    /** The insets applied now: they ease towards the props, so the machine glides aside. */
+    inset: Insets;
     /** The first framing has been made: later ones (resize, double-click) are immediate. */
     arrived: boolean;
   }>({
     fit: null,
     following: true,
     follow: null,
-    inset: insetLeft,
+    inset: { left: insetLeft, right: insetRight, top: insetTop },
     arrived: false,
   });
   useLayoutEffect(() => {
@@ -153,15 +170,17 @@ export function CameraRig({ size, center, follow, reducedMotion, insetLeft = 0 }
     };
   }, [controls, element]);
 
-  // Shifts the projection right by half the inset, so the target lands in the middle of
-  // the free part. Pointer picking and the label layer read the same projection.
+  // Shifts the projection by half the insets, so the target lands in the middle of the
+  // free part. Pointer picking and the label layer read the same projection.
   const applyInset = useMemo(
-    () => (inset: number) => {
+    () => (inset: Insets) => {
       if (!(camera instanceof OrthographicCamera)) {
         return;
       }
-      if (inset > 0.5) {
-        camera.setViewOffset(width, height, -inset / 2, 0, width, height);
+      const x = (inset.left - inset.right) / 2;
+      const y = inset.top / 2;
+      if (Math.abs(x) > 0.5 || y > 0.5) {
+        camera.setViewOffset(width, height, -x, -y, width, height);
       } else {
         camera.clearViewOffset();
       }
@@ -170,7 +189,19 @@ export function CameraRig({ size, center, follow, reducedMotion, insetLeft = 0 }
   );
   // Framing never moves the real camera: it is worked out on a stand-in.
   const probe = useMemo(() => new OrthographicCamera(), []);
-  const clampInset = (inset: number) => Math.min(Math.max(inset, 0), width * 0.6);
+  // What the insets leave of the canvas for the machine: never less than a share of it.
+  const free = useMemo(
+    () => (inset: Insets) => ({
+      width: Math.max(width - inset.left - inset.right, width * 0.3),
+      height: Math.max(height - inset.top, height * 0.5),
+    }),
+    [width, height],
+  );
+  const wantedInsets = (): Insets => ({
+    left: Math.min(Math.max(insetLeft, 0), width * 0.6),
+    right: Math.min(Math.max(insetRight, 0), width * 0.2),
+    top: Math.min(Math.max(insetTop, 0), height * 0.4),
+  });
 
   useLayoutEffect(() => {
     if (!(camera instanceof OrthographicCamera)) {
@@ -178,7 +209,7 @@ export function CameraRig({ size, center, follow, reducedMotion, insetLeft = 0 }
     }
     const reset = () => {
       const inset = rig.current.inset;
-      const fit = fitIsometric(probe, size, center, { width: width - inset, height });
+      const fit = fitIsometric(probe, size, center, free(inset));
       applyInset(inset);
       controls.target.copy(fit.target);
       camera.position.copy(fit.target).addScaledVector(ISO, DISTANCE);
@@ -198,21 +229,30 @@ export function CameraRig({ size, center, follow, reducedMotion, insetLeft = 0 }
     reset();
     element.addEventListener("dblclick", reset);
     return () => element.removeEventListener("dblclick", reset);
-  }, [camera, controls, element, probe, applyInset, size, center, width, height]);
+  }, [camera, controls, element, probe, applyInset, free, size, center]);
 
   const goal = useMemo(() => new Vector3(), []);
   const step = useMemo(() => new Vector3(), []);
   useFrame((_, delta) => {
     // A new inset (the text beside the stage got wider or narrower): ease towards it and
     // re-frame on the way. Following, the camera glides to the new framing below.
-    const wanted = clampInset(insetLeft);
-    if (Math.abs(rig.current.inset - wanted) > 0.5) {
-      const inset = reducedMotion
-        ? wanted
-        : MathUtils.damp(rig.current.inset, wanted, scene.follow.rate * 1.5, delta);
+    const wanted = wantedInsets();
+    const now = rig.current.inset;
+    if (
+      Math.abs(now.left - wanted.left) > 0.5 ||
+      Math.abs(now.right - wanted.right) > 0.5 ||
+      Math.abs(now.top - wanted.top) > 0.5
+    ) {
+      const ease = (from: number, to: number) =>
+        reducedMotion ? to : MathUtils.damp(from, to, scene.follow.rate * 1.5, delta);
+      const inset = {
+        left: ease(now.left, wanted.left),
+        right: ease(now.right, wanted.right),
+        top: ease(now.top, wanted.top),
+      };
       rig.current.inset = inset;
       applyInset(inset);
-      const fit = fitIsometric(probe, size, center, { width: width - inset, height });
+      const fit = fitIsometric(probe, size, center, free(inset));
       rig.current.fit = fit;
       controls.minZoom = fit.zoom * scene.orbit.zoomMin;
       controls.maxZoom = fit.zoom * scene.orbit.zoomMax;

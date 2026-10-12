@@ -23,6 +23,10 @@ import { machineBySlug } from "./machine-by-slug";
 const WIDE = "(min-width: 1024px)";
 /** Room between the text and the machine, in px. */
 const GUTTER = 48;
+/** Room the zone labels need past the plate's right corner, from wide screens up, in px. */
+const LABEL_ROOM = 72;
+/** Room the step ruler takes along the top of the sheet, in px. */
+const RULER_ROOM = 44;
 /** How long a machine left to run on its own rests before it starts over, in ms. */
 const REST_MS = 2400;
 
@@ -199,6 +203,8 @@ export function RunStory({ slug, opening, intro, cases, closing }: RunStoryProps
               callouts={stageCallouts(snapshot, null, null, wide ? 2 : 1)}
               camera={moment ? "follow" : "overview"}
               insetLeft={inset}
+              insetRight={wide ? LABEL_ROOM : 0}
+              insetTop={RULER_ROOM}
             />
           }
         />

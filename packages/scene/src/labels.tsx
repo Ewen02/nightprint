@@ -55,8 +55,8 @@ export function LabelAnchor({ labels, id, position }: LabelAnchorProps) {
 const point = new Vector3();
 /** In clip space: callouts right of this point open to the left, so they stay on the stage. */
 const OPEN_LEFT_FROM = 0.3;
-/** Margin, in CSS px, a label kept inside leaves to the stage's edge. */
-const EDGE = 8;
+/** Margin, in CSS px, a label kept inside leaves to the stage's edge, clear of its frame. */
+const EDGE = 28;
 /** Labels sit between z-index 0 (far) and DEPTH_LAYERS (near), inside an isolated layer. */
 const DEPTH_LAYERS = 50;
 /** How often overlaps are settled when nothing moved, in ms: names open and close too. */

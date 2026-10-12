@@ -34,6 +34,9 @@ export interface MachineStageProps {
    * machine is framed in the rest of the canvas.
    */
   readonly insetLeft?: number;
+  /** Room kept clear on the right (labels) and on top (a ruler, a title), in CSS px. */
+  readonly insetRight?: number;
+  readonly insetTop?: number;
   readonly className?: string;
 }
 
@@ -91,6 +94,8 @@ export function MachineStage({
   onHover,
   camera = "follow",
   insetLeft = 0,
+  insetRight = 0,
+  insetTop = 0,
   className,
 }: MachineStageProps) {
   const [labels] = useState(createLabelRegistry);
@@ -125,6 +130,8 @@ export function MachineStage({
           onHover={onHover}
           follows={camera === "follow"}
           insetLeft={insetLeft}
+          insetRight={insetRight}
+          insetTop={insetTop}
           revealed={ready}
           onPhase={setPhase}
         />

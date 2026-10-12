@@ -14,6 +14,7 @@ not in the v1 scope waits for the launch, and open decisions are not yours to se
 - `pnpm check` — Biome lint + typecheck + Vitest, run before every commit
 - `pnpm build` — static export in `apps/web/out`
 - `pnpm format` — Biome format + safe fixes
+- `pnpm --filter @nightprint/video capture mch-001` / `studio` / `render MCH-001 out/mch-001.mp4` — a machine's video
 
 ## Layout
 
@@ -25,6 +26,7 @@ not in the v1 scope waits for the launch, and open decisions are not yours to se
 | `packages/ui` | 2D design system in atomic design: atoms, molecules, organisms, templates. Plain props, no engine types. | tokens, react |
 | `packages/scene` | React Three Fiber components, plus the DOM label layer over the canvas. | engine, tokens, ui atoms, three, R3F |
 | `apps/web` | Pages: Next.js routes, `MachineView` (owns the player) and `machine-view-model.ts` (engine → UI props). | everything |
+| `apps/video` | Videos for X and LinkedIn (Remotion 4.0.535): captures the live site frame by frame, motion design on top. Read its README first. | tokens, remotion |
 | `art/` | Blender files and reference renders. Not part of the build. | — |
 
 The engine never imports React, three or the DOM. Workspace packages export TypeScript source

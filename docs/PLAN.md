@@ -28,7 +28,7 @@ Nightprint (nightprint.dev) est un site où chaque concept d'architecture devien
 
 Nightprint sert trois buts, dans cet ordre. Il n'a pas d'objectif de revenu.
 
-1. **Apprendre la vraie 3D** : Blender (pièces, export glTF), React Three Fiber avec WebGPU, TSL (arêtes, bloom, faux verre, coupes), et la conception d'un moteur de scénarios typé.
+1. **Apprendre la vraie 3D dans le navigateur** : React Three Fiber avec WebGPU, TSL (arêtes, bloom, faux verre, coupes), des pièces générées par le code, et la conception d'un moteur de scénarios typé.
 2. **Un projet public pour le portfolio** : il montre l'architecture (le site respecte la règle hexagonale qu'il explique), la 3D et un design system complet.
 3. **Du contenu build in public** : X en anglais, LinkedIn en français.
 
@@ -51,7 +51,7 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 | Moteur de scénarios : schéma zod, résolution des actions, player déterministe | v1 | Fait, 36 tests |
 | MCH-001 hexagonale : 7 étapes, 2 interrupteurs, nomenclature, journal, cartouche, article | v1 | Jouable de bout en bout et en ligne (12/10), pièces dessinées en code |
 | Design system en atomic design : tokens et 25 composants | v1 | Fait, publié en artifact |
-| Pièces Blender en glTF : cœur en verre, ports, 5 adaptateurs, plaque | À trancher | Pas commencé ; voir les décisions ouvertes |
+| Pièces Blender en glTF : cœur en verre, ports, 5 adaptateurs, plaque | Après le lancement, à l'essai | Les pièces restent générées par le code ; une seule pièce vedette (le cœur en verre) à l'essai, gardée seulement si elle rend mieux |
 | Caméra entre les étapes, cotes de latence, étincelles de violation | v1 | Fait (12/10) |
 | Bloom et arêtes en TSL, vue éclatée, coupe hachurée | v1 | Bloom, arêtes et coupe hachurée faits (12/10) ; vue éclatée à faire |
 | Catalogue avec les machines à venir grisées | v1 | Fait, avec un vote sur X pour la suivante |
@@ -71,7 +71,7 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 Le plan prévoyait trois week-ends de build et un lancement autour du 1er novembre. Le 12/10, l'essentiel des week-ends 2 et 3 est fait ; il reste les points de l'étape 2 ci-dessous. Ensuite, une machine par semaine.
 
 1. **Fait (11 et 12 octobre)** : cadrage, DA, rendu test Blender, nom ; repo (moteur, catalogue, scène, UI, tokens) ; nightprint.dev acheté et en ligne, publié à chaque push ; MCH-001 jouable de bout en bout avec caméra entre les étapes, cotes de latence, étincelles de violation, bloom et arêtes en TSL, coupe hachurée ; catalogue avec vote sur X ; SEO, Search Console et Bing ; vidéo de lancement ; licence ; 119 tests.
-2. **Avant le lancement** : vérifier WebGPU et la console dans Chrome et Safari réels, sur ordinateur et téléphone ; relire le parcours « Passer commande » et les deux interrupteurs contre Cockburn ; vue éclatée ; trancher les pièces Blender.
+2. **Avant le lancement** : vérifier WebGPU et la console dans Chrome et Safari réels, sur ordinateur et téléphone ; relire le parcours « Passer commande » et les deux interrupteurs contre Cockburn ; vue éclatée.
    **Lancement public de MCH-001**, avec la vidéo.
 3. **Ensuite, une machine par semaine** : MCH-002 event loop JavaScript → 003 DDD → 004 offline-first → 005 CQRS + event sourcing → 006 rendu React → 007 Redis cache-aside → 008 Kafka.
 
@@ -128,7 +128,7 @@ Le build se raconte en anglais sur X et en français sur LinkedIn ; chaque machi
 
 - **Lancement** : la vidéo de MCH-001, centrée sur le déclic « je remplace Postgres, le cœur ne bouge pas ». Anatomy est cité comme inspiration dès ce premier post.
 - **Série « une machine par semaine »** : le concept en une phrase, la vidéo, l'interrupteur qui fait comprendre.
-- **Coulisses** : croquis Excalidraw, puis pièce Blender, puis la même dans le navigateur ; pourquoi la vraie 3D plutôt que le SVG ; la coupe hachurée en TSL.
+- **Coulisses** : une pièce générée par le code, de sa définition à l'écran ; plus tard, le cœur en verre refait dans Blender face à sa version en code ; pourquoi la vraie 3D plutôt que le SVG ; la coupe hachurée en TSL.
 - **Angles déjà tirés du build** :
   - le site respecte la règle hexagonale qu'il explique, et le compilateur l'impose ;
   - « j'ai failli publier un contre-exemple faux » : contourner un port n'inverse pas une dépendance ;
@@ -158,10 +158,10 @@ Le plus gros risque n'est pas technique : c'est un projet d'apprentissage sans p
 
 ## Décisions ouvertes et prochaines actions
 
-Deux décisions restent à prendre ; les autres lignes sont à faire avant le lancement.
+Une décision reste à prendre ; les autres lignes sont à faire avant le lancement.
 
 - [ ] **Planche de concepts** : vitrine des 8 machines complètes, ou format à part avec beaucoup de petits concepts (DNS, CDN, load balancer…) dont certains deviennent des machines ?
-- [ ] **Pièces Blender** : les modéliser avant le lancement, après, ou garder les pièces dessinées en code ?
+- [x] **Pièces Blender** : hors du lancement (décidé le 12/10). Une pièce générée par le code reste une donnée de la machine : chaque nouvelle machine reste un seul fichier, compatible avec « une par semaine », et ses arêtes restent nettes dans le style dessin technique. Après le lancement, le cœur en verre à l'essai dans Blender.
 - [x] **Compte X** : le compte perso, [@ewenlq](https://x.com/ewenlq) (décidé le 12/10). Il signe les pages (auteur, carte X) et le journal de build y renvoie.
 - [x] **Repo** : public sur GitHub, [Ewen02/nightprint](https://github.com/Ewen02/nightprint) (décidé le 12/10). Licence : MIT pour le code, CC BY 4.0 pour le contenu, c'est-à-dire les machines, `art/` et les vidéos (décidé le 12/10).
 - [x] Acheter nightprint.dev (12/10), DNS chez IONOS vers le VPS, certificat Let's Encrypt émis le jour même.

@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import "@nightprint/tokens/tokens.css";
+
+/* Workspace packages that carry Tailwind classes. */
+@source "../../../packages/ui/src";
+@source "../../../packages/scene/src";
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    background: var(--color-bg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-flow-request);
+    color: var(--color-bg);
+  }
+}

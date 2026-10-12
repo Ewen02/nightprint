@@ -53,7 +53,7 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 | Design system en atomic design : tokens et 25 composants | v1 | Fait, publié en artifact |
 | Pièces Blender en glTF : cœur en verre, ports, 5 adaptateurs, plaque | Après le lancement, à l'essai | Les pièces restent générées par le code ; une seule pièce vedette (le cœur en verre) à l'essai, gardée seulement si elle rend mieux |
 | Caméra entre les étapes, cotes de latence, étincelles de violation | v1 | Fait (12/10) |
-| Bloom et arêtes en TSL, vue éclatée, coupe hachurée | v1 | Bloom, arêtes et coupe hachurée faits (12/10) ; vue éclatée à faire |
+| Bloom et arêtes en TSL, vue éclatée, coupe hachurée | v1 | Fait (12/10). Vue éclatée : « Unplug the adapters » débranche chaque adaptateur de son port ; celui que le cœur importe reste collé |
 | Catalogue avec les machines à venir grisées | v1 | Fait, avec un vote sur X pour la suivante |
 | Accessibilité : clavier, réduction des animations, contraste AA testé | v1 | En place |
 | SEO : tout le texte en HTML, JSON-LD, image de partage par machine, sitemap | v1 | Fait ; Search Console et Bing vérifiés le 12/10 |
@@ -71,7 +71,7 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 Le plan prévoyait trois week-ends de build et un lancement autour du 1er novembre. Le 12/10, l'essentiel des week-ends 2 et 3 est fait ; il reste les points de l'étape 2 ci-dessous. Ensuite, une machine par semaine.
 
 1. **Fait (11 et 12 octobre)** : cadrage, DA, rendu test Blender, nom ; repo (moteur, catalogue, scène, UI, tokens) ; nightprint.dev acheté et en ligne, publié à chaque push ; MCH-001 jouable de bout en bout avec caméra entre les étapes, cotes de latence, étincelles de violation, bloom et arêtes en TSL, coupe hachurée ; catalogue avec vote sur X ; SEO, Search Console et Bing ; vidéo de lancement ; licence ; 119 tests.
-2. **Avant le lancement** : vérifier WebGPU et la console dans Chrome et Safari réels, sur ordinateur et téléphone ; relire le parcours « Passer commande » et les deux interrupteurs contre Cockburn ; vue éclatée.
+2. **Avant le lancement** : vérifier WebGPU et la console dans Chrome et Safari réels, sur ordinateur et téléphone. Fait le 12/10 : relecture contre Cockburn (2005 et 2024), corrections en ligne ; vue éclatée ; essai automatisé sans erreur sur les moteurs de Chrome et de Safari, ordinateur et mobile émulé (WebGPU sous Safari).
    **Lancement public de MCH-001**, avec la vidéo.
 3. **Ensuite, une machine par semaine** : MCH-002 event loop JavaScript → 003 DDD → 004 offline-first → 005 CQRS + event sourcing → 006 rendu React → 007 Redis cache-aside → 008 Kafka.
 

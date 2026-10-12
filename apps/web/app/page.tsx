@@ -50,8 +50,53 @@ export const metadata: Metadata = {
 /** The machine the home page runs and quotes. */
 const featured = hexagonal;
 
+/** Rows the build log shows: the rest is on GitHub. */
+const BUILD_LOG_SHOWN = 8;
+
 /** Newest first. Posted on X as it happens. */
 const buildLog: readonly BuildLogEntry[] = [
+  {
+    key: "live",
+    date: "12 OCT",
+    flow: "response",
+    tag: "SHIP",
+    text: "nightprint.dev is live: a static export on a VPS, republished on every push to main.",
+  },
+  {
+    key: "assembly",
+    date: "12 OCT",
+    flow: "write",
+    tag: "PERF",
+    text: "The machine assembles in 1.5 s on first load. Materials compile while the stage is still hidden: no frame over 40 ms once it shows.",
+  },
+  {
+    key: "scroll-story",
+    date: "12 OCT",
+    flow: "response",
+    tag: "UI",
+    text: "The home page runs MCH-001 as you scroll: each note plays its step on one drawing sheet that stays put.",
+  },
+  {
+    key: "steps-in-html",
+    date: "12 OCT",
+    flow: "request",
+    tag: "SEO",
+    text: "Every step of every scenario is now plain HTML. Crawlers never see the canvas.",
+  },
+  {
+    key: "route-slots",
+    date: "12 OCT",
+    flow: "write",
+    tag: "FIX",
+    text: "A what-if switch stalled 166 ms compiling materials. Every route is now mounted up front and fades in: 25 ms.",
+  },
+  {
+    key: "public-repo",
+    date: "12 OCT",
+    flow: "request",
+    tag: "OPEN",
+    text: "The repo is public on GitHub. Every commit passes lint, types and tests on its own.",
+  },
   {
     key: "drei-html",
     date: "12 OCT",
@@ -242,7 +287,9 @@ export default function HomePage() {
           eyebrow="Build log"
           title="Built in public, one machine a week."
           lead="The engine, the drawings and the mistakes, posted as they happen."
-          entries={buildLog}
+          // The latest changes; every one of them is a commit on GitHub.
+          entries={buildLog.slice(0, BUILD_LOG_SHOWN)}
+          history={{ label: "Full history on GitHub", href: `${site.repo}/commits/main` }}
           follow={{ label: `Follow ${site.author.handle} on X`, href: site.author.url }}
         />
       </PageSection>

@@ -15,6 +15,8 @@ export const site = {
    * posted; then the poll's own URL, so a click lands on the vote.
    */
   poll: "https://x.com/ewenlq",
+  /** The public repository: its commits are the full build log. */
+  repo: "https://github.com/Ewen02/nightprint",
 } as const;
 
 /** The canonical path of a machine page, with the trailing slash the export serves. */

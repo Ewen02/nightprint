@@ -85,7 +85,10 @@ export function registerSheets(): RegisterSheet[] {
           { term: "Family", value: familyLabels[m.family] },
           { term: "Status", value: "In draft" },
         ],
-        action: { label: `Vote for ${m.code} on X`, href: site.poll },
+        // All four candidates run for the next free code: the vote is for the concept.
+        ...(site.pollFor.includes(m.code)
+          ? { action: { label: "Vote for it on X", href: site.poll } }
+          : {}),
       },
     })),
   ];

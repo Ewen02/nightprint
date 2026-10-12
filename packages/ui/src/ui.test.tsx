@@ -8,6 +8,7 @@ import { LogoMark } from "./atoms/logo-mark";
 import { Breadcrumb } from "./molecules/breadcrumb";
 import { FilterChips } from "./molecules/filter-chips";
 import { FlowLegend } from "./molecules/flow-legend";
+import { LogLine } from "./molecules/log-line";
 import { MachineCard } from "./molecules/machine-card";
 import { PartCallout } from "./molecules/part-callout";
 import { PlanView } from "./molecules/plan-view";
@@ -603,5 +604,20 @@ describe("footer", () => {
     expect(footer).toContain("1 of 2 live");
     expect(footer).toContain('<nav aria-label="Footer">');
     expect(footer).toMatch(/Made by <a href="https:\/\/example.org\/ewen"[^>]*>Ewen<\/a> · 2026/);
+  });
+});
+
+describe("log lines", () => {
+  it("wraps a long call between its names, never inside a decimal", () => {
+    const line = html(
+      <LogLine
+        time="4.27 ms"
+        flow="request"
+        tag="REQ"
+        text="PaymentGateway.charge(49.00 EUR) → PaymentProviderAdapter"
+      />,
+    );
+    expect(line).toContain("PaymentGateway.<wbr/>charge(49.00 EUR) →<wbr/>");
+    expect(line).not.toContain("49.<wbr/>");
   });
 });

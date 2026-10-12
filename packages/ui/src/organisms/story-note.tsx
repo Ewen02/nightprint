@@ -64,7 +64,7 @@ export function StoryNote({
       {log.length > 0 && (
         <ol
           className={cx(
-            "mt-1 flex flex-col gap-1.5 rounded-xs border bg-inset p-3 transition-colors duration-500 ease-machine motion-reduce:transition-none",
+            "@container mt-1 flex flex-col gap-1.5 rounded-xs border bg-inset p-3 transition-colors duration-500 ease-machine motion-reduce:transition-none",
             active ? "border-line-strong" : "border-line-muted",
           )}
         >

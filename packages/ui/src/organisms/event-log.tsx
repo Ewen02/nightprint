@@ -62,7 +62,7 @@ export function EventLog({ entries, className }: EventLogProps) {
         tabIndex={0}
         className="flex max-h-28 flex-col-reverse overflow-y-auto px-4 pb-4 sm:px-6"
       >
-        <ol aria-live="polite" className="flex flex-col gap-1.5">
+        <ol aria-live="polite" className="@container flex flex-col gap-1.5">
           {entries.map((entry, index) => (
             <LogLine
               key={entry.key}

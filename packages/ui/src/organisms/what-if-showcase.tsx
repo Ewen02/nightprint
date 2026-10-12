@@ -54,7 +54,7 @@ export function WhatIfShowcase({ eyebrow, title, lead, cases, onToggle }: WhatIf
               onToggle={(on) => onToggle?.(item.id, on)}
             />
             <div aria-live="polite">
-              <Well as="ul" className="flex flex-col gap-1.5">
+              <Well as="ul" className="@container flex flex-col gap-1.5">
                 {item.log.map((entry) => (
                   <LogLine
                     key={entry.key}

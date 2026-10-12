@@ -19,6 +19,8 @@ export interface WireProps {
   /** Lit in a flow colour while the step is about both of its ends, else null. */
   readonly flow: Flow | null;
   readonly reducedMotion: boolean;
+  /** Opacity unlit: faint for a wiring note, stronger for the gap an unplugged adapter leaves. */
+  readonly restOpacity?: number;
 }
 
 /**
@@ -27,7 +29,13 @@ export interface WireProps {
  * fading in or out and moving only change uniforms and geometry: its material
  * is compiled once.
  */
-export function Wire({ points, present, flow, reducedMotion }: WireProps) {
+export function Wire({
+  points,
+  present,
+  flow,
+  reducedMotion,
+  restOpacity = REST_OPACITY,
+}: WireProps) {
   const u = useMemo(
     () => ({ presence: uniform(0), lit: uniform(0), colour: uniform(new Color(scene.edge)) }),
     [],
@@ -43,12 +51,12 @@ export function Wire({ points, present, flow, reducedMotion }: WireProps) {
     });
     material.alphaToCoverage = false;
     material.colorNode = mix(color(scene.edge), u.colour, u.lit);
-    material.opacityNode = mix(float(REST_OPACITY), float(1), u.lit).mul(u.presence);
+    material.opacityNode = mix(float(restOpacity), float(1), u.lit).mul(u.presence);
     setBloom(material, u.lit.mul(scene.bloom.edge));
     const segments = new LineSegments2(new LineSegmentsGeometry(), material);
     segments.raycast = noRaycast;
     return segments;
-  }, [u]);
+  }, [u, restOpacity]);
 
   useEffect(() => () => object.material.dispose(), [object]);
 

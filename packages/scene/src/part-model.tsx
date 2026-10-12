@@ -1,4 +1,4 @@
-import type { Flow, Part } from "@nightprint/engine";
+import type { Flow, Part, Vec3 } from "@nightprint/engine";
 import { easeInOutCubic } from "@nightprint/engine";
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef } from "react";
@@ -36,6 +36,9 @@ interface Move {
   t: number;
 }
 
+/** An adapter slides off its pipe, or back on, in the exploded view. */
+const UNPLUG_MS = 900;
+
 /** Height over the move: up in the first fifth, held, down in the last fifth. */
 function liftAt(t: number): number {
   return Math.min(1, Math.sin(Math.PI * t) * 1.8);
@@ -64,6 +67,8 @@ export interface PartModelProps {
    * before), and the part is set down from `at`. Absent with reduced motion.
    */
   readonly arrival?: { readonly clock: RefObject<number>; readonly at: number } | undefined;
+  /** In the exploded view: how far the part slides off its pipe. Null while plugged in. */
+  readonly unplugBy?: Vec3 | null;
 }
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
@@ -79,7 +84,10 @@ export function PartModel({
   onSelect,
   onHover,
   arrival,
+  unplugBy = null,
 }: PartModelProps) {
+  // The exploded view's slide, around the part and its label: the part's own moves are inside.
+  const shift = useRef<Group>(null);
   const group = useRef<Group>(null);
   // What the arrival moves: the part's body, not its label anchor.
   const body = useRef<Group>(null);
@@ -170,6 +178,32 @@ export function PartModel({
     }
   });
 
+  // 0 plugged in, 1 off its pipe. The last offset stays, so the part slides back along it.
+  const out = useRef(0);
+  const offset = useRef<Vec3>([0, 0, 0]);
+  const stale = useRef(false);
+  useLayoutEffect(() => {
+    if (unplugBy) {
+      offset.current = unplugBy;
+    }
+    stale.current = true;
+  }, [unplugBy]);
+  useFrame((_, delta) => {
+    const g = shift.current;
+    const target = unplugBy ? 1 : 0;
+    if (!g || (out.current === target && !stale.current)) {
+      return;
+    }
+    stale.current = false;
+    const step = (delta * 1000) / UNPLUG_MS;
+    out.current = reducedMotion
+      ? target
+      : MathUtils.clamp(out.current + Math.sign(target - out.current) * step, 0, 1);
+    const e = easeInOutCubic(out.current);
+    const [ox, oy, oz] = offset.current;
+    g.position.set(ox * e, oy * e, oz * e);
+  });
+
   const violation = part.flag === "violation";
   const lit = focused || selected || hovered || violation;
   /** A flow colour lights the part; selection or hover alone is white, and white never blooms. */
@@ -233,40 +267,42 @@ export function PartModel({
   };
 
   return (
-    <group
-      ref={group}
-      rotation-y={part.rotationY}
-      onClick={glass ? undefined : select}
-      onPointerOver={glass ? undefined : enter}
-      onPointerOut={glass ? undefined : leave}
-    >
-      <group ref={body}>
-        {glass ? (
-          <>
-            <mesh
-              geometry={geometry}
-              material={material}
-              raycast={noRaycast}
-              renderOrder={GLASS_ORDER}
-            />
-            <Edges geometry={geometry} rest={rest} renderOrder={GLASS_ORDER + 1} />
-            <Edges
-              geometry={geometry}
-              rest={GLASS_HIDDEN}
-              pass="hidden"
-              renderOrder={GLASS_ORDER + 2}
-            />
-          </>
-        ) : (
-          <>
-            <mesh geometry={geometry} material={material} />
-            <Edges geometry={geometry} rest={rest} lit={litStyle} level={level} />
-          </>
+    <group ref={shift}>
+      <group
+        ref={group}
+        rotation-y={part.rotationY}
+        onClick={glass ? undefined : select}
+        onPointerOver={glass ? undefined : enter}
+        onPointerOut={glass ? undefined : leave}
+      >
+        <group ref={body}>
+          {glass ? (
+            <>
+              <mesh
+                geometry={geometry}
+                material={material}
+                raycast={noRaycast}
+                renderOrder={GLASS_ORDER}
+              />
+              <Edges geometry={geometry} rest={rest} renderOrder={GLASS_ORDER + 1} />
+              <Edges
+                geometry={geometry}
+                rest={GLASS_HIDDEN}
+                pass="hidden"
+                renderOrder={GLASS_ORDER + 2}
+              />
+            </>
+          ) : (
+            <>
+              <mesh geometry={geometry} material={material} />
+              <Edges geometry={geometry} rest={rest} lit={litStyle} level={level} />
+            </>
+          )}
+        </group>
+        {part.ref !== undefined && (
+          <LabelAnchor labels={labels} id={part.id} position={[0, top + 0.4, 0]} />
         )}
       </group>
-      {part.ref !== undefined && (
-        <LabelAnchor labels={labels} id={part.id} position={[0, top + 0.4, 0]} />
-      )}
     </group>
   );
 }

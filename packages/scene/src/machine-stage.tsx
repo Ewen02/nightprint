@@ -37,6 +37,8 @@ export interface MachineStageProps {
   /** Room kept clear on the right (labels) and on top (a ruler, a title), in CSS px. */
   readonly insetRight?: number;
   readonly insetTop?: number;
+  /** The exploded view: every adapter slides off its pipe, the core keeps its ports. */
+  readonly exploded?: boolean;
   readonly className?: string;
 }
 
@@ -96,6 +98,7 @@ export function MachineStage({
   insetLeft = 0,
   insetRight = 0,
   insetTop = 0,
+  exploded = false,
   className,
 }: MachineStageProps) {
   const [labels] = useState(createLabelRegistry);
@@ -136,6 +139,7 @@ export function MachineStage({
           insetTop={insetTop}
           revealed={ready}
           onPhase={setPhase}
+          exploded={exploded}
         />
         <FirstFrames onReady={() => setReady(true)} />
       </Canvas>

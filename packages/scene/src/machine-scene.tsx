@@ -16,6 +16,7 @@ import { SceneRenderPipeline } from "./render-pipeline";
 import { everyDrawnRoute, placeRoutes } from "./route-slots";
 import { Simulation } from "./simulation";
 import { Sparks } from "./sparks";
+import { unplugs } from "./unplug";
 import { usePlayerSnapshot } from "./use-player";
 import { Wire } from "./wire";
 import { Zones } from "./zones";
@@ -37,6 +38,8 @@ export interface MachineSceneProps {
   readonly revealed: boolean;
   /** Each step of the first display, for what lives outside the canvas (the labels). */
   readonly onPhase?: ((phase: AssemblyPhase) => void) | undefined;
+  /** The exploded view: every adapter off its pipe, the core and its ports whole. */
+  readonly exploded?: boolean;
 }
 
 /** Everything inside the Canvas: lights, plate, parts, pipes, tokens and label anchors. */
@@ -53,6 +56,7 @@ export function MachineScene({
   insetTop = 0,
   revealed,
   onPhase,
+  exploded = false,
 }: MachineSceneProps) {
   const { resolved, step, state, finished } = usePlayerSnapshot(player);
   const { plate } = resolved.machine.stage;
@@ -99,6 +103,8 @@ export function MachineScene({
   const pipes = useMemo(() => slots.filter((s) => s.route.kind === "pipe"), [slots]);
   const wires = useMemo(() => slots.filter((s) => s.route.kind === "wire"), [slots]);
   const hiddenPipes = useMemo(() => pipes.map((p) => ({ ...p, present: false })), [pipes]);
+  // The exploded view, ready under every switch: its lines are mounted from the start too.
+  const unplugged = useMemo(() => unplugs(resolved, pipes), [resolved, pipes]);
 
   // Once the scenario has played to its end the machine comes to rest: nothing lit,
   // nothing travelling, the trails fade and the camera goes back to the overview.
@@ -163,8 +169,20 @@ export function MachineScene({
         <Wire
           key={route.id}
           points={points}
-          present={present && routesShown}
+          // Unplugged, an adapter is wired to nothing.
+          present={present && routesShown && !exploded}
           flow={present && focus.has(route.from) && focus.has(route.to) ? step.flow : null}
+          reducedMotion={state.reducedMotion}
+        />
+      ))}
+      {/* The gap an unplugged adapter leaves, dashed like a drawing's assembly line. */}
+      {[...unplugged].map(([id, unplug]) => (
+        <Wire
+          key={`unplug-${id}`}
+          points={unplug.line}
+          present={exploded && unplug.free && routesShown}
+          flow={null}
+          restOpacity={scene.edgeOpacity.solid}
           reducedMotion={state.reducedMotion}
         />
       ))}
@@ -199,6 +217,9 @@ export function MachineScene({
           onSelect={onSelect}
           onHover={onHover}
           arrival={assembles ? { clock, at: timeline.partAt.get(part.id) ?? 0 } : undefined}
+          unplugBy={
+            exploded && unplugged.get(part.id)?.free ? unplugged.get(part.id)?.offset : null
+          }
         />
       ))}
       <Sparks origin={sparksAt} frame={frame} reducedMotion={state.reducedMotion} />

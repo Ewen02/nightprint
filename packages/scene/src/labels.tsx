@@ -65,15 +65,50 @@ const OVERLAP_EVERY = 150;
 const overlaps = (a: DOMRect, b: DOMRect) =>
   a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
+/** Area, in px², that two boxes share. */
+const shared = (a: DOMRect, b: DOMRect) =>
+  Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) *
+  Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+
+/** How much of a label is lost: under the other labels, or past the stage's edge. */
+const lost = (box: DOMRect, others: readonly DOMRect[], stage: DOMRect) =>
+  box.width * box.height -
+  shared(box, stage) +
+  others.reduce((sum, other) => sum + shared(box, other), 0);
+
 /**
- * A label that yields (a dimension's value) fades out while another label covers it,
- * and comes back once it is clear. Measured on what each label shows, so a part's
- * callout counts its name only while the name is open.
+ * A part's callout that covers another one (its open name over a neighbour's balloon)
+ * opens on its other side, when less of it is lost there. Then a label that yields (a
+ * dimension's value) fades out while another label covers it, and comes back once it
+ * is clear. Measured on what each label shows, so a part's callout counts its name only
+ * while the name is open.
  */
 function settleOverlaps(labels: LabelRegistry) {
   const shown = [...labels.elements.values()].filter((e) => e.style.visibility === "visible");
   const boxOf = (e: HTMLElement) => (e.firstElementChild ?? e).getBoundingClientRect();
-  const blockers = shown.filter((e) => e.dataset.yields === undefined).map(boxOf);
+  const fixed = shown.filter((e) => e.dataset.yields === undefined);
+  const blockers = fixed.map(boxOf);
+  const stage = fixed[0]?.parentElement?.getBoundingClientRect();
+  fixed.forEach((element, i) => {
+    const box = blockers[i];
+    if (!stage || !box) {
+      return;
+    }
+    const others = blockers.filter((_, j) => j !== i);
+    const here = lost(box, others, stage);
+    if (here === 0) {
+      return;
+    }
+    // The projector sets the side again whenever the label moves; until then, this holds.
+    const side = element.dataset.side === "left" ? "left" : "right";
+    element.dataset.side = side === "left" ? "right" : "left";
+    const flipped = boxOf(element);
+    if (lost(flipped, others, stage) < here) {
+      blockers[i] = flipped;
+    } else {
+      element.dataset.side = side;
+    }
+  });
   for (const element of shown) {
     if (element.dataset.yields === undefined) {
       continue;

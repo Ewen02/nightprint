@@ -1,8 +1,8 @@
 "use client";
 
 import type { Player } from "@nightprint/engine";
-import { Canvas } from "@react-three/fiber";
-import { useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useRef, useState } from "react";
 import { PCFShadowMap } from "three";
 import { WebGPURenderer } from "three/webgpu";
 import { createLabelRegistry, LabelLayer, type StageCallout } from "./labels";
@@ -63,6 +63,23 @@ const NO_SHADOWS = { enabled: false, type: PCFShadowMap };
  */
 const MEASURE = { scroll: false } as const;
 
+/** Frames drawn before the stage shows: by then every material has compiled once. */
+const FRAMES_BEFORE_SHOWING = 3;
+
+/** Calls `onReady` once, after the first frames have been drawn. */
+function FirstFrames({ onReady }: { readonly onReady: () => void }) {
+  const drawn = useRef(0);
+  useFrame(() => {
+    if (drawn.current < FRAMES_BEFORE_SHOWING) {
+      drawn.current += 1;
+      if (drawn.current === FRAMES_BEFORE_SHOWING) {
+        onReady();
+      }
+    }
+  });
+  return null;
+}
+
 export function MachineStage({
   player,
   label,
@@ -76,8 +93,13 @@ export function MachineStage({
   className,
 }: MachineStageProps) {
   const [labels] = useState(createLabelRegistry);
+  // The stage, labels included, fades in once its first frames are drawn: never an
+  // empty canvas, a half-built scene or labels floating before their parts.
+  const [ready, setReady] = useState(false);
   return (
-    <div className={`relative size-full ${className ?? ""}`}>
+    <div
+      className={`relative size-full transition-opacity duration-700 ease-machine motion-reduce:transition-none ${ready ? "opacity-100" : "opacity-0"} ${className ?? ""}`}
+    >
       <Canvas
         role="img"
         aria-label={label}
@@ -100,6 +122,7 @@ export function MachineStage({
           follows={camera === "follow"}
           insetLeft={insetLeft}
         />
+        <FirstFrames onReady={() => setReady(true)} />
       </Canvas>
       <LabelLayer labels={labels} callouts={callouts} />
     </div>

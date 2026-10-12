@@ -6,6 +6,11 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { scene } from "./palette";
 
 const DISTANCE = 30;
+/**
+ * The first framing starts this much wider, and the camera settles onto the machine
+ * while the stage fades in. Above the orbit's minimum zoom, so nothing clamps it.
+ */
+const ARRIVAL_ZOOM = 0.9;
 const MARGIN = 1.08;
 /** Highest point drawn above the plate, balloons included. */
 const TOP = 1.6;
@@ -96,11 +101,14 @@ export function CameraRig({ size, center, follow, reducedMotion, insetLeft = 0 }
     follow: Vec3 | null;
     /** The inset applied now: it eases towards the prop, so the machine glides aside. */
     inset: number;
+    /** The first framing has been made: later ones (resize, double-click) are immediate. */
+    arrived: boolean;
   }>({
     fit: null,
     following: true,
     follow: null,
     inset: insetLeft,
+    arrived: false,
   });
   useLayoutEffect(() => {
     rig.current.follow = follow;
@@ -174,7 +182,12 @@ export function CameraRig({ size, center, follow, reducedMotion, insetLeft = 0 }
       applyInset(inset);
       controls.target.copy(fit.target);
       camera.position.copy(fit.target).addScaledVector(ISO, DISTANCE);
-      camera.zoom = fit.zoom;
+      // On arrival the camera starts a little wide and the follow loop eases it in. Read
+      // from the system, not the player: its reduced-motion flag lands after mount.
+      const settle =
+        !rig.current.arrived && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      camera.zoom = fit.zoom * (settle ? ARRIVAL_ZOOM : 1);
+      rig.current.arrived = true;
       controls.minZoom = fit.zoom * scene.orbit.zoomMin;
       controls.maxZoom = fit.zoom * scene.orbit.zoomMax;
       camera.updateProjectionMatrix();

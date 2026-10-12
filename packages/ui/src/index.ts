@@ -45,6 +45,7 @@ export {
 export { ScenarioEnd, type ScenarioEndProps } from "./molecules/scenario-end";
 export { SectionHeading, type SectionHeadingProps } from "./molecules/section-heading";
 export { SheetPreview, type SheetPreviewProps } from "./molecules/sheet-preview";
+export { StageAction, type StageActionProps } from "./molecules/stage-action";
 export { StepCaption, type StepCaptionProps } from "./molecules/step-caption";
 export { type StepDotItem, StepDots, type StepDotsProps } from "./molecules/step-dots";
 export { StepRuler, type StepRulerProps } from "./molecules/step-ruler";

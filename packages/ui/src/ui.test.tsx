@@ -13,6 +13,7 @@ import { MachineCard } from "./molecules/machine-card";
 import { PartCallout } from "./molecules/part-callout";
 import { PlanView } from "./molecules/plan-view";
 import { SheetPreview } from "./molecules/sheet-preview";
+import { StageAction } from "./molecules/stage-action";
 import { StepDots } from "./molecules/step-dots";
 import { StepRuler } from "./molecules/step-ruler";
 import { WhatIfSwitch } from "./molecules/what-if-switch";
@@ -52,6 +53,16 @@ describe("atoms", () => {
 
   it("names icon-only buttons", () => {
     expect(html(<IconButton label="Next step">›</IconButton>)).toContain('aria-label="Next step"');
+  });
+
+  it("reads out what a stage action shows, from a live region there before it changes", () => {
+    const idle = html(<StageAction label="Unplug the adapters" onClick={() => {}} />);
+    expect(idle).toContain("<button");
+    expect(idle).toContain('role="status"');
+    const done = html(
+      <StageAction label="Plug them back" note="The core stands alone." onClick={() => {}} />,
+    );
+    expect(done).toContain("The core stands alone.");
   });
 
   it("draws a navigating action as a link, not a button", () => {

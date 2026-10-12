@@ -8,6 +8,8 @@ export interface MachineTemplateProps {
   readonly titleAside?: ReactNode;
   /** The 3D stage. It fills its box. */
   readonly stage: ReactNode;
+  /** Ways to look at the machine: inset top right of the stage, under it on phones. */
+  readonly tools?: ReactNode;
   /** Inset bottom right of the stage, hidden on phones. */
   readonly cartouche?: ReactNode;
   /** Inset bottom left of the stage, hidden on phones: the key to the colours. */
@@ -31,6 +33,7 @@ export function MachineTemplate({
   summary,
   titleAside,
   stage,
+  tools,
   cartouche,
   legend,
   transport,
@@ -55,7 +58,10 @@ export function MachineTemplate({
             </div>
             <div className="relative h-[44dvh] min-h-[280px] lg:h-auto lg:flex-1">
               <div className="absolute inset-0">{stage}</div>
+              {tools && <div className="absolute top-4 right-4 z-10 hidden sm:block">{tools}</div>}
             </div>
+            {/* On phones the stage is too small to write over: its tools follow it. */}
+            {tools && <div className="px-4 pb-4 sm:hidden">{tools}</div>}
             {cartouche && (
               <div className="absolute right-4 bottom-4 z-10 hidden sm:block">{cartouche}</div>
             )}

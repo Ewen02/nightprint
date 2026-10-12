@@ -24,6 +24,7 @@ on:
       - 'docs/**'
       - 'art/**'
       - '.claude/**'
+      - 'apps/video/**'
       - '**/*.md'
   workflow_dispatch:
 

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ButtonLink } from "../atoms/button-link";
 import { cx } from "../cx";
 import { FilterChips, type FilterOption } from "../molecules/filter-chips";
 import { SectionHeading } from "../molecules/section-heading";
@@ -31,6 +32,8 @@ export interface DrawingRegisterProps {
   readonly onSelect?: (code: string) => void;
   /** The selected sheet, beside the register from wide screens up, above it on phones. */
   readonly preview: ReactNode;
+  /** Under the lead: what the visitor can do about the register (vote on the next one). */
+  readonly action?: { readonly label: string; readonly href: string };
 }
 
 const COLUMNS = [
@@ -56,12 +59,18 @@ export function DrawingRegister({
   selected,
   onSelect,
   preview,
+  action,
 }: DrawingRegisterProps) {
   return (
     <section aria-labelledby="register-title" className="flex flex-col gap-10">
       <div className="flex flex-wrap items-end justify-between gap-6">
-        <div className="max-w-155">
+        <div className="flex max-w-155 flex-col items-start gap-6">
           <SectionHeading id="register-title" eyebrow={eyebrow} title={title} lead={[lead]} />
+          {action && (
+            <ButtonLink href={action.href} variant="secondary">
+              {action.label}
+            </ButtonLink>
+          )}
         </div>
         <FilterChips
           label="Filter by family"

@@ -10,6 +10,11 @@ export const site = {
     "Software architecture patterns as interactive 3D machines in your browser. Follow a request step by step, flip a what-if switch, and read a sourced explainer.",
   locale: "en_US",
   author: { name: "Ewen", url: "https://x.com/ewenlq", handle: "@ewenlq" },
+  /**
+   * Where the next machine is put to a vote: an X poll. The profile until a poll is
+   * posted; then the poll's own URL, so a click lands on the vote.
+   */
+  poll: "https://x.com/ewenlq",
 } as const;
 
 /** The canonical path of a machine page, with the trailing slash the export serves. */

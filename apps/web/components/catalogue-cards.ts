@@ -7,6 +7,7 @@ import type {
   SheetPreviewProps,
 } from "@nightprint/ui";
 import { planView } from "./plan-view-model";
+import { site } from "./seo";
 
 /** How families read, in filter order. */
 export const familyLabels = {
@@ -84,6 +85,7 @@ export function registerSheets(): RegisterSheet[] {
           { term: "Family", value: familyLabels[m.family] },
           { term: "Status", value: "In draft" },
         ],
+        action: { label: `Vote for ${m.code} on X`, href: site.poll },
       },
     })),
   ];

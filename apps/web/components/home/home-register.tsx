@@ -13,12 +13,14 @@ export function HomeRegister({
   lead,
   sheets,
   families,
+  action,
 }: {
   readonly eyebrow: string;
   readonly title: string;
   readonly lead: string;
   readonly sheets: readonly RegisterSheet[];
   readonly families: readonly FilterOption[];
+  readonly action?: { readonly label: string; readonly href: string };
 }) {
   const [filter, setFilter] = useState(ALL);
   const [selected, setSelected] = useState(sheets[0]?.code ?? "");
@@ -43,6 +45,7 @@ export function HomeRegister({
       }}
       selected={selected}
       onSelect={setSelected}
+      action={action}
       preview={
         current && (
           // A new sheet slides in instead of swapping.

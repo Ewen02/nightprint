@@ -12,11 +12,15 @@ export function stageCallouts(
   snapshot: PlayerSnapshot,
   selected: string | null = null,
   hovered: string | null = null,
+  /** Parts of the step named at once: fewer on a narrow stage, where names collide. */
+  namedPerStep = 2,
 ): StageCallout[] {
   const zones = snapshot.resolved.machine.stage.zones.map((zone) => ({
     id: zoneLabelId(zone.id),
     content: <ZoneLabel label={zone.label} note={zone.note} />,
     keepInside: true,
+    // A zone's name is read once; a part's name is what the step is about.
+    yields: true,
   }));
   const travelled = new Map(
     (snapshot.finished ? [] : snapshot.step.tokens).flatMap((token) =>
@@ -30,10 +34,14 @@ export function stageCallouts(
       content: (
         <DimensionLabel value={`${route.latencyMs} ms`} flow={travelled.get(route.id) ?? null} />
       ),
+      // The least needed label: it gives way to a part's name or a zone's.
+      yields: true,
     }));
-  const parts = partCallouts(snapshot, selected, hovered).map(({ id, ...callout }) => ({
-    id,
-    content: <PartCallout {...callout} />,
-  }));
+  const parts = partCallouts(snapshot, selected, hovered, namedPerStep).map(
+    ({ id, ...callout }) => ({
+      id,
+      content: <PartCallout {...callout} />,
+    }),
+  );
   return [...zones, ...dimensions, ...parts];
 }

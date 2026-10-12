@@ -59,6 +59,30 @@ const OPEN_LEFT_FROM = 0.3;
 const EDGE = 8;
 /** Labels sit between z-index 0 (far) and DEPTH_LAYERS (near), inside an isolated layer. */
 const DEPTH_LAYERS = 50;
+/** How often overlaps are settled when nothing moved, in ms: names open and close too. */
+const OVERLAP_EVERY = 150;
+
+const overlaps = (a: DOMRect, b: DOMRect) =>
+  a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+
+/**
+ * A label that yields (a dimension's value) fades out while another label covers it,
+ * and comes back once it is clear. Measured on what each label shows, so a part's
+ * callout counts its name only while the name is open.
+ */
+function settleOverlaps(labels: LabelRegistry) {
+  const shown = [...labels.elements.values()].filter((e) => e.style.visibility === "visible");
+  const boxOf = (e: HTMLElement) => (e.firstElementChild ?? e).getBoundingClientRect();
+  const blockers = shown.filter((e) => e.dataset.yields === undefined).map(boxOf);
+  for (const element of shown) {
+    if (element.dataset.yields === undefined) {
+      continue;
+    }
+    const box = boxOf(element);
+    const covered = blockers.some((blocker) => overlaps(blocker, box));
+    element.style.opacity = covered ? "0" : "";
+  }
+}
 
 interface ScreenPosition {
   /** CSS pixels from the canvas' top left, rounded to half a pixel. */
@@ -95,9 +119,11 @@ export function LabelProjector({ labels }: { readonly labels: LabelRegistry }) {
   const camera = useThree((state) => state.camera);
   const size = useThree((state) => state.size);
   const written = useRef(new WeakMap<HTMLElement, string>());
+  const settled = useRef(0);
 
   useFrame(() => {
     camera.updateMatrixWorld();
+    let moved = false;
     for (const [id, element] of labels.elements) {
       const anchor = labels.anchors.get(id);
       const screen = anchor ? toScreen(anchor, camera, size) : null;
@@ -106,6 +132,7 @@ export function LabelProjector({ labels }: { readonly labels: LabelRegistry }) {
         continue;
       }
       written.current.set(element, key);
+      moved = true;
       if (!screen) {
         element.style.visibility = "hidden";
         continue;
@@ -120,6 +147,11 @@ export function LabelProjector({ labels }: { readonly labels: LabelRegistry }) {
       element.dataset.side = screen.side;
       element.style.zIndex = String(screen.z);
       element.style.visibility = "visible";
+    }
+    const now = performance.now();
+    if (moved || now - settled.current > OVERLAP_EVERY) {
+      settled.current = now;
+      settleOverlaps(labels);
     }
   });
 
@@ -136,17 +168,21 @@ export interface StageCallout {
    * may leave its point. A part's callout never does: it must stay on its part.
    */
   readonly keepInside?: boolean;
+  /** Fades out while another label covers it: for a dimension's value, the least needed. */
+  readonly yields?: boolean;
 }
 
 function CalloutSlot({
   labels,
   id,
   keepInside,
+  yields,
   children,
 }: {
   readonly labels: LabelRegistry;
   readonly id: string;
   readonly keepInside: boolean;
+  readonly yields: boolean;
   readonly children: ReactNode;
 }) {
   const ref = useRegister<HTMLElement>(labels.elements, id);
@@ -154,7 +190,8 @@ function CalloutSlot({
     <div
       ref={ref}
       data-keep-inside={keepInside || undefined}
-      className="invisible absolute top-0 left-0 will-change-transform"
+      data-yields={yields || undefined}
+      className="invisible absolute top-0 left-0 transition-opacity duration-200 will-change-transform motion-reduce:transition-none"
     >
       {children}
     </div>
@@ -184,6 +221,7 @@ export function LabelLayer({ labels, callouts }: LabelLayerProps) {
           labels={labels}
           id={callout.id}
           keepInside={callout.keepInside ?? false}
+          yields={callout.yields ?? false}
         >
           {callout.content}
         </CalloutSlot>

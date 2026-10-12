@@ -15,6 +15,7 @@ import { type StoryCase, type StoryMoment, storySteps, storyWhatIfs } from "../h
 import { cartoucheProps, stageLabel } from "../machine-view-model";
 import { Stage } from "../stage";
 import { stageCallouts } from "../stage-callouts";
+import { useMediaQuery } from "../use-media-query";
 import { prefersReducedMotion, useReducedMotion } from "../use-reduced-motion";
 import { machineBySlug } from "./machine-by-slug";
 
@@ -122,6 +123,7 @@ export function RunStory({ slug, opening, intro, cases, closing }: RunStoryProps
   const column = useRef<HTMLDivElement>(null);
   const beat = useReadBeat(column);
   const inset = useInset(column, beat);
+  const wide = useMediaQuery(WIDE);
   // Two beats come before the notes: the opening and the intro.
   const first = 2;
   const moment: StoryMoment | null = notes[beat - first]?.moment ?? null;
@@ -189,7 +191,7 @@ export function RunStory({ slug, opening, intro, cases, closing }: RunStoryProps
             <Stage
               player={player}
               label={stageLabel(snapshot)}
-              callouts={stageCallouts(snapshot)}
+              callouts={stageCallouts(snapshot, null, null, wide ? 2 : 1)}
               camera={moment ? "follow" : "overview"}
               insetLeft={inset}
             />

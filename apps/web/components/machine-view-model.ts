@@ -125,13 +125,19 @@ export interface CalloutItem extends PartCalloutProps {
  * the one under the pointer show their name, the selected one its role and
  * description too, the others their number only.
  */
+
 export function partCallouts(
   snapshot: PlayerSnapshot,
   selected: string | null = null,
   hovered: string | null = null,
+  /** How many of the step's parts are named at once: two on a wide stage, one on a phone. */
+  namedPerStep = 2,
 ): CalloutItem[] {
   // At the end the machine is at rest: no part is the step's any more.
   const focus = new Set(snapshot.finished ? [] : snapshot.step.step.focus);
+  // Named on the stage: the step's first two parts, in the order the step lists them.
+  // More names crowd each other and the dimensions; the rest keep their lit balloon.
+  const named = new Set([...focus].slice(0, namedPerStep));
   return snapshot.resolved.parts
     .filter((part): part is typeof part & { ref: number } => part.ref !== undefined)
     .map((part) => {
@@ -144,7 +150,12 @@ export function partCallouts(
         description: part.description,
         flow: focused ? snapshot.step.flow : null,
         violation: part.flag === "violation",
-        detail: part.id === selected ? "full" : focused || part.id === hovered ? "name" : "number",
+        detail:
+          part.id === selected
+            ? "full"
+            : named.has(part.id) || part.id === hovered
+              ? "name"
+              : "number",
       };
     });
 }

@@ -29,6 +29,7 @@ import {
 } from "./machine-view-model";
 import { Stage } from "./stage";
 import { stageCallouts } from "./stage-callouts";
+import { useMediaQuery } from "./use-media-query";
 import { useOpeningMoment } from "./use-opening-moment";
 import { useReducedMotion } from "./use-reduced-motion";
 
@@ -75,6 +76,7 @@ export function MachineView({
   }
   const [player] = useState(() => createPlayer(machine, { pace: "reading" }));
   const snapshot = usePlayerSnapshot(player);
+  const wide = useMediaQuery("(min-width: 1024px)");
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   useReducedMotion(player);
@@ -123,7 +125,7 @@ export function MachineView({
           label={stageLabel(snapshot)}
           selected={selected}
           hovered={hovered}
-          callouts={stageCallouts(snapshot, selected, hovered)}
+          callouts={stageCallouts(snapshot, selected, hovered, wide ? 2 : 1)}
           onSelect={setSelected}
           onHover={setHovered}
         />

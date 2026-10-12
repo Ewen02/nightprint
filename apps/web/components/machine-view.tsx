@@ -139,6 +139,7 @@ export function MachineView({
         <FlowLegend
           items={flowLegend}
           dependency="Depends on"
+          latency="Modelled, not measured"
           hint="Click a part · drag to turn · pinch to zoom"
         />
       }

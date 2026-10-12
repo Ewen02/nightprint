@@ -7,12 +7,14 @@ export interface FlowLegendProps {
   readonly items: readonly { readonly flow: FlowName; readonly label: string }[];
   /** What an arrowhead on a pipe means: "Depends on". */
   readonly dependency?: string;
+  /** What a dimension's value in ms is: "Modelled, not measured". */
+  readonly latency?: string;
   /** How to handle the scene: "Click a part · drag to turn". */
   readonly hint?: string;
 }
 
-/** The key to the drawing: its colours, its arrowheads, and how to handle it. */
-export function FlowLegend({ items, dependency, hint }: FlowLegendProps) {
+/** The key to the drawing: its colours, its arrowheads, its dimensions, and how to handle it. */
+export function FlowLegend({ items, dependency, latency, hint }: FlowLegendProps) {
   return (
     <div className="flex flex-col gap-1.5 rounded-xs border border-line bg-bg/85 px-3 py-2">
       <ul aria-label="Flow colours" className="flex flex-wrap gap-x-4 gap-y-1">
@@ -29,6 +31,12 @@ export function FlowLegend({ items, dependency, hint }: FlowLegendProps) {
           <li className="flex items-center gap-1.5 font-mono text-micro text-text-secondary uppercase">
             <Arrowhead className="text-text-body" />
             {dependency}
+          </li>
+        )}
+        {latency && (
+          <li className="flex items-center gap-1.5 font-mono text-micro text-text-secondary uppercase">
+            <span className="text-text-body normal-case">ms</span>
+            {latency}
           </li>
         )}
       </ul>

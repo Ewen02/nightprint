@@ -133,11 +133,13 @@ describe("molecules", () => {
           { flow: "request", label: "Request" },
           { flow: "error", label: "Error" },
         ]}
+        latency="Modelled, not measured"
         hint="Click a part"
       />,
     );
     expect(legend).toContain('aria-label="Flow colours"');
-    expect(legend.match(/<li/g)).toHaveLength(2);
+    expect(legend.match(/<li/g)).toHaveLength(3);
+    expect(legend).toContain("Modelled, not measured");
     expect(legend).toContain("Click a part");
   });
 

@@ -4,7 +4,9 @@ type StepInput = MachineInput["scenarios"][number]["steps"][number];
 
 /**
  * MCH-001 — Hexagonal architecture (ports and adapters).
- * Reference: A. Cockburn, "The Hexagonal (Ports & Adapters) Architecture", 2005.
+ * References: A. Cockburn, "The Hexagonal (Ports & Adapters) Architecture", 2005; A. Cockburn
+ * and J. M. Garrido de Paz, "Hexagonal Architecture Explained", 2024 (configurator, driving
+ * and driven ports).
  *
  * Layout (y up, plate top at y = 0, pipes at y = 0.3):
  * driving adapters on the left, the glass hexagon in the centre,
@@ -48,7 +50,7 @@ function startupSteps(): StepInput[] {
       when: { none: [SWAP, TESTS] },
       focus: ["configurator", "http", "postgres", "payment-provider"],
       log: [
-        { flow: "write", tag: "CONFIG", text: "PlaceOrder ← HttpAdapter" },
+        { flow: "write", tag: "CONFIG", text: "HttpAdapter ← PlaceOrder" },
         ...plug("PostgresAdapter"),
       ],
     },
@@ -59,7 +61,7 @@ function startupSteps(): StepInput[] {
       when: { all: [SWAP], none: [TESTS] },
       focus: ["configurator", "http", "in-memory", "payment-provider"],
       log: [
-        { flow: "write", tag: "CONFIG", text: "PlaceOrder ← HttpAdapter" },
+        { flow: "write", tag: "CONFIG", text: "HttpAdapter ← PlaceOrder" },
         ...plug("InMemoryAdapter"),
       ],
     },
@@ -70,7 +72,7 @@ function startupSteps(): StepInput[] {
       when: { all: [TESTS], none: [SWAP] },
       focus: ["test", "postgres", "payment-provider"],
       log: [
-        { flow: "write", tag: "SETUP", text: "PlaceOrder ← TestAdapter" },
+        { flow: "write", tag: "SETUP", text: "TestAdapter ← PlaceOrder" },
         ...plug("PostgresAdapter").map((line) => ({ ...line, tag: "SETUP" })),
       ],
     },
@@ -81,7 +83,7 @@ function startupSteps(): StepInput[] {
       when: { all: [TESTS, SWAP] },
       focus: ["test", "in-memory", "payment-provider"],
       log: [
-        { flow: "write", tag: "SETUP", text: "PlaceOrder ← TestAdapter" },
+        { flow: "write", tag: "SETUP", text: "TestAdapter ← PlaceOrder" },
         ...plug("InMemoryAdapter").map((line) => ({ ...line, tag: "SETUP" })),
       ],
     },
@@ -106,7 +108,7 @@ function storageSteps(order: number): StepInput[] {
     {
       id: "save-direct",
       title: "The core reaches for Postgres",
-      body: "The domain imports the Postgres adapter and calls it directly. The dependency now points outward: the core knows SQL.",
+      body: "The domain imports the Postgres adapter and calls it directly. The dependency now points outward: the core cannot be built without the Postgres adapter.",
       when: { all: [IMPORTS] },
       focus: ["order-domain", "postgres"],
       tokens: [{ flow: "error", path: ["core-postgres"] }],
@@ -126,7 +128,7 @@ function storageSteps(order: number): StepInput[] {
     {
       id: "memory-answers",
       title: "InMemory answers",
-      body: "Same port, different adapter: a Map answers in a hundredth of a millisecond. Not a single domain file changed.",
+      body: "Same port, different adapter: a Map in memory answers, with no database. Not a single domain file changed.",
       when: { all: [SWAP], none: [IMPORTS] },
       focus: ["in-memory"],
       tokens: [{ flow: "write", path: ["repo-memory"] }],
@@ -143,13 +145,16 @@ function storageSteps(order: number): StepInput[] {
     },
     {
       id: "swap-breaks",
-      title: "The swap breaks the core",
-      body: "InMemory is plugged into OrderRepository, but the core still calls Postgres, now on the bench. Changing storage means editing the domain.",
+      title: "The swap does not reach the core",
+      body: "InMemory is plugged into OrderRepository, but the core still calls the Postgres adapter it imports. The swap is ignored until someone edits the domain.",
       when: { all: [IMPORTS, SWAP] },
       focus: ["order-domain", "postgres"],
       tokens: [{ flow: "error", at: "postgres" }],
       log: [
-        { flow: "error", text: "Order domain → PostgresAdapter · not wired, the core must change" },
+        {
+          flow: "error",
+          text: "Order domain → PostgresAdapter · swap ignored, the core must change",
+        },
       ],
     },
   ];
@@ -171,13 +176,17 @@ export const hexagonal = defineMachine({
       label: "A. Cockburn, 2005",
       url: "https://alistair.cockburn.us/hexagonal-architecture/",
     },
+    {
+      label: "A. Cockburn and J. M. Garrido de Paz, 2024",
+      url: "https://alistaircockburn.com/Books",
+    },
   ],
   article: [
     "Hexagonal architecture, also called ports and adapters, structures an application so that its business core depends on nothing outside it: user interfaces, databases and test suites all plug into ports the core declares. Alistair Cockburn described it in 2005, with one intent: an application should run the same whether a person, another program, a test suite or a batch script drives it, and it should be built and tested away from the databases and devices it will use in production.",
     "The application declares ports, interfaces written in its own vocabulary. Driving ports, like PlaceOrder, are what the outside world can ask of it. Driven ports, like OrderRepository and PaymentGateway, are what it needs from the outside world.",
     "Adapters translate between a technology and a port. The HTTP adapter turns a request into a PlaceOrder call; the Postgres adapter implements OrderRepository with SQL. Source code dependencies point inward: adapters know the core, the core only knows its ports.",
     "That is why the swap works: the in-memory adapter implements the same port, so not a line of the core changes, and the choice is one line in the configurator, at startup. It is also why the counter-example hurts: once the domain imports the Postgres adapter, changing storage means editing business code.",
-    "The six sides mean nothing. Cockburn drew a hexagon to leave room for several ports and adapters; an application has as many ports as it has conversations with the outside world.",
+    "The six sides mean nothing. Cockburn drew a hexagon to leave room for several ports and adapters; each port is one purposeful conversation with the outside world, and how many to have is a judgement call.",
   ],
   glossary: [
     {
@@ -276,7 +285,7 @@ export const hexagonal = defineMachine({
       id: "place-order",
       ref: 3,
       label: "PlaceOrder",
-      role: "IN PORT",
+      role: "DRIVING PORT",
       kind: "port",
       shape: PORT,
       position: [-APOTHEM, PIPE_Y, 0],
@@ -297,7 +306,7 @@ export const hexagonal = defineMachine({
       id: "order-repository",
       ref: 5,
       label: "OrderRepository",
-      role: "OUT PORT",
+      role: "DRIVEN PORT",
       kind: "port",
       shape: PORT,
       position: [APOTHEM * 0.5, PIPE_Y, -LANE],
@@ -309,7 +318,7 @@ export const hexagonal = defineMachine({
       id: "payment-gateway",
       ref: 6,
       label: "PaymentGateway",
-      role: "OUT PORT",
+      role: "DRIVEN PORT",
       kind: "port",
       shape: PORT,
       position: [APOTHEM * 0.5, PIPE_Y, LANE],
@@ -348,7 +357,8 @@ export const hexagonal = defineMachine({
       shape: ADAPTER,
       position: SLOT_BENCH,
       socket: RIGHT_SOCKET,
-      description: "Implements OrderRepository with a Map. Used in tests.",
+      description:
+        "Implements OrderRepository with a Map: the application runs without a database.",
     },
     {
       id: "configurator",
@@ -544,7 +554,7 @@ export const hexagonal = defineMachine({
         {
           id: "test-calls",
           title: "A test calls the application",
-          body: "A test case builds an order and calls PlaceOrder through the test adapter. No HTTP, no server, no network.",
+          body: "A test case builds an order and calls PlaceOrder through the test adapter. No HTTP request, no web server.",
           durationMs: 1050,
           when: { all: ["drive-from-tests"] },
           focus: ["test"],
@@ -553,21 +563,21 @@ export const hexagonal = defineMachine({
         },
         {
           id: "input-port",
-          title: "Through the input port",
+          title: "Through the driving port",
           body: "The adapter calls PlaceOrder, an interface the core owns. The adapter depends on the core, not the other way round.",
           when: { none: ["drive-from-tests"] },
           focus: ["place-order"],
           tokens: [{ flow: "request", path: ["http-in"] }],
-          log: [{ flow: "request", text: "HttpAdapter → PlaceOrder (in port)" }],
+          log: [{ flow: "request", text: "HttpAdapter → PlaceOrder (driving port)" }],
         },
         {
           id: "test-input-port",
-          title: "Through the same input port",
+          title: "Through the same driving port",
           body: "The test adapter calls PlaceOrder, the very port HTTP uses. Nothing in the core knows a test is calling.",
           when: { all: ["drive-from-tests"] },
           focus: ["place-order"],
           tokens: [{ flow: "request", path: ["test-in"] }],
-          log: [{ flow: "request", text: "TestAdapter → PlaceOrder (in port)" }],
+          log: [{ flow: "request", text: "TestAdapter → PlaceOrder (driving port)" }],
         },
         {
           id: "rules",
@@ -643,21 +653,21 @@ export const hexagonal = defineMachine({
         },
         {
           id: "empty-input-port",
-          title: "Through the input port",
+          title: "Through the driving port",
           body: "The adapter calls PlaceOrder like any other time. Checking the order is not its job.",
           when: { none: ["drive-from-tests"] },
           focus: ["place-order"],
           tokens: [{ flow: "request", path: ["http-in"] }],
-          log: [{ flow: "request", text: "HttpAdapter → PlaceOrder (in port)" }],
+          log: [{ flow: "request", text: "HttpAdapter → PlaceOrder (driving port)" }],
         },
         {
           id: "empty-test-port",
-          title: "Through the same input port",
+          title: "Through the same driving port",
           body: "The test adapter calls PlaceOrder, the port HTTP uses. Checking the order is not its job either.",
           when: { all: ["drive-from-tests"] },
           focus: ["place-order"],
           tokens: [{ flow: "request", path: ["test-in"] }],
-          log: [{ flow: "request", text: "TestAdapter → PlaceOrder (in port)" }],
+          log: [{ flow: "request", text: "TestAdapter → PlaceOrder (driving port)" }],
         },
         {
           id: "rule-fails",
@@ -670,11 +680,11 @@ export const hexagonal = defineMachine({
         {
           id: "refusal",
           title: "The refusal goes back",
-          body: "The HTTP adapter turns the core's refusal into 422 Unprocessable. Postgres and the payment provider were never called.",
+          body: "The HTTP adapter turns the core's refusal into 422 Unprocessable Content. Postgres and the payment provider were never called.",
           when: { none: ["drive-from-tests"] },
           focus: ["http"],
           tokens: [{ flow: "response", path: ["http-in", "in-core"], reverse: true }],
-          log: [{ flow: "response", text: "422 Unprocessable  order needs a line" }],
+          log: [{ flow: "response", text: "422 Unprocessable Content  order needs a line" }],
         },
         {
           id: "refusal-test",
@@ -726,11 +736,11 @@ export const hexagonal = defineMachine({
         {
           id: "declined-translated",
           title: "The adapter translates the refusal",
-          body: "The provider answers in its own terms: HTTP 402, reason insufficient_funds. The adapter turns that into PaymentDeclined, a result the port defines.",
+          body: "The provider answers in its own terms: declined, reason insufficient_funds. The adapter turns that into PaymentDeclined, a result the port defines.",
           focus: ["payment-provider", "payment-gateway"],
           tokens: [{ flow: "error", path: ["pay-provider"], reverse: true }],
           log: [
-            { flow: "error", tag: "EXT", text: "provider: 402  reason=insufficient_funds" },
+            { flow: "error", tag: "EXT", text: "provider: declined  reason=insufficient_funds" },
             { flow: "error", tag: "PORT", text: "PaymentGateway → PaymentDeclined" },
           ],
         },

@@ -49,7 +49,7 @@ export const partSchema = z.object({
   /** Bill-of-parts number, also the balloon label. Parts without one stay out of the list. */
   ref: z.number().int().positive().optional(),
   label: z.string().min(1),
-  /** Short role shown in the bill of parts ("IN PORT", "DRIVEN"). */
+  /** Short role shown in the bill of parts ("DRIVING PORT", "DRIVEN"). */
   role: z.string().min(1).max(12).optional(),
   kind: z.enum(partKinds),
   shape: shapeSchema,

@@ -41,7 +41,7 @@ export function RemotionRoot() {
           height={1080}
           defaultProps={{
             steps: [
-              { from: 0, number: 3, count: 8, title: "Through the input port", flow: "request" },
+              { from: 0, number: 3, count: 8, title: "Through the driving port", flow: "request" },
               {
                 from: 48,
                 number: 4,

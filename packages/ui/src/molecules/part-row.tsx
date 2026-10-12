@@ -5,7 +5,7 @@ import { cx } from "../cx";
 export interface PartRowProps {
   readonly number: number;
   readonly label: string;
-  /** Short role: DRIVING, IN PORT, CORE… */
+  /** Short role: DRIVING, DRIVEN PORT, CORE… */
   readonly role?: string | undefined;
   /** Flow of the current step when the part is lit. */
   readonly flow?: FlowName | null;

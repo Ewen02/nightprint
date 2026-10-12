@@ -15,6 +15,10 @@ pnpm --filter @nightprint/video render MCH-001 out/mch-001.mp4
 The first capture needs a browser for Playwright: `pnpm --filter @nightprint/video exec playwright
 install chromium`. The footage (about 240 MB per machine) is not committed; `timeline.json` is.
 
+If the render stops at "Getting composition" with `Target closed`, Remotion's own headless browser
+crashed: render with Playwright's instead, `--browser-executable=<path>` set to the
+`chrome-headless-shell` under `~/Library/Caches/ms-playwright/chromium_headless_shell-*/`.
+
 To film a page before it is deployed (a new machine, a fix), build the site and capture it locally:
 
 ```bash

@@ -26,7 +26,7 @@
       "from": 86,
       "number": 3,
       "count": 8,
-      "title": "Through the input port",
+      "title": "Through the driving port",
       "flow": "request"
     },
     {
@@ -61,7 +61,7 @@
       "from": 396,
       "number": 6,
       "count": 8,
-      "title": "The swap breaks the core",
+      "title": "The swap does not reach the core",
       "flow": "error"
     }
   ],

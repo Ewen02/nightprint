@@ -55,7 +55,7 @@ Read `CLAUDE.md` first for the architecture. This skill is the code-level checkl
 ## Biome
 
 - `pnpm format` before committing; `pnpm check` must pass (lint, typecheck, tests).
-- Suppress a rule only on the line, with `biome-ignore <rule>: <reason>`. R3F JSX is exempted from `noStaticElementInteractions` in `biome.json`. `apps/web/app/icon.svg` is exempted from `noSvgWithoutTitle`: its `<title>` comes after the `<metadata>` holding its signed Content Credentials (C2PA), and any edit to the file breaks that signature.
+- Suppress a rule only on the line, with `biome-ignore <rule>: <reason>`. R3F JSX is exempted from `noStaticElementInteractions` in `biome.json`.
 
 ## Tests (Vitest 5)
 

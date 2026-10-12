@@ -48,17 +48,19 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 
 | Élément | Statut | Où en est-on |
 | --- | --- | --- |
-| Moteur de scénarios : schéma zod, résolution des actions, player déterministe | v1 | Fait, 27 tests |
-| MCH-001 hexagonale : 7 étapes, 2 interrupteurs, nomenclature, journal, cartouche, article | v1 | Jouable en primitives depuis le 12/10 |
+| Moteur de scénarios : schéma zod, résolution des actions, player déterministe | v1 | Fait, 36 tests |
+| MCH-001 hexagonale : 7 étapes, 2 interrupteurs, nomenclature, journal, cartouche, article | v1 | Jouable de bout en bout et en ligne (12/10), pièces dessinées en code |
 | Design system en atomic design : tokens et 25 composants | v1 | Fait, publié en artifact |
-| Pièces Blender en glTF : cœur en verre, ports, 5 adaptateurs, plaque | v1 | Week-end 1 |
-| Caméra entre les étapes, cotes de latence, étincelles de violation | v1 | Week-end 2 |
-| Bloom et arêtes en TSL, vue éclatée, coupe hachurée | v1 | Week-end 3 |
-| Catalogue avec les machines à venir grisées | v1 | Version simple en place |
+| Pièces Blender en glTF : cœur en verre, ports, 5 adaptateurs, plaque | À trancher | Pas commencé ; voir les décisions ouvertes |
+| Caméra entre les étapes, cotes de latence, étincelles de violation | v1 | Fait (12/10) |
+| Bloom et arêtes en TSL, vue éclatée, coupe hachurée | v1 | Bloom, arêtes et coupe hachurée faits (12/10) ; vue éclatée à faire |
+| Catalogue avec les machines à venir grisées | v1 | Fait, avec un vote sur X pour la suivante |
 | Accessibilité : clavier, réduction des animations, contraste AA testé | v1 | En place |
+| SEO : tout le texte en HTML, JSON-LD, image de partage par machine, sitemap | v1 | Fait ; Search Console et Bing vérifiés le 12/10 |
+| Vidéo de lancement pour X et LinkedIn | v1 | Faite : `apps/video` filme le site image par image, Remotion monte (12/10) |
 | Site statique sur le VPS, domaine nightprint.dev | v1 | En ligne sur nightprint.dev (12/10), publié à chaque push sur main ; www et l'ancienne adresse sslip.io de préversion redirigent vers l'apex |
 | Machines MCH-002 à MCH-008 | Après le lancement | Une par semaine |
-| Export vidéo intégré (WebCodecs) | Après le lancement | Capture d'écran au lancement |
+| Export vidéo intégré (WebCodecs) | Après le lancement | Au lancement, la vidéo vient d'`apps/video` |
 | Planche de concepts : grille de mini-machines animées | À trancher | Voir les décisions ouvertes |
 | Génération d'une machine par IA à partir d'une phrase | v2 | Claude écrit une définition à partir du kit |
 | Éditeur de code intégré (snippet de l'event loop) | v2 | Après le catalogue de base |
@@ -66,23 +68,18 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 
 ## Roadmap
 
-Le lancement arrive après trois week-ends de build : autour du 1er novembre s'ils s'enchaînent dès ce week-end. Ensuite, une machine par semaine.
+Le plan prévoyait trois week-ends de build et un lancement autour du 1er novembre. Le 12/10, l'essentiel des week-ends 2 et 3 est fait ; il reste les points de l'étape 2 ci-dessous. Ensuite, une machine par semaine.
 
-1. **Fait (11 et 12 octobre)** : cadrage, DA, rendu test Blender, nom ; repo (moteur, catalogue, scène, UI, tokens) ; MCH-001 jouable en primitives, design system atomic, 76 tests, skills installés.
-2. **Avant le week-end 1** : acheter nightprint.dev, vérifier WebGPU dans Chrome et Safari, `git init` ; storyboard Excalidraw de MCH-001, une image par étape.
-3. **Week-end 1, les pièces et la scène** : Blender (cœur en verre, ports, 5 adaptateurs, plaque, export glTF), matières au niveau de la planche ; orbite et zoom bornés, lignes de rappel des repères, cadrage mobile, déploiement sur le VPS.
-   Livré : la machine immobile, en ligne.
-4. **Week-end 2, le scénario et les actions** : mouvements de caméra entre les étapes, cotes de latence, étincelles de violation ; relecture du parcours « Passer commande » et des deux interrupteurs contre Cockburn.
-   Livré : jouable de bout en bout, en ligne.
-5. **Week-end 3, finitions et lancement** : bloom et arêtes en TSL, vue éclatée, coupe hachurée, catalogue avec les machines à venir ; capture vidéo pour X et LinkedIn.
-   **Lancement public de MCH-001.**
-6. **Ensuite, une machine par semaine** : MCH-002 event loop JavaScript → 003 DDD → 004 offline-first → 005 CQRS + event sourcing → 006 rendu React → 007 Redis cache-aside → 008 Kafka.
+1. **Fait (11 et 12 octobre)** : cadrage, DA, rendu test Blender, nom ; repo (moteur, catalogue, scène, UI, tokens) ; nightprint.dev acheté et en ligne, publié à chaque push ; MCH-001 jouable de bout en bout avec caméra entre les étapes, cotes de latence, étincelles de violation, bloom et arêtes en TSL, coupe hachurée ; catalogue avec vote sur X ; SEO, Search Console et Bing ; vidéo de lancement ; licence ; 119 tests.
+2. **Avant le lancement** : vérifier WebGPU et la console dans Chrome et Safari réels, sur ordinateur et téléphone ; relire le parcours « Passer commande » et les deux interrupteurs contre Cockburn ; vue éclatée ; trancher les pièces Blender.
+   **Lancement public de MCH-001**, avec la vidéo.
+3. **Ensuite, une machine par semaine** : MCH-002 event loop JavaScript → 003 DDD → 004 offline-first → 005 CQRS + event sourcing → 006 rendu React → 007 Redis cache-aside → 008 Kafka.
 
 Chaque week-end se termine par une livraison en ligne. L'ordre des machines après le lancement est indicatif.
 
 ## Architecture et stack
 
-Un monorepo de cinq paquets et une app. La règle hexagonale que le site explique, il l'applique : le moteur ne connaît ni React, ni three, ni le DOM, et les `package.json` l'imposent.
+Un monorepo de cinq paquets et deux apps, le site et les vidéos. La règle hexagonale que le site explique, il l'applique : le moteur ne connaît ni React, ni three, ni le DOM, et les `package.json` l'imposent.
 
 ```mermaid
 graph TD
@@ -94,6 +91,7 @@ graph TD
   scene --> ui
   scene --> tokens["packages/tokens<br/>couleurs, typo, scène"]
   ui --> tokens
+  video["apps/video<br/>vidéos X et LinkedIn, Remotion"] --> tokens
 ```
 
 Flèche = « importe ». `apps/web` importe aussi `engine` et `tokens` directement. Le détail est dans `CLAUDE.md`.
@@ -105,10 +103,10 @@ Flèche = « importe ». `apps/web` importe aussi `engine` et `tokens` directeme
 | 3D | React Three Fiber 9.8 + three 0.186, `WebGPURenderer` | Repli WebGL2 automatique ; R3F v10 encore en alpha |
 | Langage | TypeScript 6.0.3 | TS 7 n'a plus l'API JS dont `next build` a besoin pour typer |
 | Données | zod 4 | Machines validées au chargement |
-| Tests et lint | Vitest 5, Biome 2 | 76 tests ; Biome remplace ESLint et Prettier |
+| Tests et lint | Vitest 5, Biome 2 | 119 tests ; Biome remplace ESLint et Prettier |
 | Styles | Tailwind 4, palette par défaut supprimée | Seules les couleurs de la DA existent |
 | Polices | IBM Plex Sans et Mono, auto-hébergées | Build hors ligne, licence OFL |
-| Hébergement | VPS perso, site statique derrière Caddy | Déploiement à brancher sur la CI GitHub Actions existante |
+| Hébergement | VPS perso, site statique derrière Caddy | Publié par GitHub Actions à chaque push sur main |
 
 ## Règles du projet
 
@@ -160,11 +158,12 @@ Le plus gros risque n'est pas technique : c'est un projet d'apprentissage sans p
 
 ## Décisions ouvertes et prochaines actions
 
-Une décision reste à prendre, plus la licence du repo ; les autres lignes sont à faire avant le week-end 1.
+Deux décisions restent à prendre ; les autres lignes sont à faire avant le lancement.
 
 - [ ] **Planche de concepts** : vitrine des 8 machines complètes, ou format à part avec beaucoup de petits concepts (DNS, CDN, load balancer…) dont certains deviennent des machines ?
+- [ ] **Pièces Blender** : les modéliser avant le lancement, après, ou garder les pièces dessinées en code ?
 - [x] **Compte X** : le compte perso, [@ewenlq](https://x.com/ewenlq) (décidé le 12/10). Il signe les pages (auteur, carte X) et le journal de build y renvoie.
-- [x] **Repo** : public sur GitHub, [Ewen02/nightprint](https://github.com/Ewen02/nightprint) (décidé le 12/10). Reste à choisir la licence.
+- [x] **Repo** : public sur GitHub, [Ewen02/nightprint](https://github.com/Ewen02/nightprint) (décidé le 12/10). Licence : MIT pour le code, CC BY 4.0 pour le contenu, c'est-à-dire les machines, `art/` et les vidéos (décidé le 12/10).
 - [x] Acheter nightprint.dev (12/10), DNS chez IONOS vers le VPS, certificat Let's Encrypt émis le jour même.
 - [ ] Vérifier WebGPU dans Chrome et Safari réels : aucune erreur `swizzle` en console.
 - [x] `git init` et premiers commits, atomiques (12/10).

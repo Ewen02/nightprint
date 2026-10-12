@@ -1,0 +1,98 @@
+{
+  "source": "https://nightprint.dev/m/hexagonal-architecture/",
+  "footage": {
+    "frames": 520,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "scale": 1.5
+  },
+  "steps": [
+    {
+      "from": 0,
+      "number": 1,
+      "count": 8,
+      "title": "The application starts",
+      "flow": "request"
+    },
+    {
+      "from": 48,
+      "number": 2,
+      "count": 8,
+      "title": "A request arrives",
+      "flow": "request"
+    },
+    {
+      "from": 86,
+      "number": 3,
+      "count": 8,
+      "title": "Through the input port",
+      "flow": "request"
+    },
+    {
+      "from": 134,
+      "number": 4,
+      "count": 8,
+      "title": "The core applies the rules",
+      "flow": "request"
+    },
+    {
+      "from": 182,
+      "number": 5,
+      "count": 8,
+      "title": "Out through OrderRepository",
+      "flow": "write"
+    },
+    {
+      "from": 230,
+      "number": 6,
+      "count": 8,
+      "title": "Postgres answers",
+      "flow": "write"
+    },
+    {
+      "from": 300,
+      "number": 6,
+      "count": 8,
+      "title": "InMemory answers",
+      "flow": "write"
+    },
+    {
+      "from": 396,
+      "number": 6,
+      "count": 8,
+      "title": "The swap breaks the core",
+      "flow": "error"
+    }
+  ],
+  "clicks": [
+    {
+      "frame": 300,
+      "name": "Swap Postgres for InMemory",
+      "box": {
+        "x": 1584,
+        "y": 348.671875,
+        "w": 312,
+        "h": 125.484375
+      },
+      "at": {
+        "x": 1615,
+        "y": 371.671875
+      }
+    },
+    {
+      "frame": 396,
+      "name": "Import Postgres in the core",
+      "box": {
+        "x": 1584,
+        "y": 482.15625,
+        "w": 312,
+        "h": 105.1875
+      },
+      "at": {
+        "x": 1615,
+        "y": 505.15625
+      }
+    }
+  ]
+}

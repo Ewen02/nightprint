@@ -10,3 +10,5 @@ coverage/
 *.blend1
 packages/ui/design-system/
 _to_delete/
+# Captured footage for the videos: regenerate with `pnpm --filter @nightprint/video capture`.
+apps/video/public/footage/

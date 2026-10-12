@@ -107,6 +107,8 @@ export function MachineStage({
   const labelsShown = phase === "labels" || phase === "done";
   return (
     <div
+      // Where the assembly stands: the video capture (apps/video) starts once it is "done".
+      data-assembly={phase}
       className={`relative size-full transition-opacity duration-700 ease-machine motion-reduce:transition-none ${ready ? "opacity-100" : "opacity-0"} ${className ?? ""}`}
     >
       <Canvas

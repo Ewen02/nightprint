@@ -1,0 +1,23 @@
+{
+  "name": "nightprint",
+  "private": true,
+  "description": "Software architecture, drawn as machines you can run.",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "check": "biome check . && turbo run typecheck test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "turbo": "2.11.7",
+    "typescript": "6.0.3"
+  }
+}

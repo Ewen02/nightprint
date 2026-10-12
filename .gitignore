@@ -1,0 +1,12 @@
+node_modules/
+.turbo/
+dist/
+out/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+coverage/
+.DS_Store
+*.blend1
+packages/ui/design-system/
+_to_delete/

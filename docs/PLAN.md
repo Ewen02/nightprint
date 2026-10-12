@@ -56,7 +56,7 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 | Bloom et arêtes en TSL, vue éclatée, coupe hachurée | v1 | Week-end 3 |
 | Catalogue avec les machines à venir grisées | v1 | Version simple en place |
 | Accessibilité : clavier, réduction des animations, contraste AA testé | v1 | En place |
-| Site statique sur le VPS, domaine nightprint.dev | v1 | Domaine à acheter |
+| Site statique sur le VPS, domaine nightprint.dev | v1 | En ligne en préversion (noindex) sur nightprint.137-74-175-232.sslip.io, publié à chaque push sur main ; domaine à acheter |
 | Machines MCH-002 à MCH-008 | Après le lancement | Une par semaine |
 | Export vidéo intégré (WebCodecs) | Après le lancement | Capture d'écran au lancement |
 | Planche de concepts : grille de mini-machines animées | À trancher | Voir les décisions ouvertes |

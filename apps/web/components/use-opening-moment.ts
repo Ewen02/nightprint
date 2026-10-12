@@ -2,7 +2,7 @@
 
 import type { Player } from "@nightprint/engine";
 import { useEffect } from "react";
-import { readMoment } from "./machine-link";
+import { goToMoment, readMoment } from "./machine-link";
 import { prefersReducedMotion } from "./use-reduced-motion";
 
 /**
@@ -20,13 +20,6 @@ export function useOpeningMoment(player: Player) {
       }
       return;
     }
-    if (moment.scenario) {
-      player.dispatch({ type: "setScenario", scenario: moment.scenario });
-      player.dispatch({ type: "pause" });
-    }
-    for (const action of moment.actions) {
-      player.dispatch({ type: "setAction", action, active: true });
-    }
-    player.dispatch({ type: "seek", step: moment.step ?? 0 });
+    goToMoment(player, moment);
   }, [player]);
 }

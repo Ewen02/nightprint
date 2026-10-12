@@ -1,4 +1,4 @@
-import type { Machine, PlayerState } from "@nightprint/engine";
+import type { Machine, Player, PlayerState } from "@nightprint/engine";
 
 /**
  * A moment of a machine as a URL: `?scenario=reject-order&with=swap-storage&step=3`.
@@ -28,14 +28,43 @@ export function readMoment(search: string, machine: Machine): MachineMoment | nu
   };
 }
 
-export function momentLink(base: string, state: PlayerState, machine: Machine): string {
+/** The query that opens a moment, defaults left out. `step` is zero-based. */
+export function momentQuery(
+  machine: Machine,
+  moment: { readonly scenario: string; readonly actions: readonly string[]; readonly step: number },
+): string {
   const params = new URLSearchParams();
-  if (state.scenarioId !== machine.scenarios[0]?.id) {
-    params.set("scenario", state.scenarioId);
+  if (moment.scenario !== machine.scenarios[0]?.id) {
+    params.set("scenario", moment.scenario);
   }
-  if (state.actions.length > 0) {
-    params.set("with", state.actions.join(","));
+  if (moment.actions.length > 0) {
+    params.set("with", moment.actions.join(","));
   }
-  params.set("step", String(state.stepIndex + 1));
-  return `${base}?${params.toString().replaceAll("%2C", ",")}`;
+  params.set("step", String(moment.step + 1));
+  return `?${params.toString().replaceAll("%2C", ",")}`;
+}
+
+export function momentLink(base: string, state: PlayerState, machine: Machine): string {
+  return `${base}${momentQuery(machine, {
+    scenario: state.scenarioId,
+    actions: state.actions,
+    step: state.stepIndex,
+  })}`;
+}
+
+/** Puts the player on a moment: its scenario, exactly its switches, its step. */
+export function goToMoment(player: Player, moment: MachineMoment) {
+  const scenario = moment.scenario ?? player.machine.scenarios[0]?.id;
+  if (scenario && scenario !== player.getState().scenarioId) {
+    // Choosing a scenario plays it: hold it until the switches and the step are set.
+    player.dispatch({ type: "setScenario", scenario });
+    player.dispatch({ type: "pause" });
+  }
+  for (const action of player.machine.actions) {
+    const active = moment.actions.includes(action.id);
+    if (player.getState().actions.includes(action.id) !== active) {
+      player.dispatch({ type: "setAction", action: action.id, active });
+    }
+  }
+  player.dispatch({ type: "seek", step: moment.step ?? 0 });
 }

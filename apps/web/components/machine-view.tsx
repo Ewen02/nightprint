@@ -32,6 +32,7 @@ import {
 import { Stage } from "./stage";
 import { stageCallouts } from "./stage-callouts";
 import { useMediaQuery } from "./use-media-query";
+import { useMomentLinks } from "./use-moment-links";
 import { useOpeningMoment } from "./use-opening-moment";
 import { useReducedMotion } from "./use-reduced-motion";
 
@@ -95,6 +96,7 @@ export function MachineView({
   useReducedMotion(player);
   useTransportKeys(player);
   useOpeningMoment(player);
+  useMomentLinks(player);
   const [shared, setShared] = useState<"no" | "copied" | "address">("no");
   useEffect(() => {
     if (shared === "no") {

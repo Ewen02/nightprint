@@ -21,6 +21,7 @@ import type {
   TransportProps,
   WhatIfItem,
 } from "@nightprint/ui";
+import { momentQuery } from "./machine-link";
 
 /**
  * Maps the engine's snapshot to the plain props of the UI organisms.
@@ -210,6 +211,7 @@ export function runTranscript(machine: Machine): RunScenario[] {
     resolveMachine(machine, actions).scenarios.find((s) => s.id === scenarioId)?.steps ?? [];
   const order = machine.actions.map((a) => a.id);
   const labels = new Map(machine.actions.map((a) => [a.id, a.label]));
+  const tones = new Map(machine.actions.map((a) => [a.id, actionTone(a)]));
   return machine.scenarios.map((scenario) => {
     const base = runOf([], scenario.id);
     const shown = new Set(base.map((s) => s.step.id));
@@ -229,6 +231,8 @@ export function runTranscript(machine: Machine): RunScenario[] {
           title: step.title,
           body: step.body,
           flow: played.flow,
+          tone: on.some((id) => tones.get(id) === "violation") ? "violation" : "safe",
+          href: momentQuery(machine, { scenario: scenario.id, actions: on, step: played.index }),
         },
       ]);
     }
@@ -241,6 +245,7 @@ export function runTranscript(machine: Machine): RunScenario[] {
         body: s.step.body,
         flow: s.flow,
         variants: variants.get(s.index) ?? [],
+        href: momentQuery(machine, { scenario: scenario.id, actions: [], step: s.index }),
       })),
     };
   });

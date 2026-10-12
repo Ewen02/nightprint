@@ -22,6 +22,12 @@ interface Fit {
   /** Point the camera orbits: the plate centre, shifted so the drawing is centred on screen. */
   readonly target: Vector3;
   readonly zoom: number;
+  /** Screen right and up, in the scene. */
+  readonly right: Vector3;
+  readonly up: Vector3;
+  /** Half the plate's extent on screen, in scene units, and the room it is framed in, in px. */
+  readonly half: { readonly x: number; readonly y: number };
+  readonly view: { readonly width: number; readonly height: number };
 }
 
 /** Isometric framing of the plate: where to aim and how far to zoom so the whole machine fits. */
@@ -61,7 +67,46 @@ function fitIsometric(
     viewport.width / ((maxX - minX) * MARGIN),
     viewport.height / ((maxY - minY) * MARGIN),
   );
-  return { target, zoom };
+  return {
+    target,
+    zoom,
+    right,
+    up,
+    half: { x: (maxX - minX) / 2, y: (maxY - minY) / 2 },
+    view: viewport,
+  };
+}
+
+const lean = new Vector3();
+/**
+ * Where the camera aims and how far it zooms while following: towards `point` and in by
+ * `zoomBy`, but only as far as the fit's margin allows, so the plate never leaves the
+ * frame. A wide stage has room to lean; on a phone the plate fills the width and the
+ * camera barely moves sideways. Writes the aim into `goal`, returns the zoom.
+ */
+function followFraming(
+  fit: Fit,
+  point: Vector3 | null,
+  shift: number,
+  zoomBy: number,
+  goal: Vector3,
+): number {
+  goal.copy(fit.target);
+  if (!point) {
+    return fit.zoom;
+  }
+  lean.copy(point).sub(fit.target).multiplyScalar(shift);
+  // In scene units, the room each side of the plate at the fitted zoom.
+  const roomX = Math.max(fit.view.width / (2 * fit.zoom) - fit.half.x, 0);
+  const roomY = Math.max(fit.view.height / (2 * fit.zoom) - fit.half.y, 0);
+  const dx = MathUtils.clamp(lean.dot(fit.right), -roomX, roomX);
+  const dy = MathUtils.clamp(lean.dot(fit.up), -roomY, roomY);
+  goal.addScaledVector(fit.right, dx).addScaledVector(fit.up, dy);
+  return Math.min(
+    fit.zoom * zoomBy,
+    fit.view.width / (2 * (fit.half.x + Math.abs(dx))),
+    fit.view.height / (2 * (fit.half.y + Math.abs(dy))),
+  );
 }
 
 export interface CameraRigProps {
@@ -268,10 +313,13 @@ export function CameraRig({
     const { fit, following, follow: point } = rig.current;
     if (fit && following && !reducedMotion && camera instanceof OrthographicCamera) {
       const { shift, zoom, rate } = scene.follow;
-      goal.copy(fit.target);
-      if (point) {
-        goal.lerp(step.set(point[0], point[1], point[2]), shift);
-      }
+      const zoomTo = followFraming(
+        fit,
+        point ? step.set(point[0], point[1], point[2]) : null,
+        shift,
+        zoom,
+        goal,
+      );
       // Pan the target and the camera together: the view keeps its angle.
       step
         .set(
@@ -282,7 +330,7 @@ export function CameraRig({
         .sub(controls.target);
       controls.target.add(step);
       camera.position.add(step);
-      camera.zoom = MathUtils.damp(camera.zoom, fit.zoom * (point ? zoom : 1), rate, delta);
+      camera.zoom = MathUtils.damp(camera.zoom, zoomTo, rate, delta);
       camera.updateProjectionMatrix();
     }
     controls.update();

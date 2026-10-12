@@ -21,6 +21,8 @@ export interface BuildLogProps {
   readonly entries: readonly BuildLogEntry[];
   /** Where the build is posted. */
   readonly follow?: { readonly label: string; readonly href: string };
+  /** Under the table, when it shows only the latest changes: where they all are. */
+  readonly history?: { readonly label: string; readonly href: string };
 }
 
 const CELL = "px-4 py-3 align-top";
@@ -29,7 +31,7 @@ const CELL = "px-4 py-3 align-top";
  * The project's own changelog, kept like the revision block of a drawing: one ruled
  * row per change, newest on top, with its date and its kind.
  */
-export function BuildLog({ eyebrow, title, lead, entries, follow }: BuildLogProps) {
+export function BuildLog({ eyebrow, title, lead, entries, follow, history }: BuildLogProps) {
   return (
     <section aria-labelledby="build-log-title" className="flex flex-wrap items-start gap-12">
       <div className="flex min-w-0 flex-[1_1_320px] flex-col items-start gap-6">
@@ -70,6 +72,15 @@ export function BuildLog({ eyebrow, title, lead, entries, follow }: BuildLogProp
             ))}
           </tbody>
         </table>
+        {history && (
+          <a
+            href={history.href}
+            className="mono-label flex h-11 items-center justify-between border-t border-frame px-4 text-text-secondary transition-colors hover:bg-surface hover:text-text"
+          >
+            {history.label}
+            <span aria-hidden="true">→</span>
+          </a>
+        )}
       </div>
     </section>
   );

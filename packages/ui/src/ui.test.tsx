@@ -17,6 +17,7 @@ import { StepDots } from "./molecules/step-dots";
 import { StepRuler } from "./molecules/step-ruler";
 import { WhatIfSwitch } from "./molecules/what-if-switch";
 import { BillOfParts } from "./organisms/bill-of-parts";
+import { BuildLog } from "./organisms/build-log";
 import { ConceptArticle } from "./organisms/concept-article";
 import { DrawingLegend } from "./organisms/drawing-legend";
 import { DrawingRegister } from "./organisms/drawing-register";
@@ -618,5 +619,22 @@ describe("log lines", () => {
     );
     expect(line).toContain("PaymentGateway.<wbr/>charge(49.00 EUR) →<wbr/>");
     expect(line).not.toContain("49.<wbr/>");
+  });
+});
+
+describe("build log", () => {
+  it("links its full history under the table when it has one", () => {
+    const log = html(
+      <BuildLog
+        eyebrow="Build log"
+        title="Built in public."
+        lead="As it happens."
+        entries={[{ key: "a", date: "12 OCT", flow: "write", tag: "FIX", text: "A fix." }]}
+        history={{ label: "Full history on GitHub", href: "https://example.org/commits" }}
+      />,
+    );
+    expect(log).toMatch(
+      /<\/table><a href="https:\/\/example.org\/commits"[^>]*>Full history on GitHub/,
+    );
   });
 });

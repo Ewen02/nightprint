@@ -92,6 +92,25 @@ export function eventLogEntries(snapshot: PlayerSnapshot): EventLogEntry[] {
   return snapshot.log.map(logLine);
 }
 
+/**
+ * What the exploded view shows: the core alone with its ports, or the adapters it
+ * cannot let go of, those a route that breaks the pattern ties to it.
+ */
+export function unplugNote(snapshot: PlayerSnapshot): string {
+  const { parts, routes } = snapshot.resolved;
+  const tied = parts.filter(
+    (part) =>
+      part.kind === "adapter" &&
+      routes.some((r) => r.flag === "violation" && (r.from === part.id || r.to === part.id)),
+  );
+  if (tied.length === 0) {
+    return "Every adapter is off. The core and its ports stand alone.";
+  }
+  const names = tied.map((part) => `the ${part.label}`).join(" and ");
+  const what = `${names.charAt(0).toUpperCase()}${names.slice(1)}`;
+  return `${what} cannot come off: the core imports ${tied.length > 1 ? "them" : "it"}.`;
+}
+
 export function cartoucheProps(machine: Machine): CartoucheProps {
   return {
     title: machine.title,

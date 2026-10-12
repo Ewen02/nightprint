@@ -12,6 +12,7 @@ import {
   NavLink,
   ScenarioPicker,
   SiteHeader,
+  StageAction,
   Transport,
   WhatIfPanel,
 } from "@nightprint/ui";
@@ -25,6 +26,7 @@ import {
   scenarioEnding,
   stageLabel,
   transportData,
+  unplugNote,
   whatIfItems,
 } from "./machine-view-model";
 import { Stage } from "./stage";
@@ -82,6 +84,14 @@ export function MachineView({
   const wide = useMediaQuery("(min-width: 1024px)");
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
+  // The exploded view holds the machine still; playing puts it back together.
+  const [exploded, setExploded] = useState(false);
+  const playing = snapshot.state.mode === "playing";
+  useEffect(() => {
+    if (playing) {
+      setExploded(false);
+    }
+  }, [playing]);
   useReducedMotion(player);
   useTransportKeys(player);
   useOpeningMoment(player);
@@ -133,6 +143,19 @@ export function MachineView({
           onHover={setHovered}
           // From wide screens up, the title block sits over the stage's top left.
           insetTop={wide ? TITLE_ROOM : 0}
+          exploded={exploded}
+        />
+      }
+      tools={
+        <StageAction
+          label={exploded ? "Plug them back" : "Unplug the adapters"}
+          note={exploded ? unplugNote(snapshot) : undefined}
+          onClick={() => {
+            if (!exploded) {
+              player.dispatch({ type: "pause" });
+            }
+            setExploded(!exploded);
+          }}
         />
       }
       legend={

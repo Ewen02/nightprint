@@ -1,0 +1,20 @@
+Nightprint content is licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0).
+Summary: https://creativecommons.org/licenses/by/4.0/
+Legal code: https://creativecommons.org/licenses/by/4.0/legalcode
+
+Copyright (c) 2026 Ewen LE QUERE
+
+The content is:
+- the machines in packages/catalog/src/mch-*.ts: their scenarios, parts,
+  switches and articles;
+- the Blender files and renders in art/;
+- the videos made with apps/video.
+
+Credit it as "Nightprint (nightprint.dev)", with a link to the machine's page
+when you reuse a machine.
+
+Everything else in this repository is code, under the MIT License (LICENSE).
+Files that carry their own license keep it: the third-party agent skills in
+.claude/skills, listed in .claude/SKILLS-SOURCES.md. The Nightprint name and
+logo are licensed under neither.

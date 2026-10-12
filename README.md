@@ -19,3 +19,9 @@ pnpm build   # static site in apps/web/out
 
 Stack: Next.js 16 (static export), React Three Fiber 9, three.js WebGPURenderer (WebGL 2
 fallback), TypeScript, zod, Tailwind CSS 4, Turborepo, Vitest, Biome.
+
+## License
+
+The code is under the [MIT License](LICENSE). The content is under [CC BY 4.0](LICENSE-CONTENT):
+the machines (scenarios, parts, articles), the Blender files in `art/` and the videos. Reuse them,
+crediting Nightprint with a link to nightprint.dev.

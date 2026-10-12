@@ -538,6 +538,28 @@ describe("drawing set", () => {
     expect(register).toContain('href="/m/hex/"');
     expect(register.match(/<a /g)).toHaveLength(1);
     expect(register).toContain("In draft");
+    // A draft has no page: its title is a button that pulls its sheet.
+    expect(register).toMatch(
+      /<button type="button" aria-expanded="false"[^>]*>Event loop<\/button>/,
+    );
+  });
+
+  it("opens the selected sheet beside the register, and under its row on narrow screens", () => {
+    const register = html(
+      <DrawingRegister
+        eyebrow="Drawing register"
+        title="Eight machines."
+        lead="One a week."
+        rows={[{ code: "MCH-002", title: "Event loop", family: "Frontend", status: "draft" }]}
+        filters={[{ id: "all", label: "All" }]}
+        filter="all"
+        selected="MCH-002"
+        preview={<p>Sheet MCH-002</p>}
+      />,
+    );
+    expect(register).toContain('aria-expanded="true"');
+    expect(register.match(/Sheet MCH-002/g)).toHaveLength(2);
+    expect(register).toMatch(/<tr class="lg:hidden"><td colSpan="5"/);
   });
 
   it("stamps a draft sheet and gives an issued one its drawing and action", () => {

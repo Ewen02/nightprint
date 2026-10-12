@@ -103,7 +103,7 @@ export function Mch001() {
         durationInFrames={120}
         premountFor={fps}
         action={imports.name}
-        result="Now the swap breaks the core."
+        result="The swap no longer reaches the core."
         tone="error"
         clickAt={16}
         resultAt={44}

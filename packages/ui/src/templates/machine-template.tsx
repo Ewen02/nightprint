@@ -48,7 +48,8 @@ export function MachineTemplate({
       <main>
         {/* On desktop the machine fits the screen: the stage takes what the transport and the
           log leave, so the log is in view from the start. */}
-        <div className="grid lg:h-[calc(100dvh-3.5rem)] lg:max-h-280 lg:min-h-160 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[minmax(0,1fr)_auto_auto]">
+        {/* One column on phones, at most the screen wide: a long row truncates, it never widens the page. */}
+        <div className="grid grid-cols-1 lg:h-[calc(100dvh-3.5rem)] lg:max-h-280 lg:min-h-160 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[minmax(0,1fr)_auto_auto]">
           <div className="relative flex flex-col border-b border-line-muted lg:col-start-1 lg:row-start-1 lg:border-r lg:border-b-0">
             <div className="pointer-events-none z-10 flex max-w-md flex-col gap-1.5 px-4 pt-4 lg:absolute lg:top-6 lg:left-6 lg:p-0">
               {/* The block lets drags through to the stage; its words can still be selected. */}

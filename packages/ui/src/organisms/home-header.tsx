@@ -30,9 +30,10 @@ export function HomeHeader({ homeHref, links, status }: HomeHeaderProps) {
                 key={link.href}
                 className="flex flex-1 border-line-muted not-first:border-l sm:flex-none sm:border-l"
               >
+                {/* Narrower on phones: four sections side by side still fit a 320 px screen. */}
                 <a
                   href={link.href}
-                  className={`${CELL} w-full justify-center text-text-secondary transition-colors hover:bg-surface hover:text-text`}
+                  className={`${CELL} w-full justify-center text-text-secondary transition-colors hover:bg-surface hover:text-text max-sm:px-2`}
                 >
                   {link.label}
                 </a>

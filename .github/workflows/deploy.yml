@@ -1,0 +1,78 @@
+# ---------------------------------------------------------------------------
+# Publication de Nightprint sur le VPS
+#
+# Next `output: export` → HTML pur, servi par Caddy : aucun conteneur, aucune
+# image. Convention et procédure : ~/infra/CLAUDE.md, cas B.
+#
+# Secrets (Settings › Secrets and variables › Actions) :
+#   SSH_HOST          137.74.175.232
+#   SSH_USER          ubuntu
+#   SSH_KEY           clé PRIVÉE de déploiement de ce dépôt (deploy-nightprint)
+#   SSH_KNOWN_HOSTS   sortie de : ssh-keyscan -t ed25519 137.74.175.232
+#
+# Côté serveur, la clé publique est contrainte à un seul geste :
+#   command="/home/ubuntu/infra/scripts/deploy.sh nightprint",no-agent-forwarding,…
+# ---------------------------------------------------------------------------
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    # Ce qui ne change pas le site ne le republie pas.
+    paths-ignore:
+      - 'docs/**'
+      - 'art/**'
+      - '.claude/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-nightprint
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: nightprint (statique)
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # La version de pnpm vient du champ packageManager de package.json.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Lint, typecheck et tests : un commit qui ne passe pas ne part pas.
+      - run: pnpm check
+
+      - run: pnpm build
+
+      - name: Clé de déploiement
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Publication
+        # L'archive part sur l'entrée standard ; deploy.sh l'extrait à part,
+        # refuse tout lien symbolique, puis bascule d'un coup : aucune requête
+        # ne tombe sur un site à moitié copié.
+        run: |
+          tar czf - --no-xattrs --exclude '.DS_Store' -C apps/web/out . \
+            | ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes \
+                  -o UserKnownHostsFile=~/.ssh/known_hosts -o ConnectTimeout=15 \
+                  "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+                  "sync nightprint"
+
+      - name: Effacement de la clé
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

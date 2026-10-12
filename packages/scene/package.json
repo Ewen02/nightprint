@@ -1,0 +1,34 @@
+{
+  "name": "@nightprint/scene",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./use-player": "./src/use-player.ts",
+    "./label-ids": "./src/label-ids.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nightprint/engine": "workspace:*",
+    "@nightprint/tokens": "workspace:*",
+    "@nightprint/ui": "workspace:*",
+    "@react-three/fiber": "9.8.1",
+    "three": "0.186.1"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.186.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "6.0.3"
+  }
+}

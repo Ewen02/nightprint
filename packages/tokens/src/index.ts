@@ -184,6 +184,22 @@ export const scene = {
    */
   follow: { shift: 0.22, zoom: 1.06, rate: 1.8 },
   /**
+   * The machine assembling on its first display, in seconds from when it shows: parts
+   * set down one by one in balloon order (`stagger` apart, each over `part`, dropping
+   * from `drop` world units and growing from `grow`), then the routes, then the labels,
+   * then the scenario runs. About 1.5 s in all for ten parts.
+   */
+  assembly: {
+    first: 0.1,
+    stagger: 0.07,
+    part: 0.5,
+    drop: 0.8,
+    grow: 0.55,
+    routes: 0.25,
+    labels: 0.2,
+    run: 0.15,
+  },
+  /**
    * Latency dimensions along the pipes, in world units: how far the dimension line
    * sits from the pipe, where its extension lines start and how far they overshoot,
    * the half-length of its oblique ticks.

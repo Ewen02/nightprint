@@ -1,7 +1,7 @@
 import type { Flow, Part } from "@nightprint/engine";
 import { easeInOutCubic } from "@nightprint/engine";
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { type Group, MathUtils, Vector3 } from "three";
 import { uniform } from "three/tsl";
 import { type EdgeStyle, Edges } from "./edges";
@@ -59,7 +59,14 @@ export interface PartModelProps {
   readonly labels: LabelRegistry;
   readonly onSelect?: ((partId: string) => void) | undefined;
   readonly onHover?: ((partId: string | null) => void) | undefined;
+  /**
+   * The machine's first display: `clock` counts seconds since the stage showed (-1
+   * before), and the part is set down from `at`. Absent with reduced motion.
+   */
+  readonly arrival?: { readonly clock: RefObject<number>; readonly at: number } | undefined;
 }
+
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
 export function PartModel({
   part,
@@ -71,8 +78,34 @@ export function PartModel({
   labels,
   onSelect,
   onHover,
+  arrival,
 }: PartModelProps) {
   const group = useRef<Group>(null);
+  // What the arrival moves: the part's body, not its label anchor.
+  const body = useRef<Group>(null);
+  const arrived = useRef(arrival === undefined);
+  useFrame(() => {
+    const g = body.current;
+    if (!g || arrived.current || !arrival) {
+      return;
+    }
+    const t = arrival.clock.current ?? -1;
+    // Before the stage shows, the part is drawn whole: its material compiles now, unseen.
+    if (t < 0) {
+      return;
+    }
+    const p = MathUtils.clamp((t - arrival.at) / scene.assembly.part, 0, 1);
+    const e = easeOut(p);
+    const { grow, drop } = scene.assembly;
+    g.visible = p > 0;
+    g.scale.setScalar(grow + (1 - grow) * e);
+    g.position.y = (1 - e) * drop;
+    if (p >= 1) {
+      g.scale.setScalar(1);
+      g.position.y = 0;
+      arrived.current = true;
+    }
+  });
   const glass = part.material === "glass";
   const { kind, shape, socket } = part;
   const geometry = useMemo(
@@ -207,28 +240,30 @@ export function PartModel({
       onPointerOver={glass ? undefined : enter}
       onPointerOut={glass ? undefined : leave}
     >
-      {glass ? (
-        <>
-          <mesh
-            geometry={geometry}
-            material={material}
-            raycast={noRaycast}
-            renderOrder={GLASS_ORDER}
-          />
-          <Edges geometry={geometry} rest={rest} renderOrder={GLASS_ORDER + 1} />
-          <Edges
-            geometry={geometry}
-            rest={GLASS_HIDDEN}
-            pass="hidden"
-            renderOrder={GLASS_ORDER + 2}
-          />
-        </>
-      ) : (
-        <>
-          <mesh geometry={geometry} material={material} />
-          <Edges geometry={geometry} rest={rest} lit={litStyle} level={level} />
-        </>
-      )}
+      <group ref={body}>
+        {glass ? (
+          <>
+            <mesh
+              geometry={geometry}
+              material={material}
+              raycast={noRaycast}
+              renderOrder={GLASS_ORDER}
+            />
+            <Edges geometry={geometry} rest={rest} renderOrder={GLASS_ORDER + 1} />
+            <Edges
+              geometry={geometry}
+              rest={GLASS_HIDDEN}
+              pass="hidden"
+              renderOrder={GLASS_ORDER + 2}
+            />
+          </>
+        ) : (
+          <>
+            <mesh geometry={geometry} material={material} />
+            <Edges geometry={geometry} rest={rest} lit={litStyle} level={level} />
+          </>
+        )}
+      </group>
       {part.ref !== undefined && (
         <LabelAnchor labels={labels} id={part.id} position={[0, top + 0.4, 0]} />
       )}

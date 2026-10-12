@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { useRef, useState } from "react";
 import { PCFShadowMap } from "three";
 import { WebGPURenderer } from "three/webgpu";
+import type { AssemblyPhase } from "./assembly";
 import { createLabelRegistry, LabelLayer, type StageCallout } from "./labels";
 import { MachineScene } from "./machine-scene";
 import { filterThreeConsole } from "./three-console";
@@ -96,6 +97,9 @@ export function MachineStage({
   // The stage, labels included, fades in once its first frames are drawn: never an
   // empty canvas, a half-built scene or labels floating before their parts.
   const [ready, setReady] = useState(false);
+  // The labels come last in the assembly, once their parts are set down.
+  const [phase, setPhase] = useState<AssemblyPhase>("compiling");
+  const labelsShown = phase === "labels" || phase === "done";
   return (
     <div
       className={`relative size-full transition-opacity duration-700 ease-machine motion-reduce:transition-none ${ready ? "opacity-100" : "opacity-0"} ${className ?? ""}`}
@@ -121,10 +125,16 @@ export function MachineStage({
           onHover={onHover}
           follows={camera === "follow"}
           insetLeft={insetLeft}
+          revealed={ready}
+          onPhase={setPhase}
         />
         <FirstFrames onReady={() => setReady(true)} />
       </Canvas>
-      <LabelLayer labels={labels} callouts={callouts} />
+      <div
+        className={`transition-opacity duration-500 ease-machine motion-reduce:transition-none ${labelsShown ? "opacity-100" : "opacity-0"}`}
+      >
+        <LabelLayer labels={labels} callouts={callouts} />
+      </div>
     </div>
   );
 }

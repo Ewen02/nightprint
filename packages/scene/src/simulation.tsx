@@ -59,6 +59,8 @@ export interface SimulationProps {
   /** The scenario has played to its end: no token is drawn. */
   readonly resting: boolean;
   readonly reducedMotion: boolean;
+  /** While true, the scenario gets no time: it waits for the machine to be assembled. */
+  readonly hold?: RefObject<boolean>;
 }
 
 /** A waiting token breathes: about one breath a second. */
@@ -94,7 +96,7 @@ function TokenMesh({
  * step starts somewhere else, shrinks out where it was while its successor grows.
  * Cosmetic only, like a fade: the token's position is still the player's.
  */
-export function Simulation({ player, frame, resting, reducedMotion }: SimulationProps) {
+export function Simulation({ player, frame, resting, reducedMotion, hold }: SimulationProps) {
   const groups = useRef<(Group | null)[]>([]);
   const ghostGroups = useRef<(Group | null)[]>([]);
   const materials = useMemo(() => Array.from({ length: POOL }, createTokenMaterials), []);
@@ -115,7 +117,9 @@ export function Simulation({ player, frame, resting, reducedMotion }: Simulation
   );
 
   useFrame((_, delta) => {
-    player.advance(delta * 1000);
+    if (!hold?.current) {
+      player.advance(delta * 1000);
+    }
     const sampled = player.sample();
     frame.current = sampled;
     const step = reducedMotion ? 1 : delta / SWITCH_S;

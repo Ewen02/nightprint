@@ -1,5 +1,7 @@
 import type { Frame, Player, Vec3 } from "@nightprint/engine";
-import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type AssemblyPhase, assemblyPhase, assemblyTimeline } from "./assembly";
 import { CameraRig } from "./camera-rig";
 import { DependencyArrow } from "./dependency-arrow";
 import { Dimensions } from "./dimensions";
@@ -29,6 +31,10 @@ export interface MachineSceneProps {
   readonly follows: boolean;
   /** Width kept clear on the left of the canvas for text over it, in CSS px. */
   readonly insetLeft?: number;
+  /** The stage is shown: the machine starts assembling. */
+  readonly revealed: boolean;
+  /** Each step of the first display, for what lives outside the canvas (the labels). */
+  readonly onPhase?: ((phase: AssemblyPhase) => void) | undefined;
 }
 
 /** Everything inside the Canvas: lights, plate, parts, pipes, tokens and label anchors. */
@@ -41,9 +47,45 @@ export function MachineScene({
   onHover,
   follows,
   insetLeft = 0,
+  revealed,
+  onPhase,
 }: MachineSceneProps) {
   const { resolved, step, state, finished } = usePlayerSnapshot(player);
   const { plate } = resolved.machine.stage;
+
+  // The first display assembles the machine: parts set down in balloon order, then the
+  // routes, then the labels, then the scenario runs. Read from the system, not the
+  // player: its reduced-motion flag lands after mount. Without it, everything is there.
+  const [assembles] = useState(
+    () => !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  const timeline = useMemo(() => assemblyTimeline(resolved.machine.parts), [resolved.machine]);
+  const clock = useRef(-1);
+  const [phase, setPhase] = useState<AssemblyPhase>(assembles ? "compiling" : "done");
+  const current = useRef(phase);
+  const hold = useRef(assembles);
+  const shown = useRef(revealed);
+  useLayoutEffect(() => {
+    shown.current = revealed;
+  }, [revealed]);
+  useEffect(() => {
+    onPhase?.(phase);
+  }, [phase, onPhase]);
+  // Before the simulation (-1): a scenario held back this frame gets no time this frame.
+  useFrame((_, delta) => {
+    if (current.current === "done" || !shown.current) {
+      return;
+    }
+    clock.current = clock.current < 0 ? 0 : clock.current + delta;
+    const next = assemblyPhase(clock.current, timeline);
+    if (next !== current.current) {
+      current.current = next;
+      hold.current = next !== "done";
+      setPhase(next);
+    }
+  }, -2);
+  // Routes stay out while the parts are set down; before that, drawn unseen to compile.
+  const routesShown = phase !== "parts";
 
   // Every route the switches can draw stays mounted and fades in or out: a switch then
   // changes uniforms only, never compiles a material mid-animation.
@@ -52,6 +94,7 @@ export function MachineScene({
   const slots = useMemo(() => placeRoutes(every, resolved, lastPoints.current), [every, resolved]);
   const pipes = useMemo(() => slots.filter((s) => s.route.kind === "pipe"), [slots]);
   const wires = useMemo(() => slots.filter((s) => s.route.kind === "wire"), [slots]);
+  const hiddenPipes = useMemo(() => pipes.map((p) => ({ ...p, present: false })), [pipes]);
 
   // Once the scenario has played to its end the machine comes to rest: nothing lit,
   // nothing travelling, the trails fade and the camera goes back to the overview.
@@ -103,7 +146,7 @@ export function MachineScene({
         <Pipe
           key={route.id}
           points={points}
-          present={present}
+          present={present && routesShown}
           travel={travels.get(route.id)}
           violation={route.flag === "violation"}
           reducedMotion={state.reducedMotion}
@@ -114,13 +157,13 @@ export function MachineScene({
         <Wire
           key={route.id}
           points={points}
-          present={present}
+          present={present && routesShown}
           flow={present && focus.has(route.from) && focus.has(route.to) ? step.flow : null}
           reducedMotion={state.reducedMotion}
         />
       ))}
       <Dimensions
-        routes={pipes}
+        routes={routesShown ? pipes : hiddenPipes}
         centre={plate.center}
         reducedMotion={state.reducedMotion}
         labels={labels}
@@ -132,7 +175,7 @@ export function MachineScene({
             points={points}
             end={route.dependsOn}
             violation={route.flag === "violation"}
-            present={present}
+            present={present && routesShown}
             reducedMotion={state.reducedMotion}
           />
         ) : null,
@@ -149,6 +192,7 @@ export function MachineScene({
           labels={labels}
           onSelect={onSelect}
           onHover={onHover}
+          arrival={assembles ? { clock, at: timeline.partAt.get(part.id) ?? 0 } : undefined}
         />
       ))}
       <Sparks origin={sparksAt} frame={frame} reducedMotion={state.reducedMotion} />
@@ -159,6 +203,7 @@ export function MachineScene({
         frame={frame}
         resting={finished}
         reducedMotion={state.reducedMotion}
+        hold={hold}
       />
       <SceneRenderPipeline />
     </>

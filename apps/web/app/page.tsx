@@ -56,6 +56,13 @@ const BUILD_LOG_SHOWN = 8;
 /** Newest first. Posted on X as it happens. */
 const buildLog: readonly BuildLogEntry[] = [
   {
+    key: "poll",
+    date: "12 OCT",
+    flow: "request",
+    tag: "VOTE",
+    text: "MCH-003 is up for a vote on X: domain-driven design, offline-first sync, CQRS + event sourcing or Redis cache-aside.",
+  },
+  {
     key: "live",
     date: "12 OCT",
     flow: "response",

@@ -342,6 +342,7 @@ describe("machine page sections", () => {
                 body: "POST /orders.",
                 flow: "request",
                 variants: [],
+                href: "?step=1",
               },
               {
                 number: 2,
@@ -355,6 +356,7 @@ describe("machine page sections", () => {
                     title: "InMemory answers",
                     body: "A Map.",
                     flow: "write",
+                    href: "?with=swap&step=2",
                   },
                 ],
               },
@@ -366,6 +368,7 @@ describe("machine page sections", () => {
             steps: [{ number: 1, title: "Refused", body: "No.", flow: "error", variants: [] }],
           },
         ]}
+        play="Play"
       />,
     );
     // Closed scenarios are still in the page: only the first one opens.
@@ -373,9 +376,14 @@ describe("machine page sections", () => {
     expect(run.match(/<details[^>]* open=""/g)).toHaveLength(1);
     expect(run).toMatch(/<summary[^>]*><h3[^>]*>Place an order<\/h3>/);
     expect(run.match(/<ol[^>]*>/g)).toHaveLength(2);
-    expect(run).toContain("What if · Swap storage");
+    expect(run).toContain("Swap storage");
     expect(run).toContain("InMemory answers");
     expect(run).toContain("Refused");
+    // Each link to the stage names its step: the visible words are the same on every one.
+    expect(run).toContain('aria-label="Play step 1, A request arrives"');
+    expect(run).toContain('aria-label="Play step 2 with Swap storage, InMemory answers"');
+    // Only where a step has somewhere to play.
+    expect(run.match(/<a /g)).toHaveLength(2);
   });
 
   it("ends a machine page on what comes next, with a way back to the catalogue", () => {

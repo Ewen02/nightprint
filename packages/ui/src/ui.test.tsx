@@ -4,6 +4,7 @@ import { Balloon } from "./atoms/balloon";
 import { ButtonLink } from "./atoms/button-link";
 import { IconButton } from "./atoms/icon-button";
 import { LogoMark } from "./atoms/logo-mark";
+import { TokenTag } from "./atoms/token-tag";
 import { Breadcrumb } from "./molecules/breadcrumb";
 import { FilterChips } from "./molecules/filter-chips";
 import { FlowLegend } from "./molecules/flow-legend";
@@ -18,6 +19,7 @@ import { StepRuler } from "./molecules/step-ruler";
 import { WhatIfSwitch } from "./molecules/what-if-switch";
 import { BillOfParts } from "./organisms/bill-of-parts";
 import { BuildLog } from "./organisms/build-log";
+import { CodeListing } from "./organisms/code-listing";
 import { ConceptArticle } from "./organisms/concept-article";
 import { DrawingLegend } from "./organisms/drawing-legend";
 import { DrawingRegister } from "./organisms/drawing-register";
@@ -65,6 +67,12 @@ describe("atoms", () => {
     const link = html(<ButtonLink href="/m/x/">Run MCH-001</ButtonLink>);
     expect(link).toMatch(/^<a [^>]*href="\/m\/x\/"/);
     expect(link).not.toContain("<button");
+  });
+
+  it("writes a token's name in its flow colour, out of the accessibility tree", () => {
+    const tag = html(<TokenTag label="B" flow="request" />);
+    expect(tag).toContain('aria-hidden="true"');
+    expect(tag).toContain(">B<");
   });
 
   it("keeps the logo mark out of the accessibility tree", () => {
@@ -276,6 +284,22 @@ describe("machine page sections", () => {
     expect(concept).toMatch(/^<article aria-labelledby="concept-title"/);
     expect(concept).toContain('<time dateTime="2026-10-12"');
     expect(concept).toContain("REV A");
+  });
+
+  it("lists the program with its running line, and what it printed so far", () => {
+    const listing = html(
+      <CodeListing
+        lines={['console.log("A");', "setTimeout(b, 0);"]}
+        current={2}
+        flow="request"
+        output={["A"]}
+      />,
+    );
+    expect(listing).toContain('aria-label="Program"');
+    expect(listing.match(/<li/g)).toHaveLength(2);
+    expect(listing.match(/aria-current="step"/g)).toHaveLength(1);
+    expect(listing).toMatch(/<output[^>]*><span>A<\/span><\/output>/);
+    expect(html(<CodeListing lines={["x();"]} output={[]} />)).not.toContain("aria-current");
   });
 
   it("writes out the whole run: every scenario, every step, and what a switch plays instead", () => {

@@ -10,6 +10,8 @@ export interface PartCalloutProps {
   /** Flow of the current step when the part is lit. */
   readonly flow?: FlowName | null;
   readonly violation?: boolean;
+  /** What the part is doing in this step, under its name: "Microtasks". */
+  readonly status?: string | undefined;
   /** What the callout says: its number only, its name too, or name, role and description. */
   readonly detail: "number" | "name" | "full";
 }
@@ -26,6 +28,7 @@ export function PartCallout({
   description,
   flow = null,
   violation = false,
+  status,
   detail,
 }: PartCalloutProps) {
   const accent = violation ? flowColour.error : flow ? flowColour[flow] : null;
@@ -44,6 +47,14 @@ export function PartCallout({
       >
         <div className="flex w-max max-w-60 flex-col gap-0.5 px-2 py-1">
           <p className="font-mono text-log whitespace-nowrap text-text">{label}</p>
+          {status && (
+            <p
+              className="font-mono text-micro whitespace-nowrap text-text-secondary"
+              style={accent ? { color: accent } : undefined}
+            >
+              {status}
+            </p>
+          )}
           {detail === "full" && role && (
             <p className="font-mono text-micro text-text-secondary">{role}</p>
           )}

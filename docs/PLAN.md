@@ -36,7 +36,7 @@ Nightprint sert trois buts, dans cet ordre. Il n'a pas d'objectif de revenu.
 
 **Critères de réussite (adoptés tels quels au lancement, état au 13/10)**
 
-- [ ] MCH-001 en ligne sur nightprint.dev, jouable de bout en bout sur Chrome et Safari, desktop et mobile, sans erreur en console. Vérifié sans erreur en émulation (moteurs de Chrome et de Safari, ordinateur et mobile, de 320 px à 1440 px) ; reste un essai sur appareils réels.
+- [ ] MCH-001 en ligne sur nightprint.dev, jouable de bout en bout sur Chrome et Safari, desktop et mobile, sans erreur en console. Vérifié sans erreur en émulation (moteurs de Chrome et de Safari, ordinateur et mobile, de 320 px à 1440 px), et sur un vrai téléphone le 13/10 ; reste Chrome sur ordinateur avec un vrai GPU, le seul cas où le site tourne en WebGPU sous Chrome.
 - [x] MCH-001 relue contre Cockburn (2005), et contre Cockburn et Garrido de Paz (2024) ; les deux sources sont citées sur la page.
 - [x] `pnpm check` vert à chaque commit : lint, types, tests, contraste AA. Chaque commit est vérifié seul, et la CI le rejoue avant chaque déploiement.
 - [ ] Après le lancement, une machine finie par semaine, jamais deux commencées en même temps. À partir de MCH-002.
@@ -72,7 +72,7 @@ Le plan prévoyait trois week-ends de build et un lancement autour du 1er novemb
 
 1. **Fait (11 et 12 octobre)** : cadrage, DA, rendu test Blender, nom ; repo (moteur, catalogue, scène, UI, tokens) ; nightprint.dev acheté et en ligne, publié à chaque push ; MCH-001 jouable de bout en bout avec caméra entre les étapes, cotes de latence, étincelles de violation, bloom et arêtes en TSL, coupe hachurée ; catalogue avec vote sur X ; SEO, Search Console et Bing ; vidéo de lancement ; licence ; 119 tests.
 2. **Lancement (12 et 13 octobre)** : relecture contre Cockburn (2005 et 2024), corrections en ligne ; vue éclatée ; section « Every scenario, in words » refaite, chaque étape rejouable depuis sa ligne ; essai automatisé sans erreur sur les moteurs de Chrome et de Safari, ordinateur et mobile émulé (WebGPU sous Safari), pages tenues dès 320 px ; vidéo avec le final « Unplug ».
-   **MCH-001 lancée le 12/10** : fil X avec la vidéo, le lien et le sondage pour MCH-003. Reste un essai sur appareils réels.
+   **MCH-001 lancée le 12/10** : fil X avec la vidéo, le lien et le sondage pour MCH-003. Essai sur un vrai téléphone concluant le 13/10.
 3. **Ensuite, une machine par semaine** : MCH-002 event loop JavaScript → MCH-003 au vote sur X (DDD, offline-first, CQRS + event sourcing ou Redis cache-aside ; les autres suivent) → rendu React → Kafka.
 
 Chaque week-end se termine par une livraison en ligne. L'ordre des machines après le lancement est indicatif.

@@ -56,6 +56,13 @@ const BUILD_LOG_SHOWN = 8;
 /** Newest first. Posted on X as it happens. */
 const buildLog: readonly BuildLogEntry[] = [
   {
+    key: "mch-002",
+    date: "13 OCT",
+    flow: "response",
+    tag: "SHIP",
+    text: "MCH-002 is out: the JavaScript event loop. A script logs A, D, C, B, and three switches block the stack, freeze the page, or don't.",
+  },
+  {
     key: "poll",
     date: "12 OCT",
     flow: "request",

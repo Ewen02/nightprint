@@ -138,6 +138,24 @@ describe("resolveMachine", () => {
     const back = resolveMachine(fixture, []).scenarios[0]?.steps[3]?.tokens[0];
     expect(back?.kind === "travel" && back.points[0]).toEqual([3, 0, 0]);
   });
+
+  it("colours a step that moves no token by what it logs", () => {
+    const main = must(fixtureInput.scenarios[0]);
+    const quiet: MachineInput["scenarios"][number]["steps"] = [
+      { id: "setup", title: "S", body: "s.", log: [{ flow: "write", text: "configured" }] },
+      { id: "pause", title: "P", body: "p." },
+    ];
+    const machine = defineMachine({
+      ...fixtureInput,
+      scenarios: [{ ...main, steps: [...quiet, ...main.steps] }],
+    });
+    const steps = resolveMachine(machine, []).scenarios[0]?.steps ?? [];
+    expect(steps[0]?.flow).toBe("write");
+    // Nothing moves and nothing is logged: a request, as before.
+    expect(steps[1]?.flow).toBe("request");
+    // A token still decides when there is one.
+    expect(steps[2]?.flow).toBe(steps[2]?.tokens[0]?.flow);
+  });
 });
 
 describe("logUntil", () => {

@@ -127,7 +127,8 @@ function resolveSteps(
       index,
       step,
       tokens,
-      flow: tokens[0]?.flow ?? "request",
+      // A step that moves nothing (a startup) takes the colour of what it logs.
+      flow: tokens[0]?.flow ?? step.log[0]?.flow ?? "request",
       latencyMs,
     };
   });

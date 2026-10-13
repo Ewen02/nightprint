@@ -74,13 +74,14 @@ export interface ZonesProps {
  * parts standing near it. The middle of that edge, not its corner: the plate's back
  * corner is the top of the drawing, where the stage's title sits. On the right of
  * the plate, the edge's inner end instead: the label opens to the right, and from
- * the middle it would run off the stage.
+ * the middle it would run off the stage. A wide zone that spans the plate's centre
+ * starts its label there, clear of its neighbour's on the left.
  */
 function labelPoint(zone: Zone, centreX: number): [number, number, number] {
   const x0 = Math.min(zone.from[0], zone.to[0]);
   const x1 = Math.max(zone.from[0], zone.to[0]);
   const middle = (x0 + x1) / 2;
-  const x = middle > centreX + 1e-6 ? x0 + INSET : middle;
+  const x = middle > centreX + 1e-6 ? Math.max(x0 + INSET, centreX) : middle;
   return [x, 0, Math.min(zone.from[1], zone.to[1]) - LABEL_OUT];
 }
 

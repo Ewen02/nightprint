@@ -102,8 +102,12 @@ export const zoneSchema = z.object({
 });
 export type Zone = z.infer<typeof zoneSchema>;
 
+/** What a token stands for, written on it: the callback "B". */
+const tokenLabel = z.string().min(1).max(3).optional();
+
 export const travelSchema = z.object({
   flow: flowSchema,
+  label: tokenLabel,
   /** Routes travelled in order; their polylines are chained. */
   path: z.array(id).min(1),
   reverse: z.boolean().default(false),
@@ -111,6 +115,7 @@ export const travelSchema = z.object({
 
 export const holdSchema = z.object({
   flow: flowSchema,
+  label: tokenLabel,
   /** The token waits on this part for the whole step. */
   at: id,
 });
@@ -149,6 +154,12 @@ export const stepSchema = z.object({
   focus: z.array(id).default([]),
   tokens: z.array(tokenSchema).default([]),
   log: z.array(logLineSchema).default([]),
+  /** The line of the machine's listing that runs in this step, by its id. */
+  line: id.optional(),
+  /** What the program prints in this step: the console reads them in order. */
+  output: z.array(z.string().min(1)).default([]),
+  /** What a part is doing during the step, by part id: "Microtasks" on the event loop. */
+  states: z.record(id, z.string().min(1).max(28)).default({}),
   when: conditionSchema.optional(),
 });
 export type Step = z.infer<typeof stepSchema>;
@@ -160,6 +171,10 @@ export const scenarioSchema = z.object({
 });
 export type Scenario = z.infer<typeof scenarioSchema>;
 
+/** A line of the program a machine runs, named so steps and switches can point at it. */
+export const listingLineSchema = z.object({ id, text: z.string() });
+export type ListingLine = z.infer<typeof listingLineSchema>;
+
 export const effectSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("patchPart"),
@@ -168,6 +183,10 @@ export const effectSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("addRoute"), route: routeSchema }),
   z.object({ type: z.literal("removeRoute"), route: id }),
+  /** The switch changes a line of the program. */
+  z.object({ type: z.literal("setLine"), line: id, text: z.string() }),
+  /** The switch adds a line to the program, after another one. */
+  z.object({ type: z.literal("addLine"), after: id, line: listingLineSchema }),
 ]);
 export type Effect = z.infer<typeof effectSchema>;
 
@@ -232,6 +251,11 @@ export const machineSchema = z.object({
     )
     .max(8)
     .default([]),
+  /**
+   * The program the scenarios run, shown beside the stage with each step's line lit.
+   * Switches may change or add lines: the listing shown is the one they leave.
+   */
+  listing: z.array(listingLineSchema).max(20).default([]),
   stage: z.object({
     plate: z.object({
       size: z.tuple([z.number().positive(), z.number().positive()]),

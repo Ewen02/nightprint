@@ -1,11 +1,22 @@
 import { add, chain, polylineLength } from "./geometry";
-import type { Condition, Flow, Machine, Part, Route, Scenario, Step, Vec3 } from "./schema";
+import type {
+  Condition,
+  Flow,
+  ListingLine,
+  Machine,
+  Part,
+  Route,
+  Scenario,
+  Step,
+  Vec3,
+} from "./schema";
 
 /** A token with its geometry computed for the current actions. */
 export type ResolvedToken =
   | {
       readonly kind: "travel";
       readonly flow: Flow;
+      readonly label?: string | undefined;
       /** Routes lit while the token travels. */
       readonly routes: readonly string[];
       readonly points: readonly Vec3[];
@@ -14,6 +25,7 @@ export type ResolvedToken =
   | {
       readonly kind: "hold";
       readonly flow: Flow;
+      readonly label?: string | undefined;
       readonly part: string;
       readonly point: Vec3;
     };
@@ -42,6 +54,8 @@ export interface ResolvedMachine {
   readonly routes: readonly Route[];
   readonly partById: ReadonlyMap<string, Part>;
   readonly routeById: ReadonlyMap<string, Route>;
+  /** The program as the active actions leave it; empty when the machine has none. */
+  readonly listing: readonly ListingLine[];
   readonly scenarios: readonly ResolvedScenario[];
 }
 
@@ -100,7 +114,13 @@ function resolveSteps(
         if (!part) {
           throw new ResolveError(`step "${step.id}" holds a token on unknown part "${spec.at}"`);
         }
-        return { kind: "hold", flow: spec.flow, part: part.id, point: socketOf(part) };
+        return {
+          kind: "hold",
+          flow: spec.flow,
+          label: spec.label,
+          part: part.id,
+          point: socketOf(part),
+        };
       }
       const lines = spec.path.map((routeId) => {
         const route = routeById.get(routeId);
@@ -118,6 +138,7 @@ function resolveSteps(
       return {
         kind: "travel",
         flow: spec.flow,
+        label: spec.label,
         routes: spec.path,
         points,
         length: polylineLength(points),
@@ -150,6 +171,14 @@ export function resolveMachine(machine: Machine, active: Iterable<string>): Reso
 
   const parts = new Map<string, Part>(machine.parts.map((p) => [p.id, p]));
   const routes = new Map<string, Route>(machine.routes.map((r) => [r.id, r]));
+  const listing = [...machine.listing];
+  const lineIndex = (actionId: string, lineId: string) => {
+    const index = listing.findIndex((l) => l.id === lineId);
+    if (index < 0) {
+      throw new ResolveError(`action "${actionId}" points at unknown line "${lineId}"`);
+    }
+    return index;
+  };
 
   for (const action of actions) {
     for (const effect of action.effects) {
@@ -177,6 +206,18 @@ export function resolveMachine(machine: Machine, active: Iterable<string>): Reso
           }
           break;
         }
+        case "setLine": {
+          const index = lineIndex(action.id, effect.line);
+          listing[index] = { id: effect.line, text: effect.text };
+          break;
+        }
+        case "addLine": {
+          if (listing.some((l) => l.id === effect.line.id)) {
+            throw new ResolveError(`action "${action.id}" adds existing line "${effect.line.id}"`);
+          }
+          listing.splice(lineIndex(action.id, effect.after) + 1, 0, effect.line);
+          break;
+        }
       }
     }
   }
@@ -187,6 +228,11 @@ export function resolveMachine(machine: Machine, active: Iterable<string>): Reso
 
   const scenarios = machine.scenarios.map((scenario) => {
     const steps = resolveSteps(scenario, activeSet, parts, routes);
+    for (const { step } of steps) {
+      if (step.line !== undefined && !listing.some((l) => l.id === step.line)) {
+        throw new ResolveError(`step "${step.id}" runs line "${step.line}", not in the listing`);
+      }
+    }
     if (steps.length === 0) {
       throw new ResolveError(`scenario "${scenario.id}" has no step left`);
     }
@@ -200,6 +246,7 @@ export function resolveMachine(machine: Machine, active: Iterable<string>): Reso
     routes: [...routes.values()],
     partById: parts,
     routeById: routes,
+    listing,
     scenarios,
   };
 }

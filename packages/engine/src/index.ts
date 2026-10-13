@@ -14,7 +14,7 @@ export {
   pointAlong,
   polylineLength,
 } from "./geometry";
-export { flowTags, type LogEntry, logUntil } from "./log";
+export { flowTags, type LogEntry, logUntil, outputUntil } from "./log";
 export {
   createPlayer,
   FIXED_STEP_MS,

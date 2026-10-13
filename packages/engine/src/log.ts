@@ -18,6 +18,11 @@ export interface LogEntry {
   readonly atMs: number;
 }
 
+/** What the program has printed once `stepIndex` has been reached, in order. */
+export function outputUntil(scenario: ResolvedScenario, stepIndex: number): string[] {
+  return scenario.steps.slice(0, stepIndex + 1).flatMap((resolved) => resolved.step.output);
+}
+
 /** The log as it reads once `stepIndex` has been reached. */
 export function logUntil(scenario: ResolvedScenario, stepIndex: number): LogEntry[] {
   const entries: LogEntry[] = [];

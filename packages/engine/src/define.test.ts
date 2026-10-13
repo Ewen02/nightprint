@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { actionCombinations, defineMachine, validateMachine } from "./define";
 import { fixture, fixtureInput } from "./fixture.test-helper";
-import { logUntil } from "./log";
+import { logUntil, outputUntil } from "./log";
 import { resolveMachine } from "./resolve";
 import type { MachineInput } from "./schema";
 
@@ -137,6 +137,83 @@ describe("resolveMachine", () => {
   it("reverses a path", () => {
     const back = resolveMachine(fixture, []).scenarios[0]?.steps[3]?.tokens[0];
     expect(back?.kind === "travel" && back.points[0]).toEqual([3, 0, 0]);
+  });
+
+  it("keeps what the program prints, step by step, and names the tokens", () => {
+    const main = must(fixtureInput.scenarios[0]);
+    const machine = defineMachine({
+      ...fixtureInput,
+      listing: [
+        { id: "a", text: 'console.log("A");' },
+        { id: "b", text: 'console.log("B");' },
+      ],
+      scenarios: [
+        {
+          ...main,
+          steps: [
+            {
+              id: "a",
+              title: "A",
+              body: "a.",
+              line: "a",
+              output: ["A"],
+              states: { a: "busy" },
+              tokens: [{ flow: "request", at: "a", label: "A" }],
+            },
+            { id: "b", title: "B", body: "b.", line: "b", output: ["B"] },
+            ...main.steps,
+          ],
+        },
+      ],
+    });
+    const scenario = must(resolveMachine(machine, []).scenarios[0]);
+    expect(outputUntil(scenario, 0)).toEqual(["A"]);
+    expect(outputUntil(scenario, 1)).toEqual(["A", "B"]);
+    expect(scenario.steps[0]?.tokens[0]?.label).toBe("A");
+    expect(scenario.steps[0]?.step.states).toEqual({ a: "busy" });
+  });
+
+  it("rejects a state on an unknown part, and a line the listing lacks", () => {
+    const main = must(fixtureInput.scenarios[0]);
+    const step = { id: "x", title: "X", body: "x.", line: "two", states: { nowhere: "?" } };
+    expect(() =>
+      defineMachine({
+        ...fixtureInput,
+        listing: [{ id: "one", text: "one();" }],
+        scenarios: [{ ...main, steps: [step, ...main.steps] }],
+      }),
+    ).toThrow(
+      /step "x" gives a state to unknown part "nowhere"[\s\S]*runs line "two", not in the listing/,
+    );
+  });
+
+  it("lets a switch change a line of the program and add one", () => {
+    const actions = [
+      ...fixtureInput.actions,
+      {
+        id: "loop",
+        label: "Loop",
+        description: "Again.",
+        effects: [
+          { type: "setLine", line: "one", text: "function one() {" } as const,
+          { type: "addLine", after: "one", line: { id: "again", text: "  one();" } } as const,
+        ],
+      },
+    ];
+    const machine = defineMachine({
+      ...fixtureInput,
+      actions,
+      listing: [
+        { id: "one", text: "one();" },
+        { id: "end", text: "end();" },
+      ],
+    });
+    expect(resolveMachine(machine, []).listing.map((l) => l.text)).toEqual(["one();", "end();"]);
+    expect(resolveMachine(machine, ["loop"]).listing.map((l) => l.text)).toEqual([
+      "function one() {",
+      "  one();",
+      "end();",
+    ]);
   });
 
   it("adds the time a step spends running to the log's clock", () => {

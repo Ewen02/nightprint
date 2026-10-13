@@ -103,6 +103,11 @@ export function validateMachine(machine: Machine): string[] {
   const actionIds = new Set(machine.actions.map((a) => a.id));
   for (const scenario of machine.scenarios) {
     for (const step of scenario.steps) {
+      for (const part of Object.keys(step.states)) {
+        if (!partIds.has(part)) {
+          issues.push(`step "${step.id}" gives a state to unknown part "${part}"`);
+        }
+      }
       for (const a of [...(step.when?.all ?? []), ...(step.when?.none ?? [])]) {
         if (!actionIds.has(a)) {
           issues.push(`step "${step.id}" depends on unknown action "${a}"`);

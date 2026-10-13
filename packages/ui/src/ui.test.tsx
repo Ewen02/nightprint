@@ -310,6 +310,14 @@ describe("machine page sections", () => {
                     flow: "write",
                     href: "?with=swap&step=2",
                   },
+                  {
+                    key: "check",
+                    when: "Swap storage",
+                    title: "The map is checked",
+                    body: "Once more.",
+                    flow: "write",
+                    adds: true,
+                  },
                 ],
               },
             ],
@@ -329,6 +337,8 @@ describe("machine page sections", () => {
     expect(run).toMatch(/<summary[^>]*><h3[^>]*>Place an order<\/h3>/);
     expect(run.match(/<ol[^>]*>/g)).toHaveLength(2);
     expect(run).toContain("Swap storage");
+    // A variant that adds a step says so: it does not stand in for this one.
+    expect(run.match(/adds a step after it/g)).toHaveLength(1);
     expect(run).toContain("InMemory answers");
     expect(run).toContain("Refused");
     // Each link to the stage names its step: the visible words are the same on every one.

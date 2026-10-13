@@ -11,6 +11,8 @@ export interface RunStepVariant {
   readonly title: string;
   readonly body: string;
   readonly flow: FlowName;
+  /** It plays as well, right after its step, rather than in its place. */
+  readonly adds?: boolean;
   /** As the switches show it: `violation` when one of them breaks the pattern. */
   readonly tone?: "safe" | "violation";
   /** Where the machine plays it, those switches on. */
@@ -171,6 +173,9 @@ export function RunTranscript({ eyebrow, title, lead, scenarios, play }: RunTran
                               <span>
                                 <span className="sr-only">With </span>
                                 {variant.when}
+                                {variant.adds && (
+                                  <span className="text-text-faint"> · adds a step after it</span>
+                                )}
                               </span>
                             </p>
                             {variant.href && play && (

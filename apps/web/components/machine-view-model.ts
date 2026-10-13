@@ -181,12 +181,29 @@ export function partCallouts(
 }
 
 /** The key to the colours, in the words of the visual grammar. */
-export const flowLegend: FlowLegendProps["items"] = [
-  { flow: "request", label: "Request" },
-  { flow: "write", label: "Write" },
-  { flow: "response", label: "Response" },
-  { flow: "error", label: "Error" },
-];
+/** What each flow colour means in this machine: its own words, or the default ones. */
+export function flowLegend(machine: Machine): FlowLegendProps["items"] {
+  const labels = machine.flowLabels;
+  return [
+    { flow: "request", label: labels.request ?? "Request" },
+    { flow: "write", label: labels.write ?? "Write" },
+    { flow: "response", label: labels.response ?? "Response" },
+    { flow: "error", label: labels.error ?? "Error" },
+  ];
+}
+
+/** The drawing shows a dependency arrowhead somewhere, under some switch. */
+export function drawsDependencies(machine: Machine): boolean {
+  const added = machine.actions.flatMap((a) =>
+    a.effects.flatMap((e) => (e.type === "addRoute" ? [e.route] : [])),
+  );
+  return [...machine.routes, ...added].some((route) => route.dependsOn !== undefined);
+}
+
+/** The exploded view has something to unplug: adapters. */
+export function hasAdapters(machine: Machine): boolean {
+  return machine.parts.some((part) => part.kind === "adapter");
+}
 
 /** The machine's glossary, each term with the balloon numbers of the parts it names. */
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -285,9 +302,11 @@ export function scenarioEnding(
   const suggestions = [untried[0], others[0] ?? untried[1]].filter(
     (s): s is { id: string; label: string } => s !== undefined,
   );
+  // A run that ends on an error never finished: it stopped there.
+  const stuck = snapshot.step.flow === "error";
   return {
     count: snapshot.stepCount,
-    title: `Done in ${formatMs(last?.atMs ?? 0)}`,
+    title: `${stuck ? "Stuck after" : "Done in"} ${formatMs(last?.atMs ?? 0)}`,
     result: last?.text ?? "",
     suggestions,
   };

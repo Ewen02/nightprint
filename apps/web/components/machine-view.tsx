@@ -21,8 +21,10 @@ import { momentLink } from "./machine-link";
 import {
   billOfPartsItems,
   cartoucheProps,
+  drawsDependencies,
   eventLogEntries,
   flowLegend,
+  hasAdapters,
   scenarioEnding,
   stageLabel,
   transportData,
@@ -149,21 +151,23 @@ export function MachineView({
         />
       }
       tools={
-        <StageAction
-          label={exploded ? "Plug them back" : "Unplug the adapters"}
-          note={exploded ? unplugNote(snapshot) : undefined}
-          onClick={() => {
-            if (!exploded) {
-              player.dispatch({ type: "pause" });
-            }
-            setExploded(!exploded);
-          }}
-        />
+        hasAdapters(machine) && (
+          <StageAction
+            label={exploded ? "Plug them back" : "Unplug the adapters"}
+            note={exploded ? unplugNote(snapshot) : undefined}
+            onClick={() => {
+              if (!exploded) {
+                player.dispatch({ type: "pause" });
+              }
+              setExploded(!exploded);
+            }}
+          />
+        )
       }
       legend={
         <FlowLegend
-          items={flowLegend}
-          dependency="Depends on"
+          items={flowLegend(machine)}
+          dependency={drawsDependencies(machine) ? "Depends on" : undefined}
           latency="Modelled, not measured"
           hint="Click a part · drag to turn · pinch to zoom"
         />

@@ -11,7 +11,8 @@ not in the v1 scope waits for the launch, and open decisions are not yours to se
 
 - `pnpm install` — Node ≥ 22.12, pnpm 10 (`packageManager` field)
 - `pnpm dev` — builds the tokens, then `next dev` on apps/web
-- `pnpm check` — Biome lint + typecheck + Vitest, run before every commit
+- `pnpm check` — Biome lint + typecheck + Vitest + the architecture rules of this file
+  (`scripts/architecture.test.mjs`, outside Turborepo's cache), run before every commit
 - `pnpm build` — static export in `apps/web/out`
 - `pnpm format` — Biome format + safe fixes
 - `pnpm --filter @nightprint/video capture mch-001` / `studio` / `render MCH-001 out/mch-001.mp4` — a machine's video

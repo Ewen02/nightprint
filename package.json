@@ -13,7 +13,8 @@
     "test": "turbo run test",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "check": "biome check . && turbo run typecheck test"
+    "arch": "node --test scripts/architecture.test.mjs",
+    "check": "biome check . && turbo run typecheck test && pnpm arch"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

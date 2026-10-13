@@ -59,7 +59,7 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 | SEO : tout le texte en HTML, JSON-LD, image de partage par machine, sitemap | v1 | Fait ; Search Console et Bing vérifiés le 12/10 |
 | Vidéo de lancement pour X et LinkedIn | v1 | Publiée : `apps/video` filme le site image par image, Remotion monte ; final « Unplug the adapters » ajouté le 13/10 |
 | Site statique sur le VPS, domaine nightprint.dev | v1 | En ligne sur nightprint.dev (12/10), publié à chaque push sur main ; www et l'ancienne adresse sslip.io de préversion redirigent vers l'apex |
-| Machines MCH-002 à MCH-008 | Après le lancement | Une par semaine ; MCH-002, l'event loop JavaScript, publiée le 13/10 |
+| Machines MCH-002 à MCH-008 | Après le lancement | Une par semaine ; MCH-002 (event loop JavaScript) et MCH-003 (Redis cache-aside) publiées le 13/10 |
 | Export vidéo intégré (WebCodecs) | Après le lancement | Au lancement, la vidéo vient d'`apps/video` |
 | Planche de concepts : grille de mini-machines animées | À trancher, après MCH-003 | Voir les décisions ouvertes |
 | Génération d'une machine par IA à partir d'une phrase | v2 | Claude écrit une définition à partir du kit |
@@ -73,7 +73,7 @@ Le plan prévoyait trois week-ends de build et un lancement autour du 1er novemb
 1. **Fait (11 et 12 octobre)** : cadrage, DA, rendu test Blender, nom ; repo (moteur, catalogue, scène, UI, tokens) ; nightprint.dev acheté et en ligne, publié à chaque push ; MCH-001 jouable de bout en bout avec caméra entre les étapes, cotes de latence, étincelles de violation, bloom et arêtes en TSL, coupe hachurée ; catalogue avec vote sur X ; SEO, Search Console et Bing ; vidéo de lancement ; licence ; 119 tests.
 2. **Lancement (12 et 13 octobre)** : relecture contre Cockburn (2005 et 2024), corrections en ligne ; vue éclatée ; section « Every scenario, in words » refaite, chaque étape rejouable depuis sa ligne ; essai automatisé sans erreur sur les moteurs de Chrome et de Safari, ordinateur et mobile émulé (WebGPU sous Safari), pages tenues dès 320 px ; vidéo avec le final « Unplug ».
    **MCH-001 lancée le 12/10** : fil X avec la vidéo, le lien et le sondage pour MCH-003. Essai sur un vrai téléphone concluant le 13/10.
-3. **Ensuite, une machine par semaine** : MCH-002 event loop JavaScript (publiée le 13/10 : un script qui affiche A, D, C, B, et trois interrupteurs : pile bloquée 200 ms, microtâches sans fin, timeouts sans fin ; relue contre la spécification HTML) → MCH-003 au vote sur X (DDD, offline-first, CQRS + event sourcing ou Redis cache-aside ; les autres suivent) → rendu React → Kafka.
+3. **Ensuite, une machine par semaine** : MCH-002 event loop JavaScript (publiée le 13/10 : un script qui affiche A, D, C, B, et trois interrupteurs : pile bloquée 200 ms, microtâches sans fin, timeouts sans fin ; relue contre la spécification HTML) → MCH-003 Redis cache-aside (publiée le 13/10 ; la question posée sur X n'a reçu aucun vote, choix d'Ewen) → MCH-004 DDD → 005 offline-first → 006 CQRS + event sourcing → 007 rendu React → 008 Kafka.
 
 Chaque week-end se termine par une livraison en ligne. L'ordre des machines après le lancement est indicatif.
 
@@ -83,7 +83,7 @@ Chaque week-end se termine par une livraison en ligne. L'ordre des machines apr�
 - **Délestage et réponse partielle** : un service lent ; on rejette d'abord les requêtes spéculatives, puis on répond avec ce qui est prêt à l'échéance. Source : Google SRE, « Handling Overload ».
 - **Rotation des jetons de rafraîchissement** : jeton d'accès court, jeton de rafraîchissement remplacé à chaque usage. Interrupteur : un seul jeton partagé entre deux applications, qui déconnecte partout. Source : RFC 9700 (OAuth 2.0 Security Best Current Practice).
 
-MCH-007 (Redis cache-aside) gagne deux interrupteurs : sans dédoublonnage des requêtes, la clé qui expire envoie toutes les requêtes à la base en même temps ; sans service du périmé pendant le rafraîchissement, la latence monte d'un coup. Source : RFC 5861 (`stale-while-revalidate`).
+Le dédoublonnage des requêtes est devenu l'interrupteur « Expire a hot key under load » de MCH-003 (13/10). Redis n'a pas de « stale-while-revalidate » intégré : servir du périmé pendant le rafraîchissement reste du code applicatif, à montrer comme tel si on y revient.
 
 ## Architecture et stack
 

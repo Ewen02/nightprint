@@ -139,6 +139,24 @@ describe("resolveMachine", () => {
     expect(back?.kind === "travel" && back.points[0]).toEqual([3, 0, 0]);
   });
 
+  it("adds the time a step spends running to the log's clock", () => {
+    const main = must(fixtureInput.scenarios[0]);
+    const busy: MachineInput["scenarios"][number]["steps"][number] = {
+      id: "busy",
+      title: "B",
+      body: "b.",
+      takesMs: 200,
+      log: [{ flow: "error", text: "long task" }],
+    };
+    const machine = defineMachine({
+      ...fixtureInput,
+      scenarios: [{ ...main, steps: [busy, ...main.steps] }],
+    });
+    const scenario = must(resolveMachine(machine, []).scenarios[0]);
+    expect(scenario.steps[0]?.latencyMs).toBe(200);
+    expect(logUntil(scenario, 0).at(-1)?.atMs).toBe(200);
+  });
+
   it("colours a step that moves no token by what it logs", () => {
     const main = must(fixtureInput.scenarios[0]);
     const quiet: MachineInput["scenarios"][number]["steps"] = [

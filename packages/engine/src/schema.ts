@@ -139,6 +139,12 @@ export const stepSchema = z.object({
   body: z.string().min(1),
   /** How long the step's tokens travel. Same default as the `motion.step` token. */
   durationMs: z.number().int().positive().default(1400),
+  /**
+   * Simulated time the step itself takes, on top of its routes' latencies: code that
+   * keeps a thread busy (a 200 ms loop), or the wait for a frame to be due. Added to the
+   * log's clock, never to the playback.
+   */
+  takesMs: z.number().nonnegative().default(0),
   /** Parts lit during the step. */
   focus: z.array(id).default([]),
   tokens: z.array(tokenSchema).default([]),
@@ -187,6 +193,19 @@ export const machineSchema = z.object({
   summary: z.string().min(1),
   family: z.enum(["backend", "infra", "frontend", "mobile"]),
   category: z.string().min(1),
+  /**
+   * What each flow colour means in this machine, for its legend. A flow left out reads
+   * as a request, a write, a response or an error.
+   */
+  flowLabels: z
+    .object({
+      request: z.string().min(1).max(16),
+      write: z.string().min(1).max(16),
+      response: z.string().min(1).max(16),
+      error: z.string().min(1).max(16),
+    })
+    .partial()
+    .default({}),
   /** Cartouche scale, e.g. "1 : 1 ms". */
   scale: z.string().min(1),
   revision: z.string().min(1),

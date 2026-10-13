@@ -24,7 +24,7 @@ export interface ResolvedStep {
   readonly tokens: readonly ResolvedToken[];
   /** Flow that colours the step: its first token, or `request`. */
   readonly flow: Flow;
-  /** Sum of the latencies of the routes travelled in this step. */
+  /** Simulated time of the step: its routes' latencies plus the time it spends running. */
   readonly latencyMs: number;
 }
 
@@ -93,7 +93,7 @@ function resolveSteps(
         throw new ResolveError(`step "${step.id}" focuses unknown part "${p}"`);
       }
     }
-    let latencyMs = 0;
+    let latencyMs = step.takesMs;
     const tokens = step.tokens.map((spec): ResolvedToken => {
       if ("at" in spec) {
         const part = partById.get(spec.at);

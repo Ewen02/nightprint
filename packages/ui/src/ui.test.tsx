@@ -300,6 +300,8 @@ describe("machine page sections", () => {
     expect(listing.match(/aria-current="step"/g)).toHaveLength(1);
     expect(listing).toMatch(/<output[^>]*><span>A<\/span><\/output>/);
     expect(html(<CodeListing lines={["x();"]} output={[]} />)).not.toContain("aria-current");
+    // A program that never prints has no console.
+    expect(html(<CodeListing lines={["x();"]} />)).not.toContain("<output");
   });
 
   it("writes out the whole run: every scenario, every step, and what a switch plays instead", () => {

@@ -344,11 +344,11 @@ export function scenarioEnding(
   const suggestions = [untried[0], others[0] ?? untried[1]].filter(
     (s): s is { id: string; label: string } => s !== undefined,
   );
-  // A run that ends on an error never finished: it stopped there.
+  // A run that ends on an error did not finish well: it froze, or it left something wrong.
   const stuck = snapshot.step.flow === "error";
   return {
     count: snapshot.stepCount,
-    title: `${stuck ? "Stuck after" : "Done in"} ${formatMs(last?.atMs ?? 0)}`,
+    title: `${stuck ? "Went wrong after" : "Done in"} ${formatMs(last?.atMs ?? 0)}`,
     result: last?.text ?? "",
     suggestions,
   };

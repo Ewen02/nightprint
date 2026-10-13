@@ -10,7 +10,7 @@ export interface SheetPreviewProps {
   readonly drawing?: ReactNode;
   /** The title block's cells: scale, revision, source. */
   readonly facts: readonly { readonly term: string; readonly value: string }[];
-  /** Where an issued sheet's machine runs. */
+  /** What to do with the sheet: run an issued machine, vote for a draft. */
   readonly action?: { readonly label: string; readonly href: string };
 }
 

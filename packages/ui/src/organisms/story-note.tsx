@@ -7,7 +7,7 @@ import { LogLine } from "../molecules/log-line";
 import type { EventLogEntry } from "./event-log";
 
 export interface StoryNoteProps {
-  /** Anchor of the note; its heading's id derives from it. */
+  /** Anchor of the note: the id of its section, which a link can point at. */
   readonly id: string;
   /** "Step 3 / 8 · Place an order". */
   readonly eyebrow: string;

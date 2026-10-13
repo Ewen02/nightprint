@@ -8,7 +8,7 @@ export interface SiteHeaderProps {
   readonly meta?: string;
 }
 
-/** The 56 px bar at the top of every page. */
+/** The 56 px bar at the top of a machine page; the home page has its own, `HomeHeader`. */
 export function SiteHeader({ breadcrumb, meta }: SiteHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between border-b border-line-muted px-4 sm:px-6">

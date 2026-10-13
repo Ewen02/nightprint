@@ -20,24 +20,6 @@ export function scenarioFor(machine: Machine, actions: readonly string[] = []): 
   return scenarioOf(resolveMachine(machine, actions), machine.scenarios[0]?.id ?? "");
 }
 
-/** 1-based number of a step, as the transport prints it. */
-export function stepNumberOf(scenario: ResolvedScenario, stepId: string): number {
-  const index = scenario.steps.findIndex((s) => s.step.id === stepId);
-  if (index < 0) {
-    throw new Error(`step "${stepId}" is not played in scenario "${scenario.id}"`);
-  }
-  return index + 1;
-}
-
-/** "Step 5 / 7 · InMemory answers". */
-export function stepHeadline(scenario: ResolvedScenario, step: number): string {
-  const resolved = scenario.steps[step - 1];
-  if (!resolved) {
-    throw new Error(`scenario "${scenario.id}" has no step ${step}`);
-  }
-  return `Step ${step} / ${scenario.steps.length} · ${resolved.step.title}`;
-}
-
 /** The log lines written by the given steps (1-based), at their simulated time. */
 export function logExcerpt(scenario: ResolvedScenario, steps: readonly number[]): EventLogEntry[] {
   return logUntil(scenario, scenario.steps.length - 1)
@@ -56,24 +38,6 @@ export function routeLatency(machine: Machine, routeId: string): number {
     throw new Error(`${machine.code} has no route "${routeId}"`);
   }
   return route.latencyMs;
-}
-
-export interface PartRowItem {
-  readonly id: string;
-  readonly number: number;
-  readonly label: string;
-  readonly role: string | undefined;
-}
-
-/** Bill-of-parts rows for the given parts, in that order. */
-export function partRows(machine: Machine, ids: readonly string[]): PartRowItem[] {
-  return ids.map((id) => {
-    const part = machine.parts.find((p) => p.id === id);
-    if (part?.ref === undefined) {
-      throw new Error(`${machine.code} has no numbered part "${id}"`);
-    }
-    return { id, number: part.ref, label: part.label, role: part.role };
-  });
 }
 
 /** A "what if" switch as the machine defines it. */

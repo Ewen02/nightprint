@@ -7,6 +7,11 @@ export function zoneLabelId(zoneId: string): string {
   return `zone:${zoneId}`;
 }
 
+/** The name tag of the step's `index`-th token, which follows it as it travels. */
+export function tokenLabelId(index: number): string {
+  return `token:${index}`;
+}
+
 /** A route's latency dimension. */
 export function dimensionLabelId(routeId: string): string {
   return `dim:${routeId}`;

@@ -227,6 +227,7 @@ export function MachineScene({
       <LabelProjector labels={labels} />
       <Simulation
         player={player}
+        labels={labels}
         frame={frame}
         resting={finished}
         reducedMotion={state.reducedMotion}

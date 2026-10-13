@@ -244,7 +244,8 @@ export function CameraRig({
   );
   const wantedInsets = (): Insets => ({
     left: Math.min(Math.max(insetLeft, 0), width * 0.6),
-    right: Math.min(Math.max(insetRight, 0), width * 0.2),
+    // Up to a third of the stage: room for a program listing pinned on its right.
+    right: Math.min(Math.max(insetRight, 0), width * 0.35),
     top: Math.min(Math.max(insetTop, 0), height * 0.4),
   });
 

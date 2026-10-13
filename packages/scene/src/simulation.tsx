@@ -4,6 +4,8 @@ import { useFrame } from "@react-three/fiber";
 import { type RefObject, useEffect, useMemo, useRef } from "react";
 import { type Color, type Group, Vector3 } from "three";
 import { MeshBasicNodeMaterial } from "three/webgpu";
+import { tokenLabelId } from "./label-ids";
+import { LabelAnchor, type LabelRegistry } from "./labels";
 import { setBloom } from "./materials";
 import { flowThreeColor, noRaycast } from "./palette";
 
@@ -61,6 +63,8 @@ export interface SimulationProps {
   readonly reducedMotion: boolean;
   /** While true, the scenario gets no time: it waits for the machine to be assembled. */
   readonly hold?: RefObject<boolean>;
+  /** Where each token's name tag is pinned: one anchor per slot, following its token. */
+  readonly labels?: LabelRegistry;
 }
 
 /** A waiting token breathes: about one breath a second. */
@@ -96,8 +100,17 @@ function TokenMesh({
  * step starts somewhere else, shrinks out where it was while its successor grows.
  * Cosmetic only, like a fade: the token's position is still the player's.
  */
-export function Simulation({ player, frame, resting, reducedMotion, hold }: SimulationProps) {
+export function Simulation({
+  player,
+  frame,
+  resting,
+  reducedMotion,
+  hold,
+  labels,
+}: SimulationProps) {
   const groups = useRef<(Group | null)[]>([]);
+  // Unscaled, so a breathing token never moves its tag.
+  const tagGroups = useRef<(Group | null)[]>([]);
   const ghostGroups = useRef<(Group | null)[]>([]);
   const materials = useMemo(() => Array.from({ length: POOL }, createTokenMaterials), []);
   const ghostMaterials = useMemo(() => Array.from({ length: POOL }, createTokenMaterials), []);
@@ -168,6 +181,7 @@ export function Simulation({ player, frame, resting, reducedMotion, hold }: Simu
       state.appear = Math.min(1, state.appear + step);
       state.last.copy(next);
       group.position.copy(next);
+      tagGroups.current[i]?.position.copy(next);
       // Travelling, a token keeps its size; waiting, at a part or at the end of its trip
       // while the caption is read, it breathes. The player's clock runs on while the
       // scenario waits, so a waiting token never freezes.
@@ -203,6 +217,19 @@ export function Simulation({ player, frame, resting, reducedMotion, hold }: Simu
           }}
         />
       ))}
+      {labels &&
+        materials.map((_, i) => (
+          <group
+            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-size pool, slots never reorder.
+            key={`tag-${i}`}
+            ref={(g) => {
+              tagGroups.current[i] = g;
+            }}
+          >
+            {/* To the token's left on screen, clear of the balloon above the part it waits on. */}
+            <LabelAnchor labels={labels} id={tokenLabelId(i)} position={[-0.3, 0.15, 0.3]} />
+          </group>
+        ))}
       {ghostMaterials.map((material, i) => (
         <TokenMesh
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed-size pool, slots never reorder.

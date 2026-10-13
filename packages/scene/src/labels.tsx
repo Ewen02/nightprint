@@ -57,7 +57,7 @@ const point = new Vector3();
 const OPEN_LEFT_FROM = 0.3;
 /** Margin, in CSS px, a label kept inside leaves to the stage's edge, clear of its frame. */
 const EDGE = 28;
-/** Labels sit between z-index 0 (far) and DEPTH_LAYERS (near), inside an isolated layer. */
+/** Labels sit between z-index 0 (far) and DEPTH_LAYERS (near), inside an isolated layer; raised ones above. */
 const DEPTH_LAYERS = 50;
 /** How often overlaps are settled when nothing moved, in ms: names open and close too. */
 const OVERLAP_EVERY = 150;
@@ -180,7 +180,9 @@ export function LabelProjector({ labels }: { readonly labels: LabelRegistry }) {
           : Math.min(Math.max(screen.x, EDGE), size.width - element.offsetWidth - EDGE);
       element.style.transform = `translate3d(${x}px, ${screen.y}px, 0)`;
       element.dataset.side = screen.side;
-      element.style.zIndex = String(screen.z);
+      // A label that is talking (a part's open name) stands above every bare balloon.
+      const raised = element.dataset.raised === undefined ? 0 : DEPTH_LAYERS + 1;
+      element.style.zIndex = String(screen.z + raised);
       element.style.visibility = "visible";
     }
     const now = performance.now();
@@ -205,6 +207,8 @@ export interface StageCallout {
   readonly keepInside?: boolean;
   /** Fades out while another label covers it: for a dimension's value, the least needed. */
   readonly yields?: boolean;
+  /** Stands above the other labels whatever their depth: for a name being read. */
+  readonly raised?: boolean;
 }
 
 function CalloutSlot({
@@ -212,12 +216,14 @@ function CalloutSlot({
   id,
   keepInside,
   yields,
+  raised,
   children,
 }: {
   readonly labels: LabelRegistry;
   readonly id: string;
   readonly keepInside: boolean;
   readonly yields: boolean;
+  readonly raised: boolean;
   readonly children: ReactNode;
 }) {
   const ref = useRegister<HTMLElement>(labels.elements, id);
@@ -226,6 +232,7 @@ function CalloutSlot({
       ref={ref}
       data-keep-inside={keepInside || undefined}
       data-yields={yields || undefined}
+      data-raised={raised || undefined}
       className="invisible absolute top-0 left-0 transition-opacity duration-200 will-change-transform motion-reduce:transition-none"
     >
       {children}
@@ -257,6 +264,7 @@ export function LabelLayer({ labels, callouts }: LabelLayerProps) {
           id={callout.id}
           keepInside={callout.keepInside ?? false}
           yields={callout.yields ?? false}
+          raised={callout.raised ?? false}
         >
           {callout.content}
         </CalloutSlot>

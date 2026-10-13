@@ -1,9 +1,9 @@
 import type { Frame, Vec3 } from "@nightprint/engine";
 import { polylineLength } from "@nightprint/engine";
 import { useFrame } from "@react-three/fiber";
-import { type RefObject, useEffect, useMemo } from "react";
-import { BackSide, Color, MathUtils } from "three";
-import { color, float, fract, mix, step, uniform, uv } from "three/tsl";
+import { type RefObject, useEffect, useMemo, useRef } from "react";
+import { BackSide, Color, MathUtils, type Mesh } from "three";
+import { color, float, fract, mix, normalLocal, positionLocal, step, uniform, uv } from "three/tsl";
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 import { litRange, type PipeTravel } from "./flow";
 import { createPipeGeometry } from "./geometry";
@@ -21,6 +21,13 @@ export interface PipeProps {
   /** The frame sampled by the simulation this frame. */
   readonly frame: RefObject<Frame | null>;
 }
+
+/**
+ * How far a lit pipe swells, in world units. Routes may share a stretch (two adapters into
+ * one port): two identical tubes there fight over every pixel and the lit one shows in
+ * stripes. Swollen this little, the lit tube encloses the dark one and always wins.
+ */
+const LIT_SWELL = 0.004;
 
 /**
  * A drawn route. At rest it is a dark tube. While a token travels it, the
@@ -56,7 +63,10 @@ export function Pipe({ points, present, travel, violation, reducedMotion, frame 
       violation: uniform(0),
       /** Faint glow of a violation wire between the steps that travel it. */
       rest: uniform(0),
+      /** Outward offset of the surface while lit, so it covers a pipe sharing its stretch. */
+      swell: uniform(0),
     };
+    const swollen = positionLocal.add(normalLocal.mul(u.swell));
     const error = color(flowColor.error);
     const along = uv().x;
     const metres = along.mul(u.length);
@@ -65,6 +75,7 @@ export function Pipe({ points, present, travel, violation, reducedMotion, frame 
     const ahead = u.active.mul(float(1).sub(lit)).mul(dashes).mul(scene.pipe.aheadOpacity);
     // Fully rough and non-metallic: diffuse like the Lambert bodies, with a typed emissive node.
     const m = new MeshStandardNodeMaterial({ roughness: 1, metalness: 0, transparent: true });
+    m.positionNode = swollen;
     m.colorNode = u.base;
     m.opacityNode = u.presence;
     m.emissiveNode = u.flow.mul(lit.add(ahead)).add(error.mul(u.rest));
@@ -73,6 +84,7 @@ export function Pipe({ points, present, travel, violation, reducedMotion, frame 
     // The drawn outline: back faces of a slightly larger tube show only along
     // the silhouette, two light lines either side, as in the drawings.
     const h = new MeshBasicNodeMaterial({ side: BackSide, transparent: true, depthWrite: false });
+    h.positionNode = swollen;
     h.colorNode = mix(mix(color(scene.edge), error, u.violation), u.flow, lit);
     h.opacityNode = mix(float(scene.edgeOpacity.plate), float(1), lit.max(u.violation)).mul(
       u.presence,
@@ -114,11 +126,18 @@ export function Pipe({ points, present, travel, violation, reducedMotion, frame 
     uniforms.flow.value.set(flowColor[travel.flow]);
   }, [uniforms, travel, violation]);
 
+  // A lit outline is drawn after the dark ones it shares a stretch with: blended last, on top.
+  const hullMesh = useRef<Mesh>(null);
+
   useFrame((_, delta) => {
     const target = present ? 1 : 0;
     uniforms.presence.value = reducedMotion
       ? target
       : MathUtils.damp(uniforms.presence.value, target, scene.transition.fade, delta);
+    uniforms.swell.value = uniforms.level.value > 0.01 ? LIT_SWELL : 0;
+    if (hullMesh.current) {
+      hullMesh.current.renderOrder = uniforms.level.value > 0.01 ? 2 : 1;
+    }
     if (!travel) {
       uniforms.level.value = reducedMotion
         ? 0
@@ -139,7 +158,13 @@ export function Pipe({ points, present, travel, violation, reducedMotion, frame 
   return (
     <>
       <mesh geometry={geometry} material={material} raycast={noRaycast} />
-      <mesh geometry={hullGeometry} material={hull} raycast={noRaycast} renderOrder={1} />
+      <mesh
+        ref={hullMesh}
+        geometry={hullGeometry}
+        material={hull}
+        raycast={noRaycast}
+        renderOrder={1}
+      />
     </>
   );
 }

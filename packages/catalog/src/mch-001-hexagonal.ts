@@ -45,6 +45,7 @@ function startupSteps(): StepInput[] {
   return [
     {
       id: "startup",
+      line: "storage",
       title: "The application starts",
       body: "Before any request, the configurator creates each adapter and plugs it into its port. Postgres answers OrderRepository: decided here, once, not in the core.",
       when: { none: [SWAP, TESTS] },
@@ -56,6 +57,7 @@ function startupSteps(): StepInput[] {
     },
     {
       id: "startup-memory",
+      line: "storage",
       title: "The application starts",
       body: "This time the configurator plugs InMemory into OrderRepository. That one line at startup is the whole swap: the core is untouched.",
       when: { all: [SWAP], none: [TESTS] },
@@ -98,6 +100,7 @@ function storageSteps(order: number): StepInput[] {
   return [
     {
       id: "save",
+      line: "save",
       title: "Out through OrderRepository",
       body: "The core saves the order through a port it declares. It does not know which storage will answer.",
       when: { none: [IMPORTS] },
@@ -107,6 +110,7 @@ function storageSteps(order: number): StepInput[] {
     },
     {
       id: "save-direct",
+      line: "save",
       title: "The core reaches for Postgres",
       body: "The domain imports the Postgres adapter and calls it directly. The dependency now points outward: the core cannot be built without the Postgres adapter.",
       when: { all: [IMPORTS] },
@@ -145,6 +149,7 @@ function storageSteps(order: number): StepInput[] {
     },
     {
       id: "swap-breaks",
+      line: "save",
       title: "The swap does not reach the core",
       body: "InMemory is plugged into OrderRepository, but the core still calls the Postgres adapter it imports. The swap is ignored until someone edits the domain.",
       when: { all: [IMPORTS, SWAP] },
@@ -230,6 +235,21 @@ export const hexagonal = defineMachine({
       definition:
         "Code that knows other code, drawn as an arrowhead on a pipe. Here every one points into the application.",
     },
+  ],
+  listing: [
+    { id: "core-file", text: "// core · place-order.ts" },
+    { id: "factory", text: "export const placeOrder =" },
+    { id: "param-orders", text: "  (orders: OrderRepository," },
+    { id: "param-pay", text: "   pay: PaymentGateway) =>" },
+    { id: "signature", text: "  async (order: Order) => {" },
+    { id: "rules", text: "    assertValid(order);" },
+    { id: "save", text: "    await orders.save(order);" },
+    { id: "charge", text: "    const paid = await pay.charge(order);" },
+    { id: "decide", text: '    return paid ? "confirmed" : "declined";' },
+    { id: "close", text: "  };" },
+    { id: "main-file", text: "// startup · main.ts" },
+    { id: "wire", text: "const run = placeOrder(" },
+    { id: "storage", text: "  new PostgresAdapter(pool), payments);" },
   ],
   stage: {
     plate: { size: [12, 6], center: [0, 0.6] },
@@ -479,6 +499,8 @@ export const hexagonal = defineMachine({
         { type: "patchPart", part: "postgres", set: { position: SLOT_BENCH, role: "SPARE" } },
         { type: "removeRoute", route: "repo-postgres" },
         { type: "removeRoute", route: "config-postgres" },
+        // One line at startup; not a line of the core.
+        { type: "setLine", line: "storage", text: "  new InMemoryAdapter(), payments);" },
         {
           type: "addRoute",
           route: {
@@ -511,6 +533,17 @@ export const hexagonal = defineMachine({
         "The domain calls the Postgres adapter directly. The dependency now points outward.",
       effects: [
         { type: "patchPart", part: "order-domain", set: { flag: "violation" } },
+        {
+          type: "addLine",
+          after: "core-file",
+          line: { id: "import-pg", text: "import { PostgresAdapter }" },
+        },
+        {
+          type: "addLine",
+          after: "import-pg",
+          line: { id: "import-pg-end", text: '  from "../adapters/postgres";' },
+        },
+        { type: "setLine", line: "save", text: "    await PostgresAdapter.insert(order);" },
         {
           type: "addRoute",
           route: {
@@ -563,6 +596,7 @@ export const hexagonal = defineMachine({
         },
         {
           id: "input-port",
+          line: "signature",
           title: "Through the driving port",
           body: "The adapter calls PlaceOrder, an interface the core owns. The adapter depends on the core, not the other way round.",
           when: { none: ["drive-from-tests"] },
@@ -572,6 +606,7 @@ export const hexagonal = defineMachine({
         },
         {
           id: "test-input-port",
+          line: "signature",
           title: "Through the same driving port",
           body: "The test adapter calls PlaceOrder, the very port HTTP uses. Nothing in the core knows a test is calling.",
           when: { all: ["drive-from-tests"] },
@@ -581,6 +616,7 @@ export const hexagonal = defineMachine({
         },
         {
           id: "rules",
+          line: "rules",
           title: "The core applies the rules",
           body: "An order needs at least one line and a positive total. Pure business logic: no SQL, no HTTP, no framework.",
           focus: ["order-domain"],
@@ -592,6 +628,7 @@ export const hexagonal = defineMachine({
         ...storageSteps(1042),
         {
           id: "payment",
+          line: "charge",
           title: "Payment through PaymentGateway",
           body: "The core charges the customer through another port. The payment provider is only one adapter behind it.",
           focus: ["payment-gateway", "payment-provider"],
@@ -653,6 +690,7 @@ export const hexagonal = defineMachine({
         },
         {
           id: "empty-input-port",
+          line: "signature",
           title: "Through the driving port",
           body: "The adapter calls PlaceOrder like any other time. Checking the order is not its job.",
           when: { none: ["drive-from-tests"] },
@@ -662,6 +700,7 @@ export const hexagonal = defineMachine({
         },
         {
           id: "empty-test-port",
+          line: "signature",
           title: "Through the same driving port",
           body: "The test adapter calls PlaceOrder, the port HTTP uses. Checking the order is not its job either.",
           when: { all: ["drive-from-tests"] },
@@ -671,6 +710,7 @@ export const hexagonal = defineMachine({
         },
         {
           id: "rule-fails",
+          line: "rules",
           title: "The core refuses the order",
           body: "An order needs at least one line. The rule lives in the core, so it holds whoever calls, and no storage or payment is ever reached.",
           focus: ["order-domain"],
@@ -705,6 +745,7 @@ export const hexagonal = defineMachine({
       steps: [
         {
           id: "declined-arrives",
+          line: "signature",
           title: "An order arrives",
           body: "POST /orders reaches the HTTP adapter, which calls PlaceOrder. This customer's card will be refused.",
           when: { none: [TESTS] },
@@ -715,6 +756,7 @@ export const hexagonal = defineMachine({
         },
         {
           id: "declined-test",
+          line: "signature",
           title: "A test places an order",
           body: "A test calls PlaceOrder through the test adapter, for a customer whose card will be refused.",
           when: { all: [TESTS] },
@@ -725,6 +767,7 @@ export const hexagonal = defineMachine({
         ...storageSteps(1044),
         {
           id: "declined-charge",
+          line: "charge",
           title: "The core asks for the payment",
           body: "The core charges the customer through PaymentGateway, the port it declares. The payment provider adapter makes the call.",
           focus: ["payment-gateway", "payment-provider"],
@@ -746,6 +789,7 @@ export const hexagonal = defineMachine({
         },
         {
           id: "declined-decision",
+          line: "decide",
           title: "The core decides",
           body: "What a refused payment means is a business rule: the order is not confirmed. The core decides, in its own words, without the provider's codes.",
           focus: ["order-domain"],

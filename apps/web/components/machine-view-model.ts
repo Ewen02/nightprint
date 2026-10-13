@@ -2,6 +2,7 @@ import {
   type Action,
   type LogEntry,
   type Machine,
+  outputUntil,
   type PlayerSnapshot,
   type ResolvedScenario,
   resolveMachine,
@@ -9,6 +10,7 @@ import {
 import type {
   BillOfPartsItem,
   CartoucheProps,
+  CodeListingProps,
   ConceptArticleProps,
   EventLogEntry,
   FlowLegendProps,
@@ -155,13 +157,16 @@ export function partCallouts(
 ): CalloutItem[] {
   // At the end the machine is at rest: no part is the step's any more.
   const focus = new Set(snapshot.finished ? [] : snapshot.step.step.focus);
-  // Named on the stage: the step's first two parts, in the order the step lists them.
-  // More names crowd each other and the dimensions; the rest keep their lit balloon.
-  const named = new Set([...focus].slice(0, namedPerStep));
+  // Named on the stage: a part with something to say this step (the event loop's phase)
+  // first, then the step's parts in the order it lists them, up to `namedPerStep`. More
+  // names crowd each other and the dimensions; the rest keep their lit balloon.
+  const states = snapshot.finished ? {} : snapshot.step.step.states;
+  const named = new Set([...new Set([...Object.keys(states), ...focus])].slice(0, namedPerStep));
   return snapshot.resolved.parts
     .filter((part): part is typeof part & { ref: number } => part.ref !== undefined)
     .map((part) => {
       const focused = focus.has(part.id);
+      const status = named.has(part.id) ? states[part.id] : undefined;
       return {
         id: part.id,
         number: part.ref,
@@ -170,6 +175,7 @@ export function partCallouts(
         description: part.description,
         flow: focused ? snapshot.step.flow : null,
         violation: part.flag === "violation",
+        status,
         detail:
           part.id === selected
             ? "full"
@@ -180,7 +186,28 @@ export function partCallouts(
     });
 }
 
-/** The key to the colours, in the words of the visual grammar. */
+/**
+ * The program the machine runs, as the listing beside the stage shows it: the line of
+ * the current step lit in its colour, and what the program has printed so far. Null for
+ * a machine without a listing.
+ */
+export function programListing(snapshot: PlayerSnapshot): CodeListingProps | null {
+  // As the switches leave it: they may change a line of the program or add one.
+  const listing = snapshot.resolved.listing;
+  if (listing.length === 0) {
+    return null;
+  }
+  const running = snapshot.finished
+    ? -1
+    : listing.findIndex((line) => line.id === snapshot.step.step.line);
+  return {
+    lines: listing.map((line) => line.text),
+    current: running < 0 ? null : running + 1,
+    flow: snapshot.step.flow,
+    output: outputUntil(snapshot.scenario, snapshot.state.stepIndex),
+  };
+}
+
 /** What each flow colour means in this machine: its own words, or the default ones. */
 export function flowLegend(machine: Machine): FlowLegendProps["items"] {
   const labels = machine.flowLabels;

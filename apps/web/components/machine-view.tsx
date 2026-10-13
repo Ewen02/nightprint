@@ -6,6 +6,7 @@ import { usePlayerSnapshot } from "@nightprint/scene/use-player";
 import {
   BillOfParts,
   Cartouche,
+  CodeListing,
   EventLog,
   FlowLegend,
   MachineTemplate,
@@ -25,6 +26,7 @@ import {
   eventLogEntries,
   flowLegend,
   hasAdapters,
+  programListing,
   scenarioEnding,
   stageLabel,
   transportData,
@@ -40,6 +42,8 @@ import { useReducedMotion } from "./use-reduced-motion";
 
 /** Room the title block takes over the stage, from wide screens up, in px. */
 const TITLE_ROOM = 140;
+/** Room the program listing takes on the stage's right, from wide screens up, in px. */
+const LISTING_ROOM = 380;
 
 const INTERACTIVE = "button, a, input, select, textarea, summary, [role='switch']";
 
@@ -123,6 +127,19 @@ export function MachineView({
   };
 
   const { resolved } = snapshot;
+  const listing = programListing(snapshot);
+  const unplug = hasAdapters(machine) && (
+    <StageAction
+      label={exploded ? "Plug them back" : "Unplug the adapters"}
+      note={exploded ? unplugNote(snapshot) : undefined}
+      onClick={() => {
+        if (!exploded) {
+          player.dispatch({ type: "pause" });
+        }
+        setExploded(!exploded);
+      }}
+    />
+  );
   const inspected = resolved.parts.find((p) => p.id === selected);
 
   return (
@@ -147,21 +164,17 @@ export function MachineView({
           onHover={setHovered}
           // From wide screens up, the title block sits over the stage's top left.
           insetTop={wide ? TITLE_ROOM : 0}
+          // The listing stands on the stage's right: the machine is framed beside it.
+          insetRight={wide && listing ? LISTING_ROOM : 0}
           exploded={exploded}
         />
       }
       tools={
-        hasAdapters(machine) && (
-          <StageAction
-            label={exploded ? "Plug them back" : "Unplug the adapters"}
-            note={exploded ? unplugNote(snapshot) : undefined}
-            onClick={() => {
-              if (!exploded) {
-                player.dispatch({ type: "pause" });
-              }
-              setExploded(!exploded);
-            }}
-          />
+        (listing || unplug) && (
+          <div className="flex flex-col items-end gap-3">
+            {listing && <CodeListing {...listing} />}
+            {unplug}
+          </div>
         )
       }
       legend={

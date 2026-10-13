@@ -1,12 +1,13 @@
 import type { PlayerSnapshot } from "@nightprint/engine";
 import type { StageCallout } from "@nightprint/scene";
-import { dimensionLabelId, zoneLabelId } from "@nightprint/scene/label-ids";
-import { DimensionLabel, PartCallout, ZoneLabel } from "@nightprint/ui";
+import { dimensionLabelId, tokenLabelId, zoneLabelId } from "@nightprint/scene/label-ids";
+import { DimensionLabel, PartCallout, TokenTag, ZoneLabel } from "@nightprint/ui";
 import { partCallouts } from "./machine-view-model";
 
 /**
  * Everything pinned on the stage: each zone's name, each drawn route's latency
- * (in the flow colour while a token travels it), then each numbered part's callout.
+ * (in the flow colour while a token travels it), each numbered part's callout, then
+ * the name of every token the step moves that has one.
  */
 export function stageCallouts(
   snapshot: PlayerSnapshot,
@@ -41,7 +42,14 @@ export function stageCallouts(
     ({ id, ...callout }) => ({
       id,
       content: <PartCallout {...callout} />,
+      raised: callout.detail !== "number",
     }),
   );
-  return [...zones, ...dimensions, ...parts];
+  // A token's slot is its place in the step's list: the scene keeps one anchor per slot.
+  const tokens = (snapshot.finished ? [] : snapshot.step.tokens).flatMap((token, index) =>
+    token.label
+      ? [{ id: tokenLabelId(index), content: <TokenTag label={token.label} flow={token.flow} /> }]
+      : [],
+  );
+  return [...zones, ...dimensions, ...parts, ...tokens];
 }

@@ -47,8 +47,9 @@ export function billOfPartsItems(snapshot: PlayerSnapshot): BillOfPartsItem[] {
 }
 
 /** Simulated time as the log prints it. */
+/** A simulated time: in ms below a second, in seconds from there ("60.01 s"). */
 export function formatMs(ms: number): string {
-  return `${ms.toFixed(2)} ms`;
+  return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms.toFixed(2)} ms`;
 }
 
 /** An action that flags a part or a route as a violation is a counter-example. */

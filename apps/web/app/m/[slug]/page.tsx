@@ -82,7 +82,7 @@ export default async function MachinePage({ params }: MachinePageProps) {
               eyebrow="The run, step by step"
               title="Every scenario, in words."
               lead={[
-                "What the machine plays, step by step. Beside a step, what plays in its place once a what-if switch is on.",
+                "What the machine plays, step by step. Beside a step, what a what-if switch plays in its place, or adds right after it.",
               ]}
               scenarios={runTranscript(machine)}
               play="Play"

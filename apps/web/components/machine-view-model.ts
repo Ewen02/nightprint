@@ -219,9 +219,11 @@ export function conceptRevision(machine: Machine): NonNullable<ConceptArticlePro
 }
 
 /**
- * Every scenario in words: the steps that play with no switch on, and under each
- * one, the steps that play in its place once switches are flipped. A variant sits
- * where it plays under exactly the switches its condition needs.
+ * Every scenario in words: the steps that play with no switch on, and beside each
+ * one, what the switches put in its place or add right after it. A variant is placed
+ * by the run it plays in, under exactly the switches its condition needs: counted from
+ * the last base step before it, it stands in for the base step at the same distance
+ * when that one no longer plays, and otherwise it is an addition after that base step.
  */
 export function runTranscript(machine: Machine): RunScenario[] {
   const runOf = (actions: readonly string[], scenarioId: string) =>
@@ -232,14 +234,20 @@ export function runTranscript(machine: Machine): RunScenario[] {
   return machine.scenarios.map((scenario) => {
     const base = runOf([], scenario.id);
     const shown = new Set(base.map((s) => s.step.id));
+    const baseIndex = new Map(base.map((s) => [s.step.id, s.index]));
     const variants = new Map<number, RunStepVariant[]>();
     for (const step of scenario.steps.filter((s) => !shown.has(s.id))) {
       const on = [...(step.when?.all ?? [])].sort((a, b) => order.indexOf(a) - order.indexOf(b));
-      const played = runOf(on, scenario.id).find((s) => s.step.id === step.id);
+      const run = runOf(on, scenario.id);
+      const played = run.find((s) => s.step.id === step.id);
       if (!played) {
         continue;
       }
-      const at = Math.min(played.index, base.length - 1);
+      const anchorRun = run.findLastIndex((s, i) => i < played.index && baseIndex.has(s.step.id));
+      const anchorBase = anchorRun < 0 ? -1 : (baseIndex.get(run[anchorRun]?.step.id ?? "") ?? -1);
+      const standsFor = base[anchorBase + played.index - anchorRun];
+      const replaces = standsFor !== undefined && !run.some((s) => s.step.id === standsFor.step.id);
+      const at = replaces ? standsFor.index : Math.max(anchorBase, 0);
       variants.set(at, [
         ...(variants.get(at) ?? []),
         {
@@ -249,6 +257,7 @@ export function runTranscript(machine: Machine): RunScenario[] {
           body: step.body,
           flow: played.flow,
           tone: on.some((id) => tones.get(id) === "violation") ? "violation" : "safe",
+          adds: !replaces,
           href: momentQuery(machine, { scenario: scenario.id, actions: on, step: played.index }),
         },
       ]);

@@ -43,7 +43,7 @@ import { useReducedMotion } from "./use-reduced-motion";
 /** Room the title block takes over the stage, from wide screens up, in px. */
 const TITLE_ROOM = 140;
 /** Room the program listing takes on the stage's right, from wide screens up, in px. */
-const LISTING_ROOM = 380;
+const LISTING_ROOM = 410;
 
 const INTERACTIVE = "button, a, input, select, textarea, summary, [role='switch']";
 
@@ -171,9 +171,10 @@ export function MachineView({
       }
       tools={
         (listing || unplug) && (
-          <div className="flex flex-col items-end gap-3">
-            {listing && <CodeListing {...listing} />}
+          // The button first: it stays in view while the listing gives up height.
+          <div className="flex min-h-0 flex-col items-end gap-3">
             {unplug}
+            {listing && <CodeListing {...listing} />}
           </div>
         )
       }

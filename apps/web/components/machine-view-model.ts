@@ -204,7 +204,12 @@ export function programListing(snapshot: PlayerSnapshot): CodeListingProps | nul
     lines: listing.map((line) => line.text),
     current: running < 0 ? null : running + 1,
     flow: snapshot.step.flow,
-    output: outputUntil(snapshot.scenario, snapshot.state.stepIndex),
+    // A console only for a program that prints something, under some switch.
+    output: snapshot.resolved.machine.scenarios.some((s) =>
+      s.steps.some((step) => step.output.length > 0),
+    )
+      ? outputUntil(snapshot.scenario, snapshot.state.stepIndex)
+      : undefined,
   };
 }
 

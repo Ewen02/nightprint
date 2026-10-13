@@ -56,6 +56,10 @@ jobs:
 
       - run: pnpm build
 
+      # Le commit publié, lisible en ligne : la vérification ci-dessous le compare.
+      - name: Version
+        run: printf '{"commit":"%s"}\n' "$GITHUB_SHA" > apps/web/out/version.json
+
       - name: Clé de déploiement
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
@@ -73,6 +77,21 @@ jobs:
                   -o UserKnownHostsFile=~/.ssh/known_hosts -o ConnectTimeout=15 \
                   "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
                   "sync nightprint"
+
+      - name: Vérification
+        # Le site en ligne doit servir ce commit : sinon la publication a échoué sans le dire.
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            served=$(curl -fsS "https://nightprint.dev/version.json?t=$(date +%s)" \
+              | sed -n 's/.*"commit":"\([0-9a-f]*\)".*/\1/p')
+            if [ "$served" = "$GITHUB_SHA" ]; then
+              echo "nightprint.dev sert $served"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "nightprint.dev sert ${served:-rien}, attendu $GITHUB_SHA" >&2
+          exit 1
 
       - name: Effacement de la clé
         if: always()

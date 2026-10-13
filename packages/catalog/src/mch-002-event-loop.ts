@@ -104,6 +104,16 @@ export const eventLoop = defineMachine({
       parts: ["call-stack"],
     },
   ],
+  listing: [
+    { id: "log-a", text: 'console.log("A");' },
+    { id: "timer", text: "setTimeout(() => {" },
+    { id: "log-b", text: '  console.log("B");' },
+    { id: "timer-end", text: "}, 0);" },
+    { id: "promise", text: "Promise.resolve().then(() => {" },
+    { id: "log-c", text: '  console.log("C");' },
+    { id: "promise-end", text: "});" },
+    { id: "log-d", text: 'console.log("D");' },
+  ],
   stage: {
     plate: { size: [11, 6.2], center: [0.9, 0.9] },
     zones: [
@@ -223,14 +233,34 @@ export const eventLoop = defineMachine({
       label: "Block the stack for 200 ms",
       description:
         "A loop spins for 200 ms inside the script. Timer callbacks, clicks and frames all wait for the stack to empty.",
-      effects: [{ type: "patchPart", part: "call-stack", set: { flag: "violation" } }],
+      effects: [
+        { type: "patchPart", part: "call-stack", set: { flag: "violation" } },
+        {
+          type: "addLine",
+          after: "log-a",
+          line: { id: "end", text: "const end = Date.now() + 200;" },
+        },
+        {
+          type: "addLine",
+          after: "end",
+          line: { id: "busy", text: "while (Date.now() < end) {}" },
+        },
+      ],
     },
     {
       id: ENDLESS,
       label: "Chain microtasks forever",
       description:
         "C queues itself again as a microtask. The queue never empties, so no task and no frame runs again, until the browser offers to stop the page.",
-      effects: [{ type: "patchPart", part: "microtask-queue", set: { flag: "violation" } }],
+      effects: [
+        { type: "patchPart", part: "microtask-queue", set: { flag: "violation" } },
+        { type: "setLine", line: "promise", text: "Promise.resolve().then(function c() {" },
+        {
+          type: "addLine",
+          after: "log-c",
+          line: { id: "c-again", text: "  Promise.resolve().then(c);" },
+        },
+      ],
     },
     {
       // The contrast: the same endless chain, one task at a time, leaves the page alive.
@@ -238,6 +268,10 @@ export const eventLoop = defineMachine({
       label: "Chain timeouts forever",
       description:
         "B queues itself again with setTimeout. Each round is a new task, so frames and clicks still fit in between.",
+      effects: [
+        { type: "setLine", line: "timer", text: "setTimeout(function b() {" },
+        { type: "addLine", after: "log-b", line: { id: "b-again", text: "  setTimeout(b, 0);" } },
+      ],
     },
   ],
   scenarios: [
@@ -247,6 +281,7 @@ export const eventLoop = defineMachine({
       steps: [
         {
           id: "script-task",
+          states: { "event-loop": "Task · the script" },
           title: "The script runs as one task",
           body: "The script logs A, sets a 0 ms timer for B, queues C on a resolved promise and logs D. All of it is one task: the event loop takes it from the task queue and runs it on the call stack.",
           focus: ["task-queue", "event-loop", "call-stack"],
@@ -255,6 +290,9 @@ export const eventLoop = defineMachine({
         },
         {
           id: "log-a",
+          line: "log-a",
+          output: ["A"],
+          states: { "event-loop": "Task · the script" },
           title: "A runs at once",
           body: 'console.log("A") is plain synchronous code: it runs right away, on the stack.',
           durationMs: 1050,
@@ -264,6 +302,8 @@ export const eventLoop = defineMachine({
         },
         {
           id: "long-loop",
+          line: "busy",
+          states: { "event-loop": "Task · the script" },
           title: "A 200 ms loop holds the stack",
           body: "A loop spins for 200 ms. One thread, one stack: while it runs, nothing else can, not a timer's callback, not a click, not a frame.",
           when: { all: [BLOCK] },
@@ -274,31 +314,38 @@ export const eventLoop = defineMachine({
         },
         {
           id: "set-timeout",
+          line: "timer",
+          states: { "event-loop": "Task · the script" },
           title: "setTimeout hands B to a timer",
           body: "setTimeout(cb, 0) does not run cb. It gives it to a timer, which counts in parallel, off the main thread. 0 ms means at least 0 ms.",
           focus: ["call-stack", "web-apis"],
-          tokens: [{ flow: "request", path: ["stack-timer"] }],
+          tokens: [{ flow: "request", path: ["stack-timer"], label: "B" }],
           log: [{ flow: "request", tag: "TIMER", text: "setTimeout(B, 0) → timer" }],
         },
         {
           id: "then",
+          line: "promise",
+          states: { "event-loop": "Task · the script" },
           title: "The promise queues C as a microtask",
           body: "Promise.resolve().then(cb) queues cb straight away, as a microtask. It will run as soon as the stack is empty, before the next task.",
           focus: ["call-stack", "microtask-queue"],
           tokens: [
-            { flow: "write", path: ["stack-microtasks"] },
-            { flow: "request", at: "web-apis" },
+            { flow: "write", path: ["stack-microtasks"], label: "C" },
+            { flow: "request", at: "web-apis", label: "B" },
           ],
           log: [{ flow: "write", tag: "MICRO", text: "then(C) → microtask queue" }],
         },
         {
           id: "log-d",
+          line: "log-d",
+          output: ["D"],
+          states: { "event-loop": "Task · the script" },
           title: "D, and the script is done",
           body: "The last line logs D and the script's task ends: the stack is empty. Once its 0 ms are up, the timer queues B in the task queue, where B waits its turn.",
           focus: ["call-stack", "web-apis", "task-queue"],
           tokens: [
-            { flow: "request", path: ["timer-tasks"] },
-            { flow: "write", at: "microtask-queue" },
+            { flow: "request", path: ["timer-tasks"], label: "B" },
+            { flow: "write", at: "microtask-queue", label: "C" },
           ],
           log: [
             { flow: "request", tag: "LOG", text: "D" },
@@ -307,25 +354,31 @@ export const eventLoop = defineMachine({
         },
         {
           id: "checkpoint",
+          line: "log-c",
+          output: ["C"],
+          states: { "event-loop": "Microtasks" },
           title: "Microtasks first: C",
           body: "The stack is empty, so the event loop runs a microtask checkpoint: it empties the microtask queue, C included, before it takes another task.",
           when: { none: [ENDLESS] },
           focus: ["microtask-queue", "event-loop", "call-stack"],
           tokens: [
-            { flow: "write", path: ["microtasks-loop", "loop-stack"] },
-            { flow: "request", at: "task-queue" },
+            { flow: "write", path: ["microtasks-loop", "loop-stack"], label: "C" },
+            { flow: "request", at: "task-queue", label: "B" },
           ],
           log: [{ flow: "write", tag: "LOG", text: "C" }],
         },
         {
           id: "checkpoint-endless",
+          line: "c-again",
+          output: ["C"],
+          states: { "event-loop": "Microtasks" },
           title: "C queues C again",
           body: "C logs, then queues itself as a new microtask. The checkpoint only ends when the microtask queue is empty, and now it never is.",
           when: { all: [ENDLESS] },
           focus: ["microtask-queue", "event-loop", "call-stack"],
           tokens: [
-            { flow: "error", path: ["microtasks-loop", "loop-stack"] },
-            { flow: "request", at: "task-queue" },
+            { flow: "error", path: ["microtasks-loop", "loop-stack"], label: "C" },
+            { flow: "request", at: "task-queue", label: "B" },
           ],
           log: [
             { flow: "write", tag: "LOG", text: "C" },
@@ -334,6 +387,7 @@ export const eventLoop = defineMachine({
         },
         {
           id: "frozen",
+          states: { "event-loop": "Microtasks, forever" },
           title: "The page freezes",
           body: "B never runs and no frame is drawn: the event loop never leaves the checkpoint. Clicks pile up in the task queue, unanswered.",
           when: { all: [ENDLESS] },
@@ -349,6 +403,7 @@ export const eventLoop = defineMachine({
         },
         {
           id: "frame-late",
+          states: { "event-loop": "Render" },
           title: "A frame, 200 ms late",
           body: "A frame has been due since the loop began, so it most likely comes before B. About 12 frames were never drawn at 60 Hz, and each click waited for the stack, then ran late.",
           when: { all: [BLOCK], none: [ENDLESS] },
@@ -365,20 +420,26 @@ export const eventLoop = defineMachine({
         },
         {
           id: "next-task",
+          line: "log-b",
+          output: ["B"],
+          states: { "event-loop": "Task · timer B" },
           title: "Then the next task: B",
           body: "Only now can the event loop take another task: here, the timer's callback, which logs B. The output reads A, D, C, B.",
           when: { none: [ENDLESS, TIMEOUTS] },
           focus: ["task-queue", "event-loop", "call-stack"],
-          tokens: [{ flow: "request", path: ["tasks-loop", "loop-stack"] }],
+          tokens: [{ flow: "request", path: ["tasks-loop", "loop-stack"], label: "B" }],
           log: [{ flow: "request", tag: "LOG", text: "B" }],
         },
         {
           id: "next-task-again",
+          line: "b-again",
+          output: ["B"],
+          states: { "event-loop": "Task · timer B" },
           title: "B runs, and sets B again",
           body: "Here the next task is the timer's callback: it logs B, then calls setTimeout(B, 0) again. The next B will be a new task, queued once its timer is up, so frames and other tasks can go first.",
           when: { all: [TIMEOUTS], none: [ENDLESS] },
           focus: ["task-queue", "event-loop", "call-stack"],
-          tokens: [{ flow: "request", path: ["tasks-loop", "loop-stack"] }],
+          tokens: [{ flow: "request", path: ["tasks-loop", "loop-stack"], label: "B" }],
           log: [
             { flow: "request", tag: "LOG", text: "B" },
             { flow: "request", tag: "TIMER", text: "setTimeout(B, 0) → timer, again" },
@@ -386,6 +447,7 @@ export const eventLoop = defineMachine({
         },
         {
           id: "frame",
+          states: { "event-loop": "Render" },
           title: "A frame, when one is due",
           body: "Between two tasks the browser may render: animation-frame callbacks, then style, layout and paint. At 60 Hz one is due within 16.7 ms, so it can also come before B.",
           when: { none: [ENDLESS, BLOCK] },
@@ -403,11 +465,12 @@ export const eventLoop = defineMachine({
         },
         {
           id: "keeps-going",
+          states: { "event-loop": "Waiting for a task" },
           title: "The page stays responsive",
           body: "Each B is its own task, so frames and clicks fit in between. Once timers nest more than five deep, browsers wait at least 4 ms between rounds.",
           when: { all: [TIMEOUTS], none: [ENDLESS] },
           focus: ["web-apis", "task-queue"],
-          tokens: [{ flow: "request", path: ["timer-tasks"] }],
+          tokens: [{ flow: "request", path: ["timer-tasks"], label: "B" }],
           log: [
             {
               flow: "request",

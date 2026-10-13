@@ -47,10 +47,11 @@ export function stepAt(steps: readonly TimelineStep[], frame: number): TimelineS
   return current;
 }
 
-export function clickNamed(timeline: Timeline, name: string): TimelineClick {
-  const click = timeline.clicks.find((c) => c.name === name);
+/** The capture's click on `name`; `nth` (from 0) picks a later one when it was clicked again. */
+export function clickNamed(timeline: Timeline, name: string, nth = 0): TimelineClick {
+  const click = timeline.clicks.filter((c) => c.name === name)[nth];
   if (!click) {
-    throw new Error(`The capture has no click on "${name}"`);
+    throw new Error(`The capture has no click ${nth + 1} on "${name}"`);
   }
   return click;
 }

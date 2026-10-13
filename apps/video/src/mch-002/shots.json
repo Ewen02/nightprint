@@ -1,0 +1,19 @@
+{
+  "url": "https://nightprint.dev/m/javascript-event-loop/",
+  "frames": 570,
+  "scale": 1.5,
+  "actions": [
+    { "frame": 0, "kind": "button", "name": "Step 1:" },
+    { "frame": 46, "kind": "button", "name": "Next step" },
+    { "frame": 82, "kind": "button", "name": "Next step" },
+    { "frame": 128, "kind": "button", "name": "Next step" },
+    { "frame": 174, "kind": "button", "name": "Next step" },
+    { "frame": 220, "kind": "button", "name": "Next step" },
+    { "frame": 270, "kind": "switch", "name": "Chain microtasks forever" },
+    { "frame": 320, "kind": "button", "name": "Next step" },
+    { "frame": 380, "kind": "switch", "name": "Chain microtasks forever" },
+    { "frame": 412, "kind": "switch", "name": "Chain timeouts forever" },
+    { "frame": 462, "kind": "button", "name": "Next step" },
+    { "frame": 508, "kind": "button", "name": "Next step" }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "source": "https://nightprint.dev/m/javascript-event-loop/",
+  "footage": {
+    "frames": 570,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "scale": 1.5
+  },
+  "steps": [
+    {
+      "from": 0,
+      "number": 1,
+      "count": 8,
+      "title": "The script runs as one task",
+      "flow": "request"
+    },
+    {
+      "from": 46,
+      "number": 2,
+      "count": 8,
+      "title": "A runs at once",
+      "flow": "request"
+    },
+    {
+      "from": 82,
+      "number": 3,
+      "count": 8,
+      "title": "setTimeout hands B to a timer",
+      "flow": "request"
+    },
+    {
+      "from": 128,
+      "number": 4,
+      "count": 8,
+      "title": "The promise queues C as a microtask",
+      "flow": "write"
+    },
+    {
+      "from": 174,
+      "number": 5,
+      "count": 8,
+      "title": "D, and the script is done",
+      "flow": "request"
+    },
+    {
+      "from": 220,
+      "number": 6,
+      "count": 8,
+      "title": "Microtasks first: C",
+      "flow": "write"
+    },
+    {
+      "from": 270,
+      "number": 6,
+      "count": 7,
+      "title": "C queues C again",
+      "flow": "error"
+    },
+    {
+      "from": 320,
+      "number": 7,
+      "count": 7,
+      "title": "The page freezes",
+      "flow": "error"
+    },
+    {
+      "from": 380,
+      "number": 7,
+      "count": 8,
+      "title": "Then the next task: B",
+      "flow": "request"
+    },
+    {
+      "from": 412,
+      "number": 7,
+      "count": 9,
+      "title": "B runs, and sets B again",
+      "flow": "request"
+    },
+    {
+      "from": 462,
+      "number": 8,
+      "count": 9,
+      "title": "A frame, when one is due",
+      "flow": "response"
+    },
+    {
+      "from": 508,
+      "number": 9,
+      "count": 9,
+      "title": "The page stays responsive",
+      "flow": "request"
+    }
+  ],
+  "clicks": [
+    {
+      "frame": 270,
+      "name": "Chain microtasks forever",
+      "box": {
+        "x": 1584,
+        "y": 253.671875,
+        "w": 312,
+        "h": 125.484375
+      },
+      "at": {
+        "x": 1615,
+        "y": 276.671875
+      }
+    },
+    {
+      "frame": 380,
+      "name": "Chain microtasks forever",
+      "box": {
+        "x": 1584,
+        "y": 253.671875,
+        "w": 312,
+        "h": 125.484375
+      },
+      "at": {
+        "x": 1615,
+        "y": 276.671875
+      }
+    },
+    {
+      "frame": 412,
+      "name": "Chain timeouts forever",
+      "box": {
+        "x": 1584,
+        "y": 387.15625,
+        "w": 312,
+        "h": 125.484375
+      },
+      "at": {
+        "x": 1615,
+        "y": 410.15625
+      }
+    }
+  ]
+}

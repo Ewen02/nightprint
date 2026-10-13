@@ -274,9 +274,9 @@ export default function HomePage() {
         <HomeRegister
           eyebrow="Drawing register"
           title="Eight machines on the drawing board."
-          lead="One is issued each week, and which one comes next is put to a vote on X. Pick a sheet to pull it from the drawer."
+          lead="One is issued each week, and you can say which one comes next on X. Pick a sheet to pull it from the drawer."
           sheets={registerSheets()}
-          action={{ label: "Vote for MCH-003 on X", href: site.poll }}
+          action={{ label: "Suggest the next one on X", href: site.poll }}
           families={Object.entries(familyLabels).map(([id, label]) => ({ id, label }))}
         />
       </PageSection>

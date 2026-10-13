@@ -10,10 +10,13 @@ export const site = {
     "Software architecture patterns as interactive 3D machines in your browser. Follow a request step by step, flip a what-if switch, and read a sourced explainer.",
   locale: "en_US",
   author: { name: "Ewen", url: "https://x.com/ewenlq", handle: "@ewenlq" },
-  /** The X poll that picks MCH-003, posted 12 Oct 2026: a click lands on the vote. */
-  poll: "https://x.com/ewenlq/status/2109719771000262873",
-  /** The machines the poll offers: the others take no vote. */
-  pollFor: ["MCH-003", "MCH-004", "MCH-005", "MCH-007"] as readonly string[],
+  /**
+   * Where the next machine is put to a vote: an X poll's own URL while one runs, so a click
+   * lands on the vote; the profile between polls, to suggest one.
+   */
+  poll: "https://x.com/ewenlq",
+  /** The machines a running poll offers; none between polls. */
+  pollFor: [] as readonly string[],
   /** The public repository: its commits are the full build log. */
   repo: "https://github.com/Ewen02/nightprint",
 } as const;

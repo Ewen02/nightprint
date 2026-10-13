@@ -56,6 +56,20 @@ const BUILD_LOG_SHOWN = 8;
 /** Newest first. Posted on X as it happens. */
 const buildLog: readonly BuildLogEntry[] = [
   {
+    key: "mch-003",
+    date: "13 OCT",
+    flow: "response",
+    tag: "SHIP",
+    text: "MCH-003 is out: Redis cache-aside. Miss, load, cache for 60 s; then three ways to serve a stale price or flood the database.",
+  },
+  {
+    key: "listing",
+    date: "13 OCT",
+    flow: "write",
+    tag: "UI",
+    text: "Machines now show the code they run, the line of each step lit. A switch rewrites the code the way it reads.",
+  },
+  {
     key: "mch-002",
     date: "13 OCT",
     flow: "response",

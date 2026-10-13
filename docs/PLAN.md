@@ -77,6 +77,14 @@ Le plan prévoyait trois week-ends de build et un lancement autour du 1er novemb
 
 Chaque week-end se termine par une livraison en ligne. L'ordre des machines après le lancement est indicatif.
 
+**Candidates pour un prochain sondage** (13/10), sans rien changer à l'ordre en cours :
+
+- **Webhook idempotent** : un fournisseur de paiement renvoie le même événement après un délai d'expiration. Interrupteurs : sans clé de dédoublonnage (crédité deux fois) ; clé réservée mais jamais libérée en cas d'échec (le renvoi est perdu) ; empreinte prise sur chaque événement (un remboursement est avalé). Source : le brouillon IETF « The Idempotency-Key HTTP Header Field ».
+- **Délestage et réponse partielle** : un service lent ; on rejette d'abord les requêtes spéculatives, puis on répond avec ce qui est prêt à l'échéance. Source : Google SRE, « Handling Overload ».
+- **Rotation des jetons de rafraîchissement** : jeton d'accès court, jeton de rafraîchissement remplacé à chaque usage. Interrupteur : un seul jeton partagé entre deux applications, qui déconnecte partout. Source : RFC 9700 (OAuth 2.0 Security Best Current Practice).
+
+MCH-007 (Redis cache-aside) gagne deux interrupteurs : sans dédoublonnage des requêtes, la clé qui expire envoie toutes les requêtes à la base en même temps ; sans service du périmé pendant le rafraîchissement, la latence monte d'un coup. Source : RFC 5861 (`stale-while-revalidate`).
+
 ## Architecture et stack
 
 Un monorepo de cinq paquets et deux apps, le site et les vidéos. La règle hexagonale que le site explique, il l'applique : le moteur ne connaît ni React, ni three, ni le DOM, et les `package.json` l'imposent.

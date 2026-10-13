@@ -7,7 +7,6 @@ export { Balloon, type BalloonProps } from "./atoms/balloon";
 export { Button, type ButtonProps } from "./atoms/button";
 export { ButtonLink, type ButtonLinkProps } from "./atoms/button-link";
 export { ChevronIcon, type ChevronIconProps } from "./atoms/chevron-icon";
-export { DimensionLine, type DimensionLineProps } from "./atoms/dimension-line";
 export { FilterChip, type FilterChipProps } from "./atoms/filter-chip";
 export { FlowDot, type FlowDotProps } from "./atoms/flow-dot";
 export { FlowTag, type FlowTagProps } from "./atoms/flow-tag";
@@ -15,16 +14,11 @@ export { IconButton, type IconButtonProps } from "./atoms/icon-button";
 export { LogoMark, type LogoMarkProps } from "./atoms/logo-mark";
 export { MonoLabel, type MonoLabelProps } from "./atoms/mono-label";
 export { NavLink, type NavLinkProps } from "./atoms/nav-link";
-export { Readout, type ReadoutProps } from "./atoms/readout";
 export { StepDot, type StepDotProps } from "./atoms/step-dot";
 export { Toggle, type ToggleProps } from "./atoms/toggle";
-export { Well, type WellProps } from "./atoms/well";
 
 export { Breadcrumb, type BreadcrumbItem } from "./molecules/breadcrumb";
-export { ConventionCard, type ConventionCardProps } from "./molecules/convention-card";
 export { DimensionLabel, type DimensionLabelProps } from "./molecules/dimension-label";
-export { type Fact, FactList, type FactListProps } from "./molecules/fact-list";
-export { FeatureCard, type FeatureCardProps } from "./molecules/feature-card";
 export { FilterChips, type FilterChipsProps, type FilterOption } from "./molecules/filter-chips";
 export { FlowLegend, type FlowLegendProps } from "./molecules/flow-legend";
 export { LogLine, type LogLineProps } from "./molecules/log-line";
@@ -63,10 +57,6 @@ export { BuildLog, type BuildLogEntry, type BuildLogProps } from "./organisms/bu
 export { Cartouche, type CartoucheProps } from "./organisms/cartouche";
 export { ConceptArticle, type ConceptArticleProps } from "./organisms/concept-article";
 export {
-  DrawingConventions,
-  type DrawingConventionsProps,
-} from "./organisms/drawing-conventions";
-export {
   DrawingLegend,
   type DrawingLegendProps,
   type LegendCallout,
@@ -80,8 +70,6 @@ export { DrawingSheet, type DrawingSheetProps } from "./organisms/drawing-sheet"
 export { EventLog, type EventLogEntry, type EventLogProps } from "./organisms/event-log";
 export { HomeHeader, type HomeHeaderProps } from "./organisms/home-header";
 export { HomeIntro, type HomeIntroProps } from "./organisms/home-intro";
-export { MachineCatalogue, type MachineCatalogueProps } from "./organisms/machine-catalogue";
-export { ReadingGuide, type ReadingGuideProps } from "./organisms/reading-guide";
 export {
   type RunScenario,
   type RunStep,
@@ -96,14 +84,8 @@ export { StoryNote, type StoryNoteProps } from "./organisms/story-note";
 export { Transport, type TransportProps } from "./organisms/transport";
 export { UpNext, type UpNextProps } from "./organisms/up-next";
 export { type WhatIfItem, WhatIfPanel, type WhatIfPanelProps } from "./organisms/what-if-panel";
-export {
-  type WhatIfCase,
-  WhatIfShowcase,
-  type WhatIfShowcaseProps,
-} from "./organisms/what-if-showcase";
 
 export { HomeTemplate, type HomeTemplateProps } from "./templates/home-template";
-export { MachineFigure, type MachineFigureProps } from "./templates/machine-figure";
 export { MachineTemplate, type MachineTemplateProps } from "./templates/machine-template";
 export { PageSection, type PageSectionProps } from "./templates/page-section";
 export { type StoryBeat, StoryTemplate, type StoryTemplateProps } from "./templates/story-template";

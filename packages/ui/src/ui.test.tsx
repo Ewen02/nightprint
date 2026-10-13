@@ -2,7 +2,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Balloon } from "./atoms/balloon";
 import { ButtonLink } from "./atoms/button-link";
-import { DimensionLine } from "./atoms/dimension-line";
 import { IconButton } from "./atoms/icon-button";
 import { LogoMark } from "./atoms/logo-mark";
 import { Breadcrumb } from "./molecules/breadcrumb";
@@ -24,7 +23,6 @@ import { DrawingLegend } from "./organisms/drawing-legend";
 import { DrawingRegister } from "./organisms/drawing-register";
 import { HomeHeader } from "./organisms/home-header";
 import { HomeIntro } from "./organisms/home-intro";
-import { MachineCatalogue } from "./organisms/machine-catalogue";
 import { RunTranscript } from "./organisms/run-transcript";
 import { ScenarioPicker } from "./organisms/scenario-picker";
 import { SiteFooter } from "./organisms/site-footer";
@@ -33,8 +31,6 @@ import { StoryNote } from "./organisms/story-note";
 import { Transport } from "./organisms/transport";
 import { UpNext } from "./organisms/up-next";
 import { WhatIfPanel } from "./organisms/what-if-panel";
-import { WhatIfShowcase } from "./organisms/what-if-showcase";
-import { MachineFigure } from "./templates/machine-figure";
 import { MachineTemplate } from "./templates/machine-template";
 import { StoryTemplate } from "./templates/story-template";
 
@@ -71,9 +67,8 @@ describe("atoms", () => {
     expect(link).not.toContain("<button");
   });
 
-  it("keeps the logo mark and dimension lines out of the accessibility tree", () => {
+  it("keeps the logo mark out of the accessibility tree", () => {
     expect(html(<LogoMark />)).toContain('aria-hidden="true"');
-    expect(html(<DimensionLine value="4.2 ms" />)).toContain('aria-hidden="true"');
   });
 });
 
@@ -227,52 +222,9 @@ describe("organisms", () => {
         title="Machines you can run."
         lead="Lead."
         primaryAction={{ label: "Run", href: "/m/x/" }}
-        facts={[{ term: "Live", value: "1 machine" }]}
       />,
     );
     expect(intro.match(/<h1/g)).toHaveLength(1);
-    expect(intro).toContain("<dt");
-  });
-
-  it("labels each home section by its own h2", () => {
-    const catalogue = html(
-      <MachineCatalogue
-        eyebrow="The catalogue"
-        title="Eight machines."
-        lead="Lead."
-        machines={[{ code: "MCH-002", title: "Event loop", family: "frontend" }]}
-        filters={[{ id: "all", label: "All" }]}
-        filter="all"
-      />,
-    );
-    expect(catalogue).toContain('aria-labelledby="catalogue-title"');
-    expect(catalogue).toContain('<h2 id="catalogue-title"');
-    expect(catalogue).toContain('aria-label="Filter by family"');
-  });
-
-  it("pairs each what-if switch with the log it changes", () => {
-    const showcase = html(
-      <WhatIfShowcase
-        eyebrow="What if…"
-        title="Swap Postgres."
-        lead={["Flip the switch."]}
-        cases={[
-          {
-            id: "swap",
-            caption: "Step 5 / 7 · InMemory answers",
-            label: "Swap Postgres for InMemory",
-            description: "d",
-            tone: "safe",
-            on: true,
-            log: [{ key: "a", time: "0.08 ms", flow: "write", tag: "WRITE", text: "map.set" }],
-          },
-        ]}
-      />,
-    );
-    expect(showcase).toContain('role="switch"');
-    expect(showcase).toContain('aria-checked="true"');
-    expect(showcase).toContain('aria-live="polite"');
-    expect(showcase).toContain("map.set");
   });
 
   it("holds a machine page's content in its main landmark, between header and footer", () => {
@@ -441,14 +393,6 @@ describe("end of a scenario", () => {
 
   it("keeps the step bars while the scenario runs", () => {
     expect(transport(null)).toContain('aria-current="step"');
-  });
-});
-
-describe("templates", () => {
-  it("frames a machine as a figure, its zone numbers hidden from screen readers", () => {
-    const figure = html(<MachineFigure stage={<canvas />} transport={<section />} />);
-    expect(figure).toMatch(/^<figure/);
-    expect(figure).toContain('aria-hidden="true"');
   });
 });
 

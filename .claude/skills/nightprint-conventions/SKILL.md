@@ -23,8 +23,8 @@ Read `CLAUDE.md` first for the architecture. This skill is the code-level checkl
 
 - **Atoms** (`src/atoms`): one element, styled only with tokens. No layout of siblings, no data shapes. Examples: `Balloon`, `Button`, `IconButton`, `Toggle`, `FlowTag`, `StepDot`, `MonoLabel`, `ChevronIcon`.
 - **Molecules** (`src/molecules`): a few atoms doing one job together. Examples: `PartRow`, `WhatIfSwitch`, `StepDots`, `StepCaption`, `LogLine`, `MachineCard`, `Breadcrumb`.
-- **Organisms** (`src/organisms`): a section of a page with its own heading or landmark, built from molecules. Examples: `BillOfParts`, `WhatIfPanel`, `Transport`, `EventLog`, `Cartouche`, `SiteHeader`, `MachineCatalogue`, `ConceptArticle`.
-- **Templates** (`src/templates`): layout only, slots as `ReactNode` props, no data. `MachineTemplate`, `HomeTemplate`, `MachineFigure`.
+- **Organisms** (`src/organisms`): a section of a page with its own heading or landmark, built from molecules. Examples: `BillOfParts`, `WhatIfPanel`, `Transport`, `EventLog`, `Cartouche`, `SiteHeader`, `DrawingRegister`, `ConceptArticle`.
+- **Templates** (`src/templates`): layout only, slots as `ReactNode` props, no data. `MachineTemplate`, `HomeTemplate`, `StoryTemplate`.
 - **Pages**: the Next.js routes in `apps/web/app` plus `MachineView`, which owns the player and fills the template.
 - A level imports only from levels below it. Never import an organism into a molecule.
 - UI components take plain props (`flow: FlowName`, `number`, `label`), never engine types. The engine-to-props mapping lives in `machine-view-model.ts`.

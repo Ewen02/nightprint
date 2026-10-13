@@ -4,7 +4,6 @@ import { ButtonLink } from "../atoms/button-link";
 import { ChevronIcon } from "../atoms/chevron-icon";
 import { FlowDot } from "../atoms/flow-dot";
 import { MonoLabel } from "../atoms/mono-label";
-import { type Fact, FactList } from "../molecules/fact-list";
 
 interface Action {
   readonly label: string;
@@ -18,7 +17,6 @@ export interface HomeIntroProps {
   readonly lead: string;
   readonly primaryAction: Action;
   readonly secondaryAction?: Action;
-  readonly facts?: readonly Fact[];
   /** A last line that says what scrolling does: "Scroll, and it runs". */
   readonly cue?: string;
 }
@@ -38,7 +36,6 @@ export function HomeIntro({
   lead,
   primaryAction,
   secondaryAction,
-  facts = [],
   cue,
 }: HomeIntroProps) {
   return (
@@ -59,11 +56,6 @@ export function HomeIntro({
           </ButtonLink>
         )}
       </div>
-      {facts.length > 0 && (
-        <div className={`mt-2 ${ENTER}`} style={after(4)}>
-          <FactList facts={facts} />
-        </div>
-      )}
       {/* The cue comes last, once the rest has landed. */}
       {cue && (
         <p

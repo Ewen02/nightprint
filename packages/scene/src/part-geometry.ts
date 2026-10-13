@@ -127,7 +127,64 @@ function configuratorPieces(size: Vec3): BufferGeometry[] {
   return pieces;
 }
 
+/** A conveyor tray: a base, two rails, and dividers marking the places items wait in. */
+function queuePieces(size: Vec3): BufferGeometry[] {
+  const [w, h, d] = size;
+  const along = w >= d ? "x" : "z";
+  const length = Math.max(w, d);
+  const width = Math.min(w, d);
+  const base = h * 0.45;
+  const rail = 0.06;
+  const pieces = [
+    box([w, base, d], [0, -h / 2 + base / 2, 0]),
+    box(sized(along, length, h - base, rail), onAxis(along, 0, base / 2, width / 2 - rail / 2)),
+    box(sized(along, length, h - base, rail), onAxis(along, 0, base / 2, -(width / 2 - rail / 2))),
+  ];
+  const slots = Math.max(2, Math.round(length / 0.5));
+  for (let i = 1; i < slots; i++) {
+    const at = -length / 2 + (i * length) / slots;
+    pieces.push(
+      box(
+        sized(along, 0.025, (h - base) * 0.6, width - rail * 2),
+        onAxis(along, at, -h / 2 + base + (h - base) * 0.3, 0),
+      ),
+    );
+  }
+  return pieces;
+}
+
+/** A stack of frames: slabs piled with a gap between them, the top one set slightly in. */
+function stackPieces(size: Vec3): BufferGeometry[] {
+  const [w, h, d] = size;
+  const frames = 4;
+  const gap = 0.05;
+  const slab = (h - gap * (frames - 1)) / frames;
+  return Array.from({ length: frames }, (_, i) => {
+    const inset = i === frames - 1 ? 0.08 : 0;
+    return box([w - inset, slab, d - inset], [0, -h / 2 + slab / 2 + i * (slab + gap), 0]);
+  });
+}
+
+/** A module on a plinth with a raised panel on its lid, like an adapter without a plug. */
+function actorPieces(size: Vec3): BufferGeometry[] {
+  const [w, h, d] = size;
+  return [
+    box([w + 0.08, PLINTH, d + 0.08], [0, -h / 2 + PLINTH / 2, 0]),
+    box([w, h - PLINTH, d], [0, PLINTH / 2, 0]),
+    box([w - 0.24, LID, d - 0.24], [0, h / 2 + LID / 2, 0]),
+  ];
+}
+
 function pieces(part: PartModelSpec): BufferGeometry[] {
+  if (part.kind === "queue" && part.shape.type === "box") {
+    return queuePieces(part.shape.size);
+  }
+  if (part.kind === "store" && part.shape.type === "box") {
+    return stackPieces(part.shape.size);
+  }
+  if (part.kind === "actor" && part.shape.type === "box") {
+    return actorPieces(part.shape.size);
+  }
   if (part.kind === "configurator" && part.shape.type === "box") {
     return configuratorPieces(part.shape.size);
   }

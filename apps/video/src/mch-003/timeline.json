@@ -1,0 +1,105 @@
+{
+  "source": "https://nightprint.dev/m/redis-cache-aside/",
+  "footage": {
+    "frames": 860,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "scale": 1.5
+  },
+  "steps": [
+    {
+      "from": 0,
+      "number": 1,
+      "count": 6,
+      "title": "A page asks for product 42",
+      "flow": "request"
+    },
+    {
+      "from": 84,
+      "number": 2,
+      "count": 6,
+      "title": "Redis first: a miss",
+      "flow": "request"
+    },
+    {
+      "from": 159,
+      "number": 3,
+      "count": 6,
+      "title": "On a miss, the database",
+      "flow": "request"
+    },
+    {
+      "from": 234,
+      "number": 4,
+      "count": 6,
+      "title": "Cache it for 60 seconds",
+      "flow": "write"
+    },
+    {
+      "from": 309,
+      "number": 5,
+      "count": 6,
+      "title": "The page gets 10 €",
+      "flow": "response"
+    },
+    {
+      "from": 384,
+      "number": 6,
+      "count": 6,
+      "title": "The next read: a hit",
+      "flow": "response"
+    },
+    {
+      "from": 474,
+      "number": 2,
+      "count": 6,
+      "title": "Redis first: a miss",
+      "flow": "request"
+    },
+    {
+      "from": 482,
+      "number": 2,
+      "count": 6,
+      "title": "A hot key expires under load",
+      "flow": "error"
+    },
+    {
+      "from": 572,
+      "number": 3,
+      "count": 6,
+      "title": "50 identical queries",
+      "flow": "error"
+    },
+    {
+      "from": 652,
+      "number": 4,
+      "count": 6,
+      "title": "50 SETs of the same value",
+      "flow": "write"
+    },
+    {
+      "from": 732,
+      "number": 6,
+      "count": 6,
+      "title": "Let one request load it",
+      "flow": "request"
+    }
+  ],
+  "clicks": [
+    {
+      "frame": 482,
+      "name": "Expire a hot key under load",
+      "box": {
+        "x": 1584,
+        "y": 575.046875,
+        "w": 312,
+        "h": 105.1875
+      },
+      "at": {
+        "x": 1615,
+        "y": 598.046875
+      }
+    }
+  ]
+}

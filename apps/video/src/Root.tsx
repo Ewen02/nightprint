@@ -6,6 +6,7 @@ import { ViolationFrame } from "./components/ViolationFrame";
 import { WhatIfCard } from "./components/WhatIfCard";
 import { MCH001_FRAMES, Mch001 } from "./mch-001/Mch001";
 import { MCH002_FRAMES, Mch002 } from "./mch-002/Mch002";
+import { MCH003_FRAMES, Mch003 } from "./mch-003/Mch003";
 
 export function RemotionRoot() {
   return (
@@ -22,6 +23,14 @@ export function RemotionRoot() {
         id="MCH-002"
         component={Mch002}
         durationInFrames={MCH002_FRAMES}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="MCH-003"
+        component={Mch003}
+        durationInFrames={MCH003_FRAMES}
         fps={30}
         width={1920}
         height={1080}

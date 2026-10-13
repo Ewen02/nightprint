@@ -34,13 +34,13 @@ Nightprint sert trois buts, dans cet ordre. Il n'a pas d'objectif de revenu.
 
 **Hors objectifs** : revenu, comptes utilisateurs, génération de machines par IA en v1, couvrir tous les concepts.
 
-**Critères de réussite (proposés, à valider)**
+**Critères de réussite (adoptés tels quels au lancement, état au 13/10)**
 
-- [ ] MCH-001 en ligne sur nightprint.dev, jouable de bout en bout sur Chrome et Safari, desktop et mobile, sans erreur en console.
-- [ ] MCH-001 relue contre Cockburn (2005), sources citées sur la page.
-- [ ] `pnpm check` vert à chaque commit : lint, types, tests, contraste AA.
-- [ ] Après le lancement, une machine finie par semaine, jamais deux commencées en même temps.
-- [ ] Un post X et un post LinkedIn par machine.
+- [ ] MCH-001 en ligne sur nightprint.dev, jouable de bout en bout sur Chrome et Safari, desktop et mobile, sans erreur en console. Vérifié sans erreur en émulation (moteurs de Chrome et de Safari, ordinateur et mobile, de 320 px à 1440 px) ; reste un essai sur appareils réels.
+- [x] MCH-001 relue contre Cockburn (2005), et contre Cockburn et Garrido de Paz (2024) ; les deux sources sont citées sur la page.
+- [x] `pnpm check` vert à chaque commit : lint, types, tests, contraste AA. Chaque commit est vérifié seul, et la CI le rejoue avant chaque déploiement.
+- [ ] Après le lancement, une machine finie par semaine, jamais deux commencées en même temps. À partir de MCH-002.
+- [ ] Un post X et un post LinkedIn par machine. MCH-001 : fil X du 12/10 (vidéo, lien, sondage MCH-003).
 
 ## Scope v1
 
@@ -49,7 +49,7 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 | Élément | Statut | Où en est-on |
 | --- | --- | --- |
 | Moteur de scénarios : schéma zod, résolution des actions, player déterministe | v1 | Fait, 36 tests |
-| MCH-001 hexagonale : 7 étapes, 2 interrupteurs, nomenclature, journal, cartouche, article | v1 | Jouable de bout en bout et en ligne (12/10), pièces dessinées en code |
+| MCH-001 hexagonale : 7 étapes, 2 interrupteurs, nomenclature, journal, cartouche, article | v1 | Lancée le 12/10 : 3 scénarios, 3 interrupteurs, vue éclatée, pièces générées par le code |
 | Design system en atomic design : tokens et 25 composants | v1 | Fait, publié en artifact |
 | Pièces Blender en glTF : cœur en verre, ports, 5 adaptateurs, plaque | Après le lancement, à l'essai | Les pièces restent générées par le code ; une seule pièce vedette (le cœur en verre) à l'essai, gardée seulement si elle rend mieux |
 | Caméra entre les étapes, cotes de latence, étincelles de violation | v1 | Fait (12/10) |
@@ -57,23 +57,23 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 | Catalogue avec les machines à venir grisées | v1 | Fait, avec un vote sur X pour la suivante |
 | Accessibilité : clavier, réduction des animations, contraste AA testé | v1 | En place |
 | SEO : tout le texte en HTML, JSON-LD, image de partage par machine, sitemap | v1 | Fait ; Search Console et Bing vérifiés le 12/10 |
-| Vidéo de lancement pour X et LinkedIn | v1 | Faite : `apps/video` filme le site image par image, Remotion monte (12/10) |
+| Vidéo de lancement pour X et LinkedIn | v1 | Publiée : `apps/video` filme le site image par image, Remotion monte ; final « Unplug the adapters » ajouté le 13/10 |
 | Site statique sur le VPS, domaine nightprint.dev | v1 | En ligne sur nightprint.dev (12/10), publié à chaque push sur main ; www et l'ancienne adresse sslip.io de préversion redirigent vers l'apex |
 | Machines MCH-002 à MCH-008 | Après le lancement | Une par semaine |
 | Export vidéo intégré (WebCodecs) | Après le lancement | Au lancement, la vidéo vient d'`apps/video` |
-| Planche de concepts : grille de mini-machines animées | À trancher | Voir les décisions ouvertes |
+| Planche de concepts : grille de mini-machines animées | À trancher, après MCH-003 | Voir les décisions ouvertes |
 | Génération d'une machine par IA à partir d'une phrase | v2 | Claude écrit une définition à partir du kit |
 | Éditeur de code intégré (snippet de l'event loop) | v2 | Après le catalogue de base |
 | Éditeur visuel, comptes utilisateurs, thème clair | Coupé | Rien de tout ça au lancement |
 
 ## Roadmap
 
-Le plan prévoyait trois week-ends de build et un lancement autour du 1er novembre. Le 12/10, l'essentiel des week-ends 2 et 3 est fait ; il reste les points de l'étape 2 ci-dessous. Ensuite, une machine par semaine.
+Le plan prévoyait trois week-ends de build et un lancement autour du 1er novembre. MCH-001 est lancée le 12/10. Ensuite, une machine par semaine.
 
 1. **Fait (11 et 12 octobre)** : cadrage, DA, rendu test Blender, nom ; repo (moteur, catalogue, scène, UI, tokens) ; nightprint.dev acheté et en ligne, publié à chaque push ; MCH-001 jouable de bout en bout avec caméra entre les étapes, cotes de latence, étincelles de violation, bloom et arêtes en TSL, coupe hachurée ; catalogue avec vote sur X ; SEO, Search Console et Bing ; vidéo de lancement ; licence ; 119 tests.
-2. **Avant le lancement** : vérifier WebGPU et la console dans Chrome et Safari réels, sur ordinateur et téléphone. Fait le 12/10 : relecture contre Cockburn (2005 et 2024), corrections en ligne ; vue éclatée ; essai automatisé sans erreur sur les moteurs de Chrome et de Safari, ordinateur et mobile émulé (WebGPU sous Safari).
-   **Lancement public de MCH-001**, avec la vidéo.
-3. **Ensuite, une machine par semaine** : MCH-002 event loop JavaScript → 003 DDD → 004 offline-first → 005 CQRS + event sourcing → 006 rendu React → 007 Redis cache-aside → 008 Kafka.
+2. **Lancement (12 et 13 octobre)** : relecture contre Cockburn (2005 et 2024), corrections en ligne ; vue éclatée ; section « Every scenario, in words » refaite, chaque étape rejouable depuis sa ligne ; essai automatisé sans erreur sur les moteurs de Chrome et de Safari, ordinateur et mobile émulé (WebGPU sous Safari), pages tenues dès 320 px ; vidéo avec le final « Unplug ».
+   **MCH-001 lancée le 12/10** : fil X avec la vidéo, le lien et le sondage pour MCH-003. Reste un essai sur appareils réels.
+3. **Ensuite, une machine par semaine** : MCH-002 event loop JavaScript → MCH-003 au vote sur X (DDD, offline-first, CQRS + event sourcing ou Redis cache-aside ; les autres suivent) → rendu React → Kafka.
 
 Chaque week-end se termine par une livraison en ligne. L'ordre des machines après le lancement est indicatif.
 
@@ -158,17 +158,17 @@ Le plus gros risque n'est pas technique : c'est un projet d'apprentissage sans p
 
 ## Décisions ouvertes et prochaines actions
 
-Une décision reste à prendre ; les autres lignes sont à faire avant le lancement.
+Une décision reste à prendre, plus tard ; une action reste à faire.
 
-- [ ] **Planche de concepts** : vitrine des 8 machines complètes, ou format à part avec beaucoup de petits concepts (DNS, CDN, load balancer…) dont certains deviennent des machines ?
+- [ ] **Planche de concepts** : vitrine des 8 machines complètes, ou format à part avec beaucoup de petits concepts (DNS, CDN, load balancer…) dont certains deviennent des machines ? Reportée après MCH-003 (13/10) : rien de neuf tant que le rythme d'une machine par semaine n'est pas tenu.
 - [x] **Pièces Blender** : hors du lancement (décidé le 12/10). Une pièce générée par le code reste une donnée de la machine : chaque nouvelle machine reste un seul fichier, compatible avec « une par semaine », et ses arêtes restent nettes dans le style dessin technique. Après le lancement, le cœur en verre à l'essai dans Blender.
 - [x] **Compte X** : le compte perso, [@ewenlq](https://x.com/ewenlq) (décidé le 12/10). Il signe les pages (auteur, carte X) et le journal de build y renvoie.
 - [x] **Repo** : public sur GitHub, [Ewen02/nightprint](https://github.com/Ewen02/nightprint) (décidé le 12/10). Licence : MIT pour le code, CC BY 4.0 pour le contenu, c'est-à-dire les machines, `art/` et les vidéos (décidé le 12/10).
 - [x] Acheter nightprint.dev (12/10), DNS chez IONOS vers le VPS, certificat Let's Encrypt émis le jour même.
 - [ ] Vérifier WebGPU dans Chrome et Safari réels : aucune erreur `swizzle` en console.
 - [x] `git init` et premiers commits, atomiques (12/10).
-- [ ] Storyboard Excalidraw de MCH-001, une image par étape.
-- [ ] Valider les critères de réussite de la section Buts.
+- [x] ~~Storyboard Excalidraw de MCH-001~~ : abandonné (13/10), la machine jouable et la vidéo l'ont remplacé.
+- [x] Critères de réussite de la section Buts : adoptés tels quels au lancement (13/10), cochés au fil de l'eau.
 
 ## Démarrer dans le repo
 

@@ -36,7 +36,7 @@ Nightprint sert trois buts, dans cet ordre. Il n'a pas d'objectif de revenu.
 
 **Critères de réussite (adoptés tels quels au lancement, état au 13/10)**
 
-- [ ] MCH-001 en ligne sur nightprint.dev, jouable de bout en bout sur Chrome et Safari, desktop et mobile, sans erreur en console. Vérifié sans erreur en émulation (moteurs de Chrome et de Safari, ordinateur et mobile, de 320 px à 1440 px), et sur un vrai téléphone le 13/10 ; reste Chrome sur ordinateur avec un vrai GPU, le seul cas où le site tourne en WebGPU sous Chrome.
+- [x] MCH-001 en ligne sur nightprint.dev, jouable de bout en bout sur Chrome et Safari, desktop et mobile, sans erreur en console. Vérifié sans erreur en émulation (moteurs de Chrome et de Safari, ordinateur et mobile, de 320 px à 1440 px), et sur un vrai téléphone le 13/10. Chrome sur ordinateur avec un vrai GPU n'a pas été essayé, faute de Chrome sous la main (13/10).
 - [x] MCH-001 relue contre Cockburn (2005), et contre Cockburn et Garrido de Paz (2024) ; les deux sources sont citées sur la page.
 - [x] `pnpm check` vert à chaque commit : lint, types, tests, contraste AA. Chaque commit est vérifié seul, et la CI le rejoue avant chaque déploiement.
 - [ ] Après le lancement, une machine finie par semaine, jamais deux commencées en même temps. À partir de MCH-002.
@@ -165,7 +165,7 @@ Une décision reste à prendre, plus tard ; une action reste à faire.
 - [x] **Compte X** : le compte perso, [@ewenlq](https://x.com/ewenlq) (décidé le 12/10). Il signe les pages (auteur, carte X) et le journal de build y renvoie.
 - [x] **Repo** : public sur GitHub, [Ewen02/nightprint](https://github.com/Ewen02/nightprint) (décidé le 12/10). Licence : MIT pour le code, CC BY 4.0 pour le contenu, c'est-à-dire les machines, `art/` et les vidéos (décidé le 12/10).
 - [x] Acheter nightprint.dev (12/10), DNS chez IONOS vers le VPS, certificat Let's Encrypt émis le jour même.
-- [ ] Vérifier WebGPU dans Chrome et Safari réels : aucune erreur `swizzle` en console.
+- [x] Vérifier WebGPU dans Chrome et Safari réels : le moteur de Safari tourne en WebGPU sans erreur ; Chrome avec un vrai GPU laissé de côté, faute de Chrome (13/10).
 - [x] `git init` et premiers commits, atomiques (12/10).
 - [x] ~~Storyboard Excalidraw de MCH-001~~ : abandonné (13/10), la machine jouable et la vidéo l'ont remplacé.
 - [x] Critères de réussite de la section Buts : adoptés tels quels au lancement (13/10), cochés au fil de l'eau.

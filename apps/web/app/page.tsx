@@ -63,6 +63,13 @@ const buildLog: readonly BuildLogEntry[] = [
     text: "MCH-003 is up for a vote on X: domain-driven design, offline-first sync, CQRS + event sourcing or Redis cache-aside.",
   },
   {
+    key: "launch",
+    date: "12 OCT",
+    flow: "response",
+    tag: "LAUNCH",
+    text: "MCH-001 launches on X: send an order through the hexagon, flip a what-if switch, one machine a week from here.",
+  },
+  {
     key: "live",
     date: "12 OCT",
     flow: "response",

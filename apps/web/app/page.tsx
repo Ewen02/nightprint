@@ -1,4 +1,4 @@
-import { hexagonal, machines } from "@nightprint/catalog";
+import { hexagonal, machines, projects } from "@nightprint/catalog";
 import { flows } from "@nightprint/engine";
 import {
   BuildLog,
@@ -8,6 +8,7 @@ import {
   HomeHeader,
   HomeIntro,
   HomeTemplate,
+  MachineCard,
   PageSection,
   SectionHeading,
   SiteFooter,
@@ -21,7 +22,7 @@ import { routeLatency, runDuration, scenarioFor } from "../components/home-view-
 import { JsonLd } from "../components/json-ld";
 import { formatMs } from "../components/machine-view-model";
 import { annotatedPlan, legendCallouts } from "../components/plan-view-model";
-import { previewImage, site, socialMetadata, websiteJsonLd } from "../components/seo";
+import { machinePath, previewImage, site, socialMetadata, websiteJsonLd } from "../components/seo";
 import { siteFooter } from "../components/site-footer-content";
 
 // The topic first: nobody searches for the name yet.
@@ -229,6 +230,7 @@ export default function HomePage() {
             { label: "Machines", href: "#machines" },
             { label: "Legend", href: "#legend" },
             { label: "Build log", href: "#build-log" },
+            { label: "Projects", href: "#projects" },
           ]}
           status={{ label: `${featured.code} is running`, href: "#run" }}
         />
@@ -295,7 +297,39 @@ export default function HomePage() {
         />
       </PageSection>
 
-      <PageSection id="legend" tone="surface" entrance="rise">
+      <PageSection id="projects" tone="surface" entrance="rise">
+        <div className="flex flex-col gap-8">
+          <div className="max-w-155">
+            <SectionHeading
+              id="projects-title"
+              eyebrow="Real projects"
+              title="Real repositories, drawn from their code."
+              lead={[
+                "The same drawing, made from a real repository: its packages and folders become parts, and every route between two of them stands on an import the code has. Each machine here was read against its code before it was published.",
+                "Draw a public JavaScript or TypeScript repository yourself: it takes two or three minutes, and the drawing gets a link you can share.",
+              ]}
+            />
+          </div>
+          <ol className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
+            {projects.map((project) => (
+              <li key={project.code}>
+                <MachineCard
+                  code={project.code}
+                  title={project.title}
+                  family={familyLabels[project.family]}
+                  href={machinePath(project)}
+                  summary={project.summary}
+                />
+              </li>
+            ))}
+          </ol>
+          <div className="flex flex-wrap gap-3">
+            <ButtonLink href="/import/">Draw your repository</ButtonLink>
+          </div>
+        </div>
+      </PageSection>
+
+      <PageSection id="legend" entrance="rise">
         <HomeLegend
           eyebrow="Legend"
           title="Learn to read one machine, and you can read them all."
@@ -317,7 +351,7 @@ export default function HomePage() {
         />
       </PageSection>
 
-      <PageSection id="build-log" entrance="rise">
+      <PageSection id="build-log" tone="surface" entrance="rise">
         <BuildLog
           eyebrow="Build log"
           title="Built in public, one machine a week."

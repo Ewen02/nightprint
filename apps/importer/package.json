@@ -6,6 +6,7 @@
   "scripts": {
     "survey": "tsx --env-file-if-exists=.env src/cli.ts survey",
     "draw": "tsx --env-file-if-exists=.env src/cli.ts draw",
+    "serve": "tsx --env-file-if-exists=.env src/main.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

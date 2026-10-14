@@ -57,6 +57,8 @@ export class ComposeError extends Error {
     message: string,
     /** What the last blueprint still broke, when it came to that. */
     readonly issues: readonly string[] = [],
+    /** What the answers cost before it gave up: a failed drawing is paid for too. */
+    readonly usage?: Usage,
   ) {
     super(message);
   }
@@ -166,10 +168,10 @@ export async function compose(
     usage.cacheWriteTokens += message.usage.cache_creation_input_tokens ?? 0;
     usage.outputTokens += message.usage.output_tokens;
     if (message.stop_reason === "refusal") {
-      throw new ComposeError("The model declined to draw this repository.");
+      throw new ComposeError("The model declined to draw this repository.", [], usage);
     }
     if (message.stop_reason === "max_tokens") {
-      throw new ComposeError("The blueprint did not fit in one answer.");
+      throw new ComposeError("The blueprint did not fit in one answer.", [], usage);
     }
     const read = blueprintOf(message);
     issues = read.issues;
@@ -197,7 +199,7 @@ export async function compose(
       },
     );
   }
-  throw new ComposeError(`No valid blueprint after ${MAX_ATTEMPTS} attempts.`, issues);
+  throw new ComposeError(`No valid blueprint after ${MAX_ATTEMPTS} attempts.`, issues, usage);
 }
 
 /**

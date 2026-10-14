@@ -67,6 +67,7 @@ export function drawRepository(deps: DrawDeps) {
       model: MODEL,
       attempts: composed.attempts,
       cost,
+      blueprint: composed.blueprint,
       machine: composed.input,
     };
     await deps.store.put(drawing);

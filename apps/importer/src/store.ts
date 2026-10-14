@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import type { Blueprint } from "@nightprint/blueprint";
 import type { MachineInput } from "@nightprint/engine";
 
 /**
@@ -20,6 +21,11 @@ export interface Drawing {
   readonly attempts: number;
   /** Dollars, at list price. */
   readonly cost: number;
+  /**
+   * The model's plan, kept so a better layout can redraw every machine without asking the
+   * model again. Drawings made before 15/10/2026 have none.
+   */
+  readonly blueprint?: Blueprint;
   readonly machine: MachineInput;
 }
 

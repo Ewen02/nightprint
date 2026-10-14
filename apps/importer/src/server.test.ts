@@ -75,6 +75,7 @@ interface Reply {
   readonly result?: {
     readonly repo: string;
     readonly sha: string;
+    readonly blueprint?: unknown;
     readonly attempts: number;
     readonly machine: { readonly code: string; readonly slug: string };
   };
@@ -137,6 +138,12 @@ describe("the importer's API", () => {
     expect((await read(again)).result?.sha).toBe(SHA);
     const shared = await fetch(`${base}/api/drawings/acme/tiny/${SHA}`);
     expect(shared.status).toBe(200);
+  });
+
+  it("keeps the model's plan with the machine, so a better layout can redraw it for free", async () => {
+    await start();
+    const done = await settle((await read(await post("acme/tiny"))).id);
+    expect(done.result?.blueprint).toMatchObject({ title: "Tiny" });
   });
 
   it("refuses what is not a repository, and says why GitHub could not find one", async () => {

@@ -1,0 +1,24 @@
+{
+  "name": "@nightprint/importer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "survey": "tsx --env-file-if-exists=.env src/cli.ts survey",
+    "draw": "tsx --env-file-if-exists=.env src/cli.ts draw",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.133.0",
+    "@nightprint/blueprint": "workspace:*",
+    "@nightprint/engine": "workspace:*",
+    "zod": "4.6.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
+  }
+}

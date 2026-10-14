@@ -28,6 +28,7 @@ not in the v1 scope waits for the launch, and open decisions are not yours to se
 | `packages/scene` | React Three Fiber components, plus the DOM label layer over the canvas. | engine, tokens, ui atoms, three, R3F |
 | `packages/blueprint` | Real projects: `surveyRepo` reads a repository's units and imports, `checkBlueprint` holds a model's plan to them, `drawMachine` lays it out. Pure. | engine, zod, typescript |
 | `apps/web` | Pages: Next.js routes, `MachineView` (owns the player) and `machine-view-model.ts` (engine → UI props). | everything |
+| `apps/importer` | Reads a repository (local or GitHub) and asks Claude for its blueprint: `pnpm --filter @nightprint/importer draw <repo> …`. | blueprint, engine, Anthropic SDK |
 | `apps/video` | Videos for X and LinkedIn (Remotion 4.0.535): captures the live site frame by frame, motion design on top. Read its README first. | tokens, remotion |
 | `art/` | Blender files and reference renders. Not part of the build. | — |
 
@@ -44,6 +45,10 @@ The engine never imports React, three or the DOM. Workspace packages export Type
 
 ## Rules
 
+- **A real project's machine shows only what its code shows.** Every route between two parts of
+  the code stands on an import the survey found, its arrowhead the way the import runs; a what-if
+  adds an import the code does not have. `checkBlueprint` enforces it, and its issues go back to
+  the model until the blueprint keeps every rule.
 - **A machine is data.** `defineMachine()` validates it at import time for every combination of
   actions: a step that references a removed route fails tests and build. Adding a machine = one
   file in `packages/catalog/src` + one line in `index.ts`.

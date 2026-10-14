@@ -182,7 +182,8 @@ function pieces(part: PartModelSpec): BufferGeometry[] {
   if (part.kind === "store" && part.shape.type === "box") {
     return stackPieces(part.shape.size);
   }
-  if (part.kind === "actor" && part.shape.type === "box") {
+  // A module of a real project is drawn like an actor: a block on a plinth, no plug.
+  if ((part.kind === "actor" || part.kind === "module") && part.shape.type === "box") {
     return actorPieces(part.shape.size);
   }
   if (part.kind === "configurator" && part.shape.type === "box") {

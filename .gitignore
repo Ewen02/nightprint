@@ -16,3 +16,5 @@ apps/video/public/footage/
 # Secrets: the importer reads its API keys from apps/importer/.env.
 .env
 .env.*
+# Documents the variables, without values.
+!.env.example

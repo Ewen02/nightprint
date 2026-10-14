@@ -1,0 +1,107 @@
+# ---------------------------------------------------------------------------
+# Publication de nightprint-importer, l'API derrière nightprint.dev/api
+#
+# Conteneur Node : image construite ici, poussée sur ghcr.io, tirée par le VPS.
+# Convention : ~/infra/CLAUDE.md, cas A dans un monorepo (§ 7 bis) : la clé de
+# déploiement de ce dépôt est la même que pour le site, sa liste blanche porte
+# les deux unités :
+#   command="/home/ubuntu/infra/scripts/deploy.sh nightprint nightprint-importer",…
+#
+# Secrets : les quatre du site (SSH_HOST, SSH_USER, SSH_KEY, SSH_KNOWN_HOSTS).
+# Ceux de l'API (ANTHROPIC_API_KEY, GITHUB_TOKEN) vivent dans
+# ~/apps/nightprint-importer/.env sur le serveur, jamais ici.
+# ---------------------------------------------------------------------------
+
+name: Importer
+
+on:
+  push:
+    branches: [main]
+    # Seul ce qui entre dans l'image la reconstruit.
+    paths:
+      - 'apps/importer/**'
+      - 'packages/blueprint/**'
+      - 'packages/engine/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/importer.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Image nightprint-importer
+    runs-on: ubuntu-latest
+    concurrency:
+      group: importer-build-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Une image ne part que si ce qu'elle embarque passe ses tests.
+      - run: pnpm turbo run typecheck test --filter "@nightprint/importer..."
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/importer/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/ewen02/nightprint-importer:latest
+            ghcr.io/ewen02/nightprint-importer:${{ github.sha }}
+          platforms: linux/amd64
+          cache-from: type=gha,scope=importer
+          cache-to: type=gha,mode=max,scope=importer
+          provenance: false
+
+  deploy:
+    name: Déploiement sur le VPS
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: importer-deploy-${{ github.ref }}
+      cancel-in-progress: false
+    environment: production
+
+    steps:
+      - name: Clé de déploiement
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Déploiement
+        # deploy.sh tire l'image de ce commit, attend l'état healthy, et revient
+        # à la précédente sinon : son code de sortie fait échouer ce job.
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes \
+              -o UserKnownHostsFile=~/.ssh/known_hosts -o ConnectTimeout=15 \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              "deploy nightprint-importer ${{ github.sha }}"
+
+      - name: Vérification
+        run: curl -fsS https://nightprint.dev/api/health
+
+      - name: Effacement de la clé
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

@@ -1,0 +1,14 @@
+# The build reads the root manifests and three workspace packages, nothing else:
+# no secrets, no footage, no other app.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!packages/engine/
+!packages/blueprint/
+!apps/importer/
+**/node_modules
+**/dist
+**/.turbo
+**/.env
+**/.env.*

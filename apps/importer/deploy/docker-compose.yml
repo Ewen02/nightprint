@@ -1,0 +1,63 @@
+# ---------------------------------------------------------------------------
+# nightprint-importer — ~/apps/nightprint-importer/docker-compose.yml on the VPS
+#
+# From ~/infra/templates/docker-compose.yml, personal profile. Differs in one
+# thing: a named volume at /data, where the drawings (one JSON file per
+# repository and commit) and the daily spend live. Losing it costs a few
+# cents of redrawing, nothing more: the machine stays disposable.
+#
+# Caddy reaches it as nightprint-importer:3000 on web-nightprint-importer, for
+# nightprint.dev/api/* only.
+# ---------------------------------------------------------------------------
+
+name: nightprint-importer
+
+x-durcissement: &durcissement
+  user: "1001:1001"
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  init: true
+  restart: unless-stopped
+
+services:
+  app:
+    <<: *durcissement
+    image: ghcr.io/ewen02/nightprint-importer:${IMAGE_TAG:-latest}
+    container_name: nightprint-importer
+    env_file:
+      - .env
+
+    # No ports: Caddy alone is published (CLAUDE.md § 3.1).
+
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1.0
+
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    volumes:
+      - data:/data
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 2s
+
+    # A drawing in progress takes up to three minutes; past this, it is asked again.
+    stop_grace_period: 30s
+
+    networks:
+      - web-nightprint-importer
+
+volumes:
+  data:
+
+networks:
+  web-nightprint-importer:
+    external: true

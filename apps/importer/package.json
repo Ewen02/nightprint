@@ -7,6 +7,7 @@
     "survey": "tsx --env-file-if-exists=.env src/cli.ts survey",
     "draw": "tsx --env-file-if-exists=.env src/cli.ts draw",
     "serve": "tsx --env-file-if-exists=.env src/main.ts",
+    "build": "esbuild src/main.ts --bundle --platform=node --target=node22 --format=esm --legal-comments=none --outfile=dist/server.mjs \"--banner:js=import { createRequire } from 'node:module'; import { fileURLToPath } from 'node:url'; const require = createRequire(import.meta.url); const __filename = fileURLToPath(import.meta.url);\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@types/node": "22.20.5",
+    "esbuild": "0.28.2",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
     "vitest": "5.0.3"

@@ -352,9 +352,17 @@ export function scenarioEnding(
   );
   // A run that ends on an error did not finish well: it froze, or it left something wrong.
   const stuck = snapshot.step.flow === "error";
+  // A real project's machine models no time: its run says how it ended, not after how long.
+  const ms = last?.atMs ?? 0;
+  const title =
+    ms > 0
+      ? `${stuck ? "Went wrong after" : "Done in"} ${formatMs(ms)}`
+      : stuck
+        ? "Went wrong"
+        : "Done";
   return {
     count: snapshot.stepCount,
-    title: `${stuck ? "Went wrong after" : "Done in"} ${formatMs(last?.atMs ?? 0)}`,
+    title,
     result: last?.text ?? "",
     suggestions,
   };

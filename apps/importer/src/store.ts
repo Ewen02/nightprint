@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { MachineInput } from "@nightprint/engine";
@@ -38,7 +39,8 @@ function drawingPath(dir: string, repo: string, sha: string): string {
 /** Writes through a temporary file, so a reader never sees half a file. */
 async function writeAtomically(path: string, content: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  const temporary = `${path}.${process.pid}.tmp`;
+  // Unique per write: two drawings of one repository may end together.
+  const temporary = `${path}.${randomUUID()}.tmp`;
   await writeFile(temporary, content);
   await rename(temporary, path);
 }

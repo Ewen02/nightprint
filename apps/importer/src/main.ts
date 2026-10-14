@@ -38,7 +38,7 @@ const handler = createImporter({
   }),
   store,
   ledger,
-  queue: new JobQueue<Drawing>({ maxWaiting: 5, keepFor: 60 * 60 * 1000 }),
+  queue: new JobQueue<Drawing>({ concurrency: 2, maxWaiting: 5, keepFor: 60 * 60 * 1000 }),
   visitors: new VisitorLimit(number(env.DRAWINGS_PER_VISITOR, 5), 24 * 60 * 60 * 1000),
   dailyBudget: number(env.DAILY_BUDGET_USD, 1),
   estimate: number(env.DRAWING_ESTIMATE_USD, 0.05),

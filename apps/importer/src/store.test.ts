@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { JobQueue, QueueFullError, VisitorLimit } from "./jobs";
+import { JobQueue, QueueFullError, type Report, VisitorLimit } from "./jobs";
 import { type Drawing, dayOf, fileDrawingStore, fileLedger } from "./store";
 
 let dir: string;
@@ -78,6 +78,22 @@ describe("JobQueue", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(queue.get(id)).toMatchObject({ stage: "done", result: "drawn" });
     expect(queue.get(second)).toMatchObject({ stage: "done", result: "second" });
+  });
+
+  it("runs as many jobs at once as it is told, the rest waiting in line", async () => {
+    const queue = new JobQueue<string>({ concurrency: 2, maxWaiting: 2, keepFor: 1000 });
+    const starts = (report: Report) => {
+      report("reading");
+      return new Promise<string>(() => {});
+    };
+    const ids = [
+      queue.add(starts, () => ""),
+      queue.add(starts, () => ""),
+      queue.add(starts, () => ""),
+    ];
+    await Promise.resolve();
+    expect(ids.map((id) => queue.get(id)?.stage)).toEqual(["reading", "reading", "queued"]);
+    expect(queue.pending).toBe(3);
   });
 
   it("refuses work past its waiting room", () => {

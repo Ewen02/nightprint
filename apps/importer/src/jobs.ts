@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 /**
- * Drawings run one at a time, in order, in this process. A job lives in memory: a restart
+ * Drawings run a few at a time, in order, in this process. A job lives in memory: a restart
  * loses the ones in flight, and their visitors simply ask again. The cache, not the queue,
  * is what lasts.
  */
@@ -22,7 +22,9 @@ export interface JobState<Result> {
 export type Report = (stage: "reading" | "surveying" | "drawing", attempt?: number) => void;
 
 export interface QueueOptions {
-  /** Jobs waiting beyond the running one; past it, `add` refuses. */
+  /** Jobs run at once: a drawing mostly waits on GitHub and the model, not on the CPU. */
+  readonly concurrency?: number;
+  /** Jobs waiting beyond the running ones; past it, `add` refuses. */
   readonly maxWaiting: number;
   /** How long a finished job stays readable, in ms. */
   readonly keepFor: number;
@@ -36,7 +38,7 @@ export class QueueFullError extends Error {
 export class JobQueue<Result> {
   readonly #jobs = new Map<string, { state: JobState<Result>; finishedAt?: number }>();
   readonly #waiting: { id: string; run: (report: Report) => Promise<Result> }[] = [];
-  #running = false;
+  #running = 0;
   readonly #options: QueueOptions;
   readonly #now: () => number;
 
@@ -45,9 +47,9 @@ export class JobQueue<Result> {
     this.#now = options.now ?? Date.now;
   }
 
-  /** Jobs not finished yet: the running one and those waiting. */
+  /** Jobs not finished yet: those running and those waiting. */
   get pending(): number {
-    return this.#waiting.length + (this.#running ? 1 : 0);
+    return this.#waiting.length + this.#running;
   }
 
   add(run: (report: Report) => Promise<Result>, describe: (error: unknown) => string): string {
@@ -77,14 +79,14 @@ export class JobQueue<Result> {
   }
 
   async #next(): Promise<void> {
-    if (this.#running) {
+    if (this.#running >= (this.#options.concurrency ?? 1)) {
       return;
     }
     const job = this.#waiting.shift();
     if (!job) {
       return;
     }
-    this.#running = true;
+    this.#running += 1;
     const set = (state: JobState<Result>, finished = false) => {
       this.#jobs.set(job.id, finished ? { state, finishedAt: this.#now() } : { state });
     };
@@ -97,7 +99,7 @@ export class JobQueue<Result> {
         true,
       );
     } finally {
-      this.#running = false;
+      this.#running -= 1;
       void this.#next();
     }
   }

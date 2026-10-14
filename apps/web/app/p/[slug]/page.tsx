@@ -2,12 +2,21 @@ import { getMachine, projects } from "@nightprint/catalog";
 import { ConceptArticle, PageSection, RunTranscript, SiteFooter } from "@nightprint/ui";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLd } from "../../../components/json-ld";
 import { MachineView } from "../../../components/machine-view";
 import {
   conceptRevision,
   glossaryTerms,
   runTranscript,
 } from "../../../components/machine-view-model";
+import {
+  machineDescription,
+  machineHeadline,
+  machineJsonLd,
+  machinePath,
+  previewImage,
+  socialMetadata,
+} from "../../../components/seo";
 import { siteFooter } from "../../../components/site-footer-content";
 
 interface ProjectPageProps {
@@ -16,6 +25,7 @@ interface ProjectPageProps {
 
 export const dynamicParams = false;
 
+/** Real projects in the catalogue: read against their code before they were added. */
 export function generateStaticParams() {
   return projects.map((m) => ({ slug: m.slug }));
 }
@@ -25,11 +35,23 @@ export async function generateMetadata({ params }: ProjectPageProps): Promise<Me
   if (!machine) {
     return {};
   }
-  // A real project's machine is a preview until it is read against its code: kept out of search.
+  const title = machineHeadline(machine);
+  const description = machineDescription(machine);
   return {
-    title: `${machine.title}, drawn from its code`,
-    description: machine.summary,
-    robots: { index: false, follow: false },
+    title,
+    description,
+    alternates: { canonical: machinePath(machine) },
+    ...socialMetadata({
+      title,
+      description,
+      path: machinePath(machine),
+      image: previewImage(
+        machinePath(machine),
+        machine.revised,
+        `${title}, drawn as a machine and seen from above, with its title block`,
+      ),
+      article: { modifiedTime: machine.revised },
+    }),
   };
 }
 
@@ -43,6 +65,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       machine={machine}
       after={
         <>
+          <JsonLd data={machineJsonLd(machine)} />
           <PageSection id="concept">
             <ConceptArticle
               title={machine.summary}

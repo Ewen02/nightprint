@@ -21,21 +21,38 @@ export const site = {
   repo: "https://github.com/Ewen02/nightprint",
 } as const;
 
-/** The canonical path of a machine page, with the trailing slash the export serves. */
-export function machinePath(machine: Pick<Machine, "slug">): string {
-  return `/m/${machine.slug}/`;
+/** A real project drawn from its repository (PRJ), not a concept (MCH). */
+export function isProject(machine: Pick<Machine, "code">): boolean {
+  return machine.code.startsWith("PRJ-");
 }
 
-/** "Hexagonal architecture (ports and adapters)": the concept under all its names. */
-export function machineHeadline(machine: Pick<Machine, "title" | "aliases">): string {
+/**
+ * The canonical path of a machine page, with the trailing slash the export serves:
+ * concepts under /m/, real projects under /p/.
+ */
+export function machinePath(machine: Pick<Machine, "slug" | "code">): string {
+  return `${isProject(machine) ? "/p" : "/m"}/${machine.slug}/`;
+}
+
+/**
+ * "Hexagonal architecture (ports and adapters)": the concept under all its names. A real
+ * project is searched for by its name: "Nightprint's architecture".
+ */
+export function machineHeadline(machine: Pick<Machine, "title" | "aliases" | "code">): string {
+  if (isProject(machine)) {
+    return `${machine.title}'s architecture`;
+  }
   return machine.aliases.length > 0
     ? `${machine.title} (${machine.aliases.join(", ")})`
     : machine.title;
 }
 
-/** The search snippet: what the page is, then the concept in one sentence. */
+/** The search snippet: what the page is, then the concept, or the project, in one sentence. */
 export function machineDescription(machine: Machine): string {
-  return `${machineHeadline(machine)}, explained as a 3D machine you can run. ${machine.summary}`;
+  const what = isProject(machine)
+    ? "drawn from its repository as a 3D machine you can run"
+    : "explained as a 3D machine you can run";
+  return `${machineHeadline(machine)}, ${what}. ${machine.summary}`;
 }
 
 /**
@@ -111,6 +128,13 @@ export function websiteJsonLd() {
   };
 }
 
+/** A real project's repository, from the source it was drawn from: "https://github.com/o/n". */
+function repositoryOf(machine: Machine): string | undefined {
+  const url = machine.sources[0]?.url;
+  const match = url ? /^(https:\/\/github\.com\/[^/]+\/[^/]+)/.exec(url) : null;
+  return match?.[1];
+}
+
 /**
  * A machine page: the article, what it is about, what it was checked against, and
  * the breadcrumb the header shows. Only what the page shows, and its revision day
@@ -128,11 +152,18 @@ export function machineJsonLd(machine: Machine) {
         headline: machine.title,
         ...(machine.aliases.length > 0 && { alternativeHeadline: machineHeadline(machine) }),
         description: machine.summary,
-        about: {
-          "@type": "Thing",
-          name: machine.title,
-          ...(machine.aliases.length > 0 && { alternateName: machine.aliases }),
-        },
+        // A concept is a Thing; a real project is the code it was drawn from.
+        about: isProject(machine)
+          ? {
+              "@type": "SoftwareSourceCode",
+              name: machine.title,
+              ...(repositoryOf(machine) && { codeRepository: repositoryOf(machine) }),
+            }
+          : {
+              "@type": "Thing",
+              name: machine.title,
+              ...(machine.aliases.length > 0 && { alternateName: machine.aliases }),
+            },
         author: { "@id": ids.author },
         citation: machine.sources.map((source) => ({
           "@type": "CreativeWork",

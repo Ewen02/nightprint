@@ -82,7 +82,7 @@ export { EventLog, type EventLogEntry, type EventLogProps } from "./organisms/ev
 export { type FieldNote, FieldNotes, type FieldNotesProps } from "./organisms/field-notes";
 export { HomeHeader, type HomeHeaderProps } from "./organisms/home-header";
 export { HomeIntro, type HomeIntroProps } from "./organisms/home-intro";
-export { ImportPanel, type ImportPanelProps, type ImportStage } from "./organisms/import-panel";
+export { ImportPanel, type ImportPanelProps } from "./organisms/import-panel";
 export {
   type RunScenario,
   type RunStep,

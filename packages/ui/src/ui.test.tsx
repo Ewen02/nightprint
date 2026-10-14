@@ -698,23 +698,18 @@ describe("import", () => {
     expect(html(<RepoForm {...form} value="acme/shop" busy />)).toMatch(/disabled=""/);
   });
 
-  it("reads out where the drawing is, and why it failed", () => {
+  it("reads out why the drawing failed", () => {
     const panel = html(
       <ImportPanel
         eyebrow="Import"
         title="Draw a repository."
         lead={[]}
         form={form}
-        stages={[
-          { label: "Reading the repository", state: "done" },
-          { label: "Drawing", state: "current" },
-        ]}
         error="No public repository acme/missing."
       />,
     );
     expect(panel).toMatch(/<input id="repo"[^>]*aria-describedby="import-status"/);
     expect(panel).toMatch(/<div id="import-status" role="status" aria-live="polite"/);
-    expect(panel).toContain("<ol");
     expect(panel).toContain("No public repository acme/missing.");
   });
 });

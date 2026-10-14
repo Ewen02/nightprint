@@ -363,7 +363,6 @@ export function ImportView() {
         placeholder: "owner/name or https://github.com/owner/name",
         action: "Draw it",
       }}
-      stages={[]}
       error={view.kind === "failed" ? view.error : undefined}
       note="JavaScript and TypeScript, public repositories, up to 3,000 source files. A repository is drawn once per commit; a few new drawings per visitor a day."
     />

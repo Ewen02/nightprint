@@ -3,7 +3,7 @@ import { claudeAsk } from "./compose";
 import { drawRepository } from "./drawing";
 import { JobQueue, VisitorLimit } from "./jobs";
 import { createImporter } from "./server";
-import { readGitHubAt, resolveGitHub } from "./sources";
+import { commitsSince, readGitHubAt, resolveGitHub } from "./sources";
 import { type Drawing, fileDrawingStore, fileLedger } from "./store";
 
 /**
@@ -30,6 +30,7 @@ const log = (event: Record<string, unknown>) =>
 
 const handler = createImporter({
   resolve: (repo) => resolveGitHub(repo, github),
+  commitsSince: (commit, base) => commitsSince(commit, base, github),
   draw: drawRepository({
     read: (commit) => readGitHubAt(commit, github),
     ask: claudeAsk(),

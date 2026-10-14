@@ -25,6 +25,8 @@ let dir: string;
 let server: Server;
 let base: string;
 let resolved: GitHubRepo[];
+/** The commit the repository's default branch points at, as GitHub would answer. */
+let head: string;
 
 /** The importer with GitHub and the model replaced: everything else is the real thing. */
 async function start(overrides: Partial<ImporterDeps> = {}, ...answers: Answer[]) {
@@ -37,8 +39,9 @@ async function start(overrides: Partial<ImporterDeps> = {}, ...answers: Answer[]
       if (repo.name === "missing") {
         throw new SourceError("not-found", "No public repository acme/missing.");
       }
-      return { ...commit, name: repo.name };
+      return { ...commit, name: repo.name, sha: head };
     },
+    commitsSince: async () => 3,
     draw: drawRepository({
       read: async (c) => ({ ...snapshot, name: `${c.owner}/${c.name}`, ref: c.sha }),
       ask: async () => {
@@ -72,6 +75,7 @@ interface Reply {
   readonly id?: string;
   readonly stage?: string;
   readonly error?: string;
+  readonly newer?: { readonly sha: string; readonly commits?: number };
   readonly result?: {
     readonly repo: string;
     readonly sha: string;
@@ -83,11 +87,11 @@ interface Reply {
 // The server under test wrote it: these tests check its shape field by field.
 const read = async (response: Response) => (await response.json()) as Reply;
 
-const post = (repo: unknown) =>
+const post = (repo: unknown, redraw?: boolean) =>
   fetch(`${base}/api/drawings`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ repo }),
+    body: JSON.stringify({ repo, redraw }),
   });
 
 /** Polls a job until it finishes. */
@@ -105,6 +109,7 @@ async function settle(id: string | undefined): Promise<Reply> {
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), "importer-"));
   resolved = [];
+  head = SHA;
 });
 afterEach(async () => {
   await new Promise((resolve) => server.close(resolve));
@@ -144,6 +149,24 @@ describe("the importer's API", () => {
     await start();
     const done = await settle((await read(await post("acme/tiny"))).id);
     expect(done.result?.blueprint).toMatchObject({ title: "Tiny" });
+  });
+
+  it("opens the last drawing when the repository has moved on, and redraws only when asked", async () => {
+    await start({}, answer(valid), answer(valid));
+    await settle((await read(await post("acme/tiny"))).id);
+
+    head = "b".repeat(40);
+    const behind = await post("acme/tiny");
+    expect(behind.status).toBe(200);
+    expect(await read(behind)).toMatchObject({
+      stage: "done",
+      result: { sha: SHA },
+      newer: { sha: head, commits: 3 },
+    });
+
+    const redrawn = await settle((await read(await post("acme/tiny", true))).id);
+    expect(redrawn.result?.sha).toBe(head);
+    expect((await read(await post("acme/tiny"))).result?.sha).toBe(head);
   });
 
   it("refuses what is not a repository, and says why GitHub could not find one", async () => {

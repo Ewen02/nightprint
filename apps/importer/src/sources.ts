@@ -153,6 +153,21 @@ export async function resolveGitHub(
   };
 }
 
+const compareInfo = z.object({ ahead_by: z.number() });
+
+/** How many commits `commit` is ahead of an older one: one API call, undefined when unknown. */
+export async function commitsSince(
+  commit: GitHubCommit,
+  base: string,
+  options: GitHubOptions = {},
+): Promise<number | undefined> {
+  const { api } = githubApi(options);
+  return api(commit, `/compare/${base}...${commit.sha}`, compareInfo).then(
+    (c) => c.ahead_by,
+    () => undefined,
+  );
+}
+
 /**
  * Reads a public repository at a known commit: one API call for the tree, then each wanted
  * file from raw.githubusercontent.com, which the API's rate limit does not count.

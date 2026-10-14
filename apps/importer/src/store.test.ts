@@ -33,6 +33,22 @@ describe("fileDrawingStore", () => {
     expect(await store.get("acme/tiny", "c".repeat(40))).toBeUndefined();
   });
 
+  it("points at each repository's latest drawing", async () => {
+    const store = fileDrawingStore(dir);
+    expect(await store.latest("acme/tiny")).toBeUndefined();
+    await store.put(drawing);
+    const later = { ...drawing, sha: "c".repeat(40), drawnAt: "2026-10-15T09:00:00.000Z" };
+    await store.put(later);
+    expect((await store.latest("acme/tiny"))?.sha).toBe(later.sha);
+  });
+
+  it("finds the newest drawing of a repository drawn before pointers existed", async () => {
+    const store = fileDrawingStore(dir);
+    await store.put(drawing);
+    await rm(join(dir, "drawings", "acme", "tiny", "latest.json"));
+    expect((await store.latest("acme/tiny"))?.sha).toBe(drawing.sha);
+  });
+
   it("refuses a key that would climb out of its folder", async () => {
     const store = fileDrawingStore(dir);
     await expect(store.get("acme/..", drawing.sha)).rejects.toThrow(/Not a repository/);

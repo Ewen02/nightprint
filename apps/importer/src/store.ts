@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Blueprint } from "@nightprint/blueprint";
 import type { MachineInput } from "@nightprint/engine";
 
 /**
  * What the server keeps on its one volume: each drawing, keyed by the commit it was drawn
- * from, so a repository is drawn once per commit; and what the model cost each day, so the
- * budget holds across restarts.
+ * from, so a repository is drawn once per commit, with a pointer to each repository's last
+ * one; and what the model cost each day, so the budget holds across restarts.
  */
 
 /** A repository's machine, as drawn from one commit. */
@@ -33,13 +33,20 @@ const OWNER = /^[A-Za-z0-9-]+$/;
 const NAME = /^[A-Za-z0-9._-]+$/;
 const SHA = /^[0-9a-f]{40}$/;
 
-/** A file name per drawing, from parts already checked: nothing in them climbs out of `dir`. */
-function drawingPath(dir: string, repo: string, sha: string): string {
+/** A repository's folder, from parts already checked: nothing in them climbs out of `dir`. */
+function repoDir(dir: string, repo: string): string {
   const [owner = "", name = ""] = repo.toLowerCase().split("/");
-  if (!OWNER.test(owner) || !NAME.test(name) || /^\.+$/.test(name) || !SHA.test(sha)) {
+  if (!OWNER.test(owner) || !NAME.test(name) || /^\.+$/.test(name)) {
+    throw new Error(`Not a repository: ${repo}`);
+  }
+  return join(dir, "drawings", owner, name);
+}
+
+function drawingPath(dir: string, repo: string, sha: string): string {
+  if (!SHA.test(sha)) {
     throw new Error(`Not a repository at a commit: ${repo}@${sha}`);
   }
-  return join(dir, "drawings", owner, name, `${sha}.json`);
+  return join(repoDir(dir, repo), `${sha}.json`);
 }
 
 /** Writes through a temporary file, so a reader never sees half a file. */
@@ -64,15 +71,43 @@ async function readJson(path: string): Promise<unknown> {
 
 export interface DrawingStore {
   get(repo: string, sha: string): Promise<Drawing | undefined>;
+  /** The repository's most recent drawing, whatever its commit. */
+  latest(repo: string): Promise<Drawing | undefined>;
   put(drawing: Drawing): Promise<void>;
 }
 
 export function fileDrawingStore(dir: string): DrawingStore {
+  // Written by `put` alone, from a drawing the engine accepted.
+  const get = async (repo: string, sha: string) =>
+    (await readJson(drawingPath(dir, repo, sha))) as Drawing | undefined;
   return {
-    // Written by `put` alone, from a drawing the engine accepted.
-    get: async (repo, sha) => (await readJson(drawingPath(dir, repo, sha))) as Drawing | undefined,
-    put: (drawing) =>
-      writeAtomically(drawingPath(dir, drawing.repo, drawing.sha), JSON.stringify(drawing)),
+    get,
+    latest: async (repo) => {
+      const folder = repoDir(dir, repo);
+      const pointer = await readJson(join(folder, "latest.json"));
+      const sha =
+        typeof pointer === "object" && pointer !== null && "sha" in pointer
+          ? pointer.sha
+          : undefined;
+      if (typeof sha === "string") {
+        return get(repo, sha);
+      }
+      // Drawn before pointers existed: the newest drawing in the folder.
+      const names = await readdir(folder).catch((): string[] => []);
+      const drawings = await Promise.all(
+        names.filter((n) => /^[0-9a-f]{40}\.json$/.test(n)).map((n) => get(repo, n.slice(0, 40))),
+      );
+      return drawings
+        .filter((d): d is Drawing => d !== undefined)
+        .sort((a, b) => b.drawnAt.localeCompare(a.drawnAt))[0];
+    },
+    put: async (drawing) => {
+      await writeAtomically(drawingPath(dir, drawing.repo, drawing.sha), JSON.stringify(drawing));
+      await writeAtomically(
+        join(repoDir(dir, drawing.repo), "latest.json"),
+        JSON.stringify({ sha: drawing.sha }),
+      );
+    },
   };
 }
 

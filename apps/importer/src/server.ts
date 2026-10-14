@@ -8,8 +8,10 @@ import { type Drawing, type DrawingStore, dayOf, type Ledger } from "./store";
  * The importer's HTTP API, behind Caddy on nightprint.dev/api:
  *
  *   GET  /api/health                         for the deployment's healthcheck
- *   POST /api/drawings { repo }              the drawing of a repository at its latest commit:
- *                                            at once when cached, else a job to follow
+ *   POST /api/drawings { repo, redraw? }     the drawing of a repository at its latest commit:
+ *                                            at once when cached; else its last drawing, with
+ *                                            how far behind it is; else, or with `redraw`, a
+ *                                            job to follow
  *   GET  /api/drawings/<job id>              where that job is
  *   GET  /api/drawings/<owner>/<name>/<sha>  a cached drawing, for a shared link
  *
@@ -20,6 +22,8 @@ import { type Drawing, type DrawingStore, dayOf, type Ledger } from "./store";
 export interface ImporterDeps {
   readonly resolve: (repo: GitHubRepo) => Promise<GitHubCommit>;
   readonly draw: (commit: GitHubCommit, report: Report) => Promise<Drawing>;
+  /** How many commits `commit` is ahead of an older one, when GitHub can tell. */
+  readonly commitsSince?: (commit: GitHubCommit, base: string) => Promise<number | undefined>;
   readonly store: DrawingStore;
   readonly ledger: Ledger;
   readonly queue: JobQueue<Drawing>;
@@ -91,6 +95,8 @@ export function createImporter(deps: ImporterDeps) {
       typeof body === "object" && body !== null && "repo" in body && typeof body.repo === "string"
         ? body.repo
         : undefined;
+    const redraw =
+      typeof body === "object" && body !== null && "redraw" in body && body.redraw === true;
     const repo = input === undefined ? undefined : parseGitHubRepo(input);
     if (!repo) {
       throw new HttpError(400, "Give a GitHub repository: owner/name or its address.");
@@ -110,6 +116,15 @@ export function createImporter(deps: ImporterDeps) {
       runningState.stage !== "failed"
     ) {
       return { status: 202, body: runningState };
+    }
+    // A newer commit is no reason to spend: the last drawing opens, and the visitor decides.
+    const last = redraw ? undefined : await deps.store.latest(key);
+    if (last) {
+      const commits = await deps.commitsSince?.(commit, last.sha);
+      return {
+        status: 200,
+        body: { stage: "done", result: last, newer: { sha: commit.sha, commits } },
+      };
     }
     const spent = await deps.ledger.spent(dayOf(now()));
     if (spent + (deps.queue.pending + 1) * deps.estimate > deps.dailyBudget) {

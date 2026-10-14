@@ -21,6 +21,7 @@ export { TokenTag, type TokenTagProps } from "./atoms/token-tag";
 
 export { Breadcrumb, type BreadcrumbItem } from "./molecules/breadcrumb";
 export { DimensionLabel, type DimensionLabelProps } from "./molecules/dimension-label";
+export { FileGrid, type FileGridProps } from "./molecules/file-grid";
 export { FilterChips, type FilterChipsProps, type FilterOption } from "./molecules/filter-chips";
 export { FlowLegend, type FlowLegendProps } from "./molecules/flow-legend";
 export { LogLine, type LogLineProps } from "./molecules/log-line";
@@ -46,6 +47,12 @@ export { StageAction, type StageActionProps } from "./molecules/stage-action";
 export { StepCaption, type StepCaptionProps } from "./molecules/step-caption";
 export { type StepDotItem, StepDots, type StepDotsProps } from "./molecules/step-dots";
 export { StepRuler, type StepRulerProps } from "./molecules/step-ruler";
+export {
+  type SketchBox,
+  type SketchLine,
+  SurveySketch,
+  type SurveySketchProps,
+} from "./molecules/survey-sketch";
 export { TermEntry, type TermEntryProps } from "./molecules/term-entry";
 export { WhatIfSwitch, type WhatIfSwitchProps } from "./molecules/what-if-switch";
 export { Wordmark, type WordmarkProps } from "./molecules/wordmark";
@@ -72,6 +79,7 @@ export {
 } from "./organisms/drawing-register";
 export { DrawingSheet, type DrawingSheetProps } from "./organisms/drawing-sheet";
 export { EventLog, type EventLogEntry, type EventLogProps } from "./organisms/event-log";
+export { type FieldNote, FieldNotes, type FieldNotesProps } from "./organisms/field-notes";
 export { HomeHeader, type HomeHeaderProps } from "./organisms/home-header";
 export { HomeIntro, type HomeIntroProps } from "./organisms/home-intro";
 export { ImportPanel, type ImportPanelProps, type ImportStage } from "./organisms/import-panel";

@@ -7,6 +7,7 @@ import { LogoMark } from "./atoms/logo-mark";
 import { TextField } from "./atoms/text-field";
 import { TokenTag } from "./atoms/token-tag";
 import { Breadcrumb } from "./molecules/breadcrumb";
+import { FileGrid } from "./molecules/file-grid";
 import { FilterChips } from "./molecules/filter-chips";
 import { FlowLegend } from "./molecules/flow-legend";
 import { LogLine } from "./molecules/log-line";
@@ -18,6 +19,7 @@ import { SheetPreview } from "./molecules/sheet-preview";
 import { StageAction } from "./molecules/stage-action";
 import { StepDots } from "./molecules/step-dots";
 import { StepRuler } from "./molecules/step-ruler";
+import { SurveySketch } from "./molecules/survey-sketch";
 import { WhatIfSwitch } from "./molecules/what-if-switch";
 import { BillOfParts } from "./organisms/bill-of-parts";
 import { BuildLog } from "./organisms/build-log";
@@ -25,6 +27,7 @@ import { CodeListing } from "./organisms/code-listing";
 import { ConceptArticle } from "./organisms/concept-article";
 import { DrawingLegend } from "./organisms/drawing-legend";
 import { DrawingRegister } from "./organisms/drawing-register";
+import { FieldNotes } from "./organisms/field-notes";
 import { HomeHeader } from "./organisms/home-header";
 import { HomeIntro } from "./organisms/home-intro";
 import { ImportPanel } from "./organisms/import-panel";
@@ -713,5 +716,62 @@ describe("import", () => {
     expect(panel).toMatch(/<div id="import-status" role="status" aria-live="polite"/);
     expect(panel).toContain("<ol");
     expect(panel).toContain("No public repository acme/missing.");
+  });
+});
+
+describe("survey", () => {
+  it("keeps its notes in a log, so new ones are read out as they come", () => {
+    const notes = html(
+      <FieldNotes
+        title="Field notes"
+        clock="01:07"
+        notes={[
+          { key: "a", time: "00:00", text: "Asked GitHub for acme/shop.", tone: "request" },
+          {
+            key: "b",
+            time: "00:41",
+            text: "Part: Web app.",
+            tone: "write",
+            details: ["web, web/app"],
+          },
+        ]}
+      />,
+    );
+    expect(notes).toMatch(/<ol role="log" aria-live="polite" aria-relevant="additions"/);
+    expect(notes).toContain("Part: Web app.");
+    expect(notes).toContain("web, web/app");
+  });
+
+  it("names what the sketch and the file grid show, for whoever cannot see them", () => {
+    const sketch = html(
+      <SurveySketch
+        width={400}
+        height={200}
+        boxes={[
+          {
+            id: "web",
+            x: 10,
+            y: 10,
+            width: 150,
+            height: 26,
+            label: "web",
+            part: "Web app",
+            state: "latest",
+            delay: 0,
+          },
+        ]}
+        lines={[]}
+        sweeping={false}
+        closing={false}
+        label="Sketch of acme/shop: 1 unit."
+      />,
+    );
+    expect(sketch).toMatch(/<svg[^>]*role="img"[^>]*aria-label="Sketch of acme\/shop: 1 unit."/);
+    // A grouped unit shows its part's name, and keeps its own path as a tooltip.
+    expect(sketch).toContain("<title>web</title>");
+    expect(sketch).toContain("Web app");
+    const grid = html(<FileGrid total={10} done={4} label="4 of 10 files read." />);
+    expect(grid).toMatch(/role="img" aria-label="4 of 10 files read."/);
+    expect(grid.match(/<rect/g)).toHaveLength(10);
   });
 });

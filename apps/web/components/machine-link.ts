@@ -44,12 +44,25 @@ export function momentQuery(
   return `?${params.toString().replaceAll("%2C", ",")}`;
 }
 
-export function momentLink(base: string, state: PlayerState, machine: Machine): string {
-  return `${base}${momentQuery(machine, {
+/**
+ * The page's address on a moment. Whatever else its query says stays: the import page's
+ * `?repo=…&sha=…` names the machine itself.
+ */
+export function momentLink(page: string, state: PlayerState, machine: Machine): string {
+  const url = new URL(page);
+  url.hash = "";
+  for (const key of ["scenario", "with", "step"]) {
+    url.searchParams.delete(key);
+  }
+  const moment = momentQuery(machine, {
     scenario: state.scenarioId,
     actions: state.actions,
     step: state.stepIndex,
-  })}`;
+  });
+  for (const [key, value] of new URLSearchParams(moment)) {
+    url.searchParams.set(key, value);
+  }
+  return url.toString().replaceAll("%2C", ",");
 }
 
 /** Puts the player on a moment: its scenario, exactly its switches, its step. */

@@ -108,8 +108,7 @@ export function MachineView({
     return () => window.clearTimeout(reset);
   }, [shared]);
   const share = () => {
-    const base = `${window.location.origin}${window.location.pathname}`;
-    const link = momentLink(base, player.getState(), machine);
+    const link = momentLink(window.location.href, player.getState(), machine);
     // Without clipboard access (refused, or not a secure context), the address bar holds the link.
     const toAddressBar = () => {
       window.history.replaceState(null, "", link);

@@ -1,6 +1,6 @@
 # Nightprint — plan de projet
 
-> Copie du doc Claude « Nightprint — plan de projet » (12/10/2026). Le doc Claude est la version
+> Copie du doc Claude « Nightprint — plan de projet » (12/10/2026, série PRJ ajoutée le 14/10). Le doc Claude est la version
 > qu'on édite ; ce fichier suit. Les agents qui codent dans ce repo le lisent avant d'ajouter une
 > fonctionnalité : ce qui est hors du scope v1 attend le lancement.
 
@@ -62,6 +62,7 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 | Machines MCH-002 à MCH-008 | Après le lancement | Une par semaine ; MCH-002 (event loop JavaScript) et MCH-003 (Redis cache-aside) publiées le 13/10 |
 | Export vidéo intégré (WebCodecs) | Après le lancement | Au lancement, la vidéo vient d'`apps/video` |
 | Planche de concepts : grille de mini-machines animées | À trancher, après MCH-003 | Voir les décisions ouvertes |
+| Série PRJ : un vrai dépôt GitHub dessiné en machine, par un visiteur sur /import | Après le lancement | Décidée le 14/10 ; PRJ-001 (Nightprint) en ligne, API et page /import prêtes, voir Vrais projets |
 | Génération d'une machine par IA à partir d'une phrase | v2 | Claude écrit une définition à partir du kit |
 | Éditeur de code intégré (snippet de l'event loop) | v2 | Après le catalogue de base |
 | Éditeur visuel, comptes utilisateurs, thème clair | Coupé | Rien de tout ça au lancement |
@@ -84,6 +85,31 @@ Chaque week-end se termine par une livraison en ligne. L'ordre des machines apr�
 - **Rotation des jetons de rafraîchissement** : jeton d'accès court, jeton de rafraîchissement remplacé à chaque usage. Interrupteur : un seul jeton partagé entre deux applications, qui déconnecte partout. Source : RFC 9700 (OAuth 2.0 Security Best Current Practice).
 
 Le dédoublonnage des requêtes est devenu l'interrupteur « Expire a hot key under load » de MCH-003 (13/10). Redis n'a pas de « stale-while-revalidate » intégré : servir du périmé pendant le rafraîchissement reste du code applicatif, à montrer comme tel si on y revient.
+
+## Vrais projets (série PRJ)
+
+La série PRJ dessine un vrai dépôt GitHub en machine : le code donne les faits, un modèle (Claude Haiku 5.5) les regroupe et raconte, et chaque route doit reposer sur un import réel. Décidée le 14/10, à côté des concepts MCH, sans toucher à leur rythme d'une par semaine ; PRJ-001 est Nightprint lui-même.
+
+La chaîne, d'un dépôt à une machine :
+
+1. **Lecture** : un dépôt local ou GitHub public, à un commit précis (sources JS/TS, manifestes, README).
+2. **Survey**, sans LLM : unités (paquets ou dossiers), imports, bibliothèques par catégorie, entrées (pages, endpoints, commandes).
+3. **Blueprint** : le modèle regroupe les unités en pièces et écrit zones, scénarios, « et si… », article et glossaire.
+4. **Contrôle** : `checkBlueprint` puis `defineMachine` ; chaque règle enfreinte repart au modèle, trois réponses au plus.
+5. **Dessin**, sans LLM : `drawMachine` place zones, pièces et routes à angle droit.
+6. **Publication** : une PRJ relue entre au catalogue et se lit sur /p/<slug> ; un dessin demandé par un visiteur sur /import reste PRJ-000, non relu, hors des moteurs.
+
+| Morceau | Où en est-on |
+| --- | --- |
+| PRJ-001, Nightprint | En ligne sur /p/nightprint, en noindex, depuis le 14/10 |
+| API nightprint-importer | Prête et testée en conteneur ; déploiement sur le VPS à faire |
+| Page /import | Prête ; sort avec l'API |
+| Vidéo de PRJ-001 | Capture du site puis montage Remotion, comme les MCH |
+| Coût | 0,02 à 0,035 $ par dépôt en deux essais ; plafond de 1 $ par jour, 5 nouveaux dessins par visiteur |
+
+Limites : JavaScript et TypeScript seulement ; seuls les imports statiques sont vus (pas d'appels HTTP entre services, de files de messages ni d'injection de dépendances) ; les routes sont prouvées, les textes des étapes ne le sont pas.
+
+Le détail technique est dans `CLAUDE.md` (paquets `blueprint` et `importer`) et dans `apps/importer`.
 
 ## Architecture et stack
 
@@ -166,9 +192,11 @@ Le plus gros risque n'est pas technique : c'est un projet d'apprentissage sans p
 
 ## Décisions ouvertes et prochaines actions
 
-Une décision reste à prendre, plus tard ; une action reste à faire.
+Trois décisions restent à prendre, dont deux sur la série PRJ.
 
 - [ ] **Planche de concepts** : vitrine des 8 machines complètes, ou format à part avec beaucoup de petits concepts (DNS, CDN, load balancer…) dont certains deviennent des machines ? Reportée après MCH-003 (13/10) : rien de neuf tant que le rythme d'une machine par semaine n'est pas tenu.
+- [ ] **Import public** : ouvrir /import aux moteurs et le lier depuis l'accueil, ou le garder discret ? Et quel budget quotidien (1 $ par défaut, soit une trentaine de dessins) ?
+- [ ] **PRJ-002** : quel deuxième vrai projet (Sidetown ?) ; c'est lui qui fixera l'abstraction de l'extracteur, comme le veut la règle 2.
 - [x] **Pièces Blender** : hors du lancement (décidé le 12/10). Une pièce générée par le code reste une donnée de la machine : chaque nouvelle machine reste un seul fichier, compatible avec « une par semaine », et ses arêtes restent nettes dans le style dessin technique. Après le lancement, le cœur en verre à l'essai dans Blender.
 - [x] **Compte X** : le compte perso, [@ewenlq](https://x.com/ewenlq) (décidé le 12/10). Il signe les pages (auteur, carte X) et le journal de build y renvoie.
 - [x] **Repo** : public sur GitHub, [Ewen02/nightprint](https://github.com/Ewen02/nightprint) (décidé le 12/10). Licence : MIT pour le code, CC BY 4.0 pour le contenu, c'est-à-dire les machines, `art/` et les vidéos (décidé le 12/10).

@@ -2,9 +2,13 @@ import type { Machine } from "@nightprint/engine";
 import { hexagonal } from "./mch-001-hexagonal";
 import { eventLoop } from "./mch-002-event-loop";
 import { cacheAside } from "./mch-003-cache-aside";
+import { nightprint } from "./prj-001-nightprint";
 
 /** Published machines, in catalogue order. */
 export const machines: readonly Machine[] = [hexagonal, eventLoop, cacheAside];
+
+/** Real projects drawn from their repositories (PRJ), apart from the concept series. */
+export const projects: readonly Machine[] = [nightprint];
 
 export interface UpcomingMachine {
   readonly code: string;
@@ -22,7 +26,7 @@ export const upcoming: readonly UpcomingMachine[] = [
 ];
 
 export function getMachine(slug: string): Machine | undefined {
-  return machines.find((m) => m.slug === slug);
+  return [...machines, ...projects].find((m) => m.slug === slug);
 }
 
-export { cacheAside, eventLoop, hexagonal };
+export { cacheAside, eventLoop, hexagonal, nightprint };

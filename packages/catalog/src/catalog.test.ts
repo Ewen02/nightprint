@@ -6,16 +6,22 @@ import {
   validateMachine,
 } from "@nightprint/engine";
 import { describe, expect, it } from "vitest";
-import { hexagonal, machines, upcoming } from "./index";
+import { hexagonal, machines, projects, upcoming } from "./index";
 
 describe("catalogue", () => {
-  it("has unique codes and slugs", () => {
-    const codes = [...machines.map((m) => m.code), ...upcoming.map((m) => m.code)];
+  it("has unique codes and slugs, real projects included", () => {
+    const all = [...machines, ...projects];
+    const codes = [...all.map((m) => m.code), ...upcoming.map((m) => m.code)];
     expect(new Set(codes).size).toBe(codes.length);
-    expect(new Set(machines.map((m) => m.slug)).size).toBe(machines.length);
+    expect(new Set(all.map((m) => m.slug)).size).toBe(all.length);
   });
 
-  for (const machine of machines) {
+  it("numbers concepts MCH and real projects PRJ", () => {
+    expect(machines.every((m) => m.code.startsWith("MCH-"))).toBe(true);
+    expect(projects.every((m) => m.code.startsWith("PRJ-"))).toBe(true);
+  });
+
+  for (const machine of [...machines, ...projects]) {
     describe(machine.code, () => {
       it("is valid under every combination of actions", () => {
         expect(validateMachine(machine)).toEqual([]);

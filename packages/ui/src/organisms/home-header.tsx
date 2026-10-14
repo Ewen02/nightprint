@@ -25,10 +25,11 @@ export function HomeHeader({ homeHref, links, status }: HomeHeaderProps) {
         </div>
         <nav aria-label="Main" className="flex flex-1 sm:justify-end">
           <ul className="flex flex-1 sm:flex-none">
-            {links.map((link) => (
+            {links.map((link, index) => (
               <li
                 key={link.href}
-                className="flex flex-1 border-line-muted not-first:border-l sm:flex-none sm:border-l"
+                // Four sections side by side fit a 320 px screen; a fifth shows from sm up.
+                className={`flex flex-1 border-line-muted not-first:border-l sm:flex-none sm:border-l ${index >= 4 ? "max-sm:hidden" : ""}`}
               >
                 {/* Narrower on phones: four sections side by side still fit a 320 px screen. */}
                 <a

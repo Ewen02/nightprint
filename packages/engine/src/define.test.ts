@@ -23,6 +23,11 @@ describe("defineMachine", () => {
     expect(() => defineMachine({ ...fixtureInput, code: "M1" })).toThrow(/Invalid machine M1/);
   });
 
+  it("numbers a real project PRJ, and nothing else", () => {
+    expect(defineMachine({ ...fixtureInput, code: "PRJ-001" }).code).toBe("PRJ-001");
+    expect(() => defineMachine({ ...fixtureInput, code: "ABC-001" })).toThrow(/Invalid machine/);
+  });
+
   it("rejects duplicate ids and refs", () => {
     const parts = [...fixtureInput.parts, { ...must(fixtureInput.parts[0]), ref: 99 }];
     expect(() => defineMachine({ ...fixtureInput, parts })).toThrow(/duplicate part id "a"/);

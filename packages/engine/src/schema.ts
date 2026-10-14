@@ -42,6 +42,8 @@ export const partKinds = [
   "boundary",
   /** Builds the application at startup: creates the adapters and plugs them into ports. */
   "configurator",
+  /** A unit of a real project's own code (a package, a folder) that is no port or adapter. */
+  "module",
 ] as const;
 
 export const partSchema = z.object({
@@ -201,7 +203,8 @@ export const actionSchema = z.object({
 export type Action = z.infer<typeof actionSchema>;
 
 export const machineSchema = z.object({
-  code: z.string().regex(/^MCH-\d{3}$/),
+  /** `MCH-` for a concept, `PRJ-` for a real project drawn from its repository. */
+  code: z.string().regex(/^(MCH|PRJ)-\d{3}$/),
   slug: id,
   title: z.string().min(1),
   /**

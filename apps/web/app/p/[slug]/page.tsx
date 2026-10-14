@@ -40,7 +40,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   }
   return (
     <MachineView
-      slug={machine.slug}
+      machine={machine}
       after={
         <>
           <PageSection id="concept">

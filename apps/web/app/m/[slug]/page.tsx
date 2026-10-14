@@ -63,7 +63,7 @@ export default async function MachinePage({ params }: MachinePageProps) {
   }
   return (
     <MachineView
-      slug={machine.slug}
+      machine={machine}
       after={
         <>
           <JsonLd data={machineJsonLd(machine)} />

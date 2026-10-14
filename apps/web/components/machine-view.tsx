@@ -1,7 +1,6 @@
 "use client";
 
-import { getMachine } from "@nightprint/catalog";
-import { createPlayer, type Player } from "@nightprint/engine";
+import { createPlayer, type Machine, type Player } from "@nightprint/engine";
 import { usePlayerSnapshot } from "@nightprint/scene/use-player";
 import {
   BillOfParts,
@@ -73,19 +72,16 @@ function useTransportKeys(player: Player) {
 
 /** The machine page: owns the player and feeds the UI organisms. */
 export function MachineView({
-  slug,
+  machine,
   after,
   footer,
 }: {
-  readonly slug: string;
+  /** From the catalogue, or drawn from a repository on the import page. */
+  readonly machine: Machine;
   /** Sections under the machine: the concept, what comes next. */
   readonly after?: ReactNode;
   readonly footer?: ReactNode;
 }) {
-  const machine = getMachine(slug);
-  if (!machine) {
-    throw new Error(`Unknown machine "${slug}"`);
-  }
   const [player] = useState(() => createPlayer(machine, { pace: "reading" }));
   const snapshot = usePlayerSnapshot(player);
   const wide = useMediaQuery("(min-width: 1024px)");

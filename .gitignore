@@ -12,3 +12,7 @@ packages/ui/design-system/
 _to_delete/
 # Captured footage for the videos: regenerate with `pnpm --filter @nightprint/video capture`.
 apps/video/public/footage/
+
+# Secrets: the importer reads its API keys from apps/importer/.env.
+.env
+.env.*

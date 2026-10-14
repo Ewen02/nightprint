@@ -26,6 +26,7 @@ not in the v1 scope waits for the launch, and open decisions are not yours to se
 | `packages/catalog` | Machine definitions, data only. One file per machine. | engine |
 | `packages/ui` | 2D design system in atomic design: atoms, molecules, organisms, templates. Plain props, no engine types. | tokens, react |
 | `packages/scene` | React Three Fiber components, plus the DOM label layer over the canvas. | engine, tokens, ui atoms, three, R3F |
+| `packages/blueprint` | Real projects: `surveyRepo` reads a repository's units and imports, `checkBlueprint` holds a model's plan to them, `drawMachine` lays it out. Pure. | engine, zod, typescript |
 | `apps/web` | Pages: Next.js routes, `MachineView` (owns the player) and `machine-view-model.ts` (engine → UI props). | everything |
 | `apps/video` | Videos for X and LinkedIn (Remotion 4.0.535): captures the live site frame by frame, motion design on top. Read its README first. | tokens, remotion |
 | `art/` | Blender files and reference renders. Not part of the build. | — |

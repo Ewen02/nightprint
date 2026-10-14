@@ -93,6 +93,13 @@ test("a machine is data: the catalog imports the engine only", () => {
   assert.deepEqual(check(sources("packages/catalog/src"), importsOnly(["@nightprint/engine"])), []);
 });
 
+test("a blueprint is read from code and drawn as data: no model, no network, no React", () => {
+  const allowed = ["@nightprint/engine", "zod", "typescript"];
+  // Its test fixtures hold repositories as text, imports included: those are data.
+  const files = sources("packages/blueprint/src").filter((path) => !isTest(path));
+  assert.deepEqual(check(files, importsOnly(allowed)), []);
+});
+
 test("the UI knows neither the engine nor the scene", () => {
   const banned = [
     "@nightprint/engine",

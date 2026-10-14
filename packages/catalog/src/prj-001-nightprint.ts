@@ -15,7 +15,7 @@ export const nightprint = defineMachine({
   category: "PROJECT",
   scale: "NTS",
   revision: "A",
-  revised: "2026-10-14",
+  revised: "2026-10-15",
   sources: [
     {
       label: "Ewen02/nightprint at 3fdf528",
@@ -395,7 +395,7 @@ export const nightprint = defineMachine({
         {
           id: "ask-page",
           title: "A visitor asks for a machine page",
-          body: "The visitor's browser asks for a machine's page. The web app's page route receives the request.",
+          body: "The visitor's browser asks for a machine's page: one of the web app's pages, already built for that slug.",
           focus: ["visitor", "web-app"],
           tokens: [
             {
@@ -474,20 +474,20 @@ export const nightprint = defineMachine({
         },
         {
           id: "page-returns",
-          title: "The page goes back to the visitor",
-          body: "The static HTML of the page returns along the route it came by, from the views through the web app to the visitor.",
-          focus: ["site-views", "web-app", "visitor"],
+          title: "The visitor gets the page",
+          body: "The page's HTML was written at build time: the web app sends it as a file, and no server runs on the way back.",
+          focus: ["web-app", "visitor"],
           tokens: [
             {
               flow: "response",
-              path: ["visit-app", "app-views"],
+              path: ["visit-app"],
               reverse: true,
             },
           ],
           log: [
             {
               flow: "response",
-              text: "Page /m/[slug] → HTML",
+              text: "Static HTML → browser",
             },
           ],
         },

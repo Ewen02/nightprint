@@ -97,13 +97,14 @@ La chaîne, d'un dépôt à une machine :
 3. **Blueprint** : le modèle regroupe les unités en pièces et écrit zones, scénarios, « et si… », article et glossaire.
 4. **Contrôle** : `checkBlueprint` puis `defineMachine` ; chaque règle enfreinte repart au modèle, trois réponses au plus.
 5. **Dessin**, sans LLM : `drawMachine` place zones, pièces et routes à angle droit.
-6. **Publication** : une PRJ relue entre au catalogue et se lit sur /p/<slug> ; un dessin demandé par un visiteur sur /import reste PRJ-000, non relu, hors des moteurs.
+6. **Publication** : une PRJ relue entre au catalogue, se lit sur /p/<slug>, indexée, et figure dans la vitrine de l'accueil ; un dessin demandé par un visiteur sur /import reste PRJ-000, non relu, hors des moteurs.
 
 | Morceau | Où en est-on |
 | --- | --- |
 | PRJ-001, Nightprint | En ligne sur /p/nightprint, en noindex, depuis le 14/10 |
-| API nightprint-importer | Prête et testée en conteneur ; déploiement sur le VPS à faire |
-| Page /import | Prête ; sort avec l'API |
+| API nightprint-importer | En ligne depuis le 15/10 (conteneur sur le VPS, derrière nightprint.dev/api) ; garde le plan du modèle avec chaque dessin, sert le dernier dessin d'un dépôt qui a avancé et ne redessine que sur demande, deux dessins à la fois |
+| Page /import | En ligne depuis le 15/10, liée depuis l'accueil, hors des moteurs |
+| Vitrine | Section « Real projects » de l'accueil ; les pages /p/<slug> relues sont indexées et au sitemap |
 | Vidéo de PRJ-001 | Capture du site puis montage Remotion, comme les MCH |
 | Coût | 0,02 à 0,035 $ par dépôt en deux essais ; plafond de 1 $ par jour, 5 nouveaux dessins par visiteur |
 
@@ -192,10 +193,10 @@ Le plus gros risque n'est pas technique : c'est un projet d'apprentissage sans p
 
 ## Décisions ouvertes et prochaines actions
 
-Trois décisions restent à prendre, dont deux sur la série PRJ.
+Deux décisions restent à prendre, dont une sur la série PRJ.
 
 - [ ] **Planche de concepts** : vitrine des 8 machines complètes, ou format à part avec beaucoup de petits concepts (DNS, CDN, load balancer…) dont certains deviennent des machines ? Reportée après MCH-003 (13/10) : rien de neuf tant que le rythme d'une machine par semaine n'est pas tenu.
-- [ ] **Import public** : ouvrir /import aux moteurs et le lier depuis l'accueil, ou le garder discret ? Et quel budget quotidien (1 $ par défaut, soit une trentaine de dessins) ?
+- [x] **Import public** : une vitrine relue (décidé le 15/10). L'accueil liste les PRJ du catalogue, relues contre leur code et indexées sur /p/<slug>, et mène à /import ; les dessins des visiteurs restent hors des moteurs, partagés par leur lien. Budget quotidien : 1 $ pour l'instant.
 - [ ] **PRJ-002** : quel deuxième vrai projet (Sidetown ?) ; c'est lui qui fixera l'abstraction de l'extracteur, comme le veut la règle 2.
 - [x] **Pièces Blender** : hors du lancement (décidé le 12/10). Une pièce générée par le code reste une donnée de la machine : chaque nouvelle machine reste un seul fichier, compatible avec « une par semaine », et ses arêtes restent nettes dans le style dessin technique. Après le lancement, le cœur en verre à l'essai dans Blender.
 - [x] **Compte X** : le compte perso, [@ewenlq](https://x.com/ewenlq) (décidé le 12/10). Il signe les pages (auteur, carte X) et le journal de build y renvoie.

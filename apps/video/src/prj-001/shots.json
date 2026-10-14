@@ -1,0 +1,83 @@
+{
+  "url": "https://nightprint.dev/p/nightprint/",
+  "frames": 1010,
+  "scale": 1.5,
+  "actions": [
+    {
+      "frame": 0,
+      "kind": "button",
+      "name": "Step 1:"
+    },
+    {
+      "frame": 75,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 150,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 225,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 300,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 375,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 450,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 540,
+      "kind": "button",
+      "name": "Play a step on the stage",
+      "cursor": true
+    },
+    {
+      "frame": 541,
+      "kind": "button",
+      "name": "Pause"
+    },
+    {
+      "frame": 580,
+      "kind": "switch",
+      "name": "Import the scene in the engine"
+    },
+    {
+      "frame": 600,
+      "kind": "button",
+      "name": "Step 1:"
+    },
+    {
+      "frame": 670,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 740,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 810,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 880,
+      "kind": "button",
+      "name": "Next step"
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "source": "https://nightprint.dev/p/nightprint/",
+  "footage": {
+    "frames": 1010,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "scale": 1.5
+  },
+  "steps": [
+    {
+      "from": 0,
+      "number": 1,
+      "count": 7,
+      "title": "Build writes the machine pages",
+      "flow": "write"
+    },
+    {
+      "from": 75,
+      "number": 2,
+      "count": 7,
+      "title": "A visitor asks for a machine page",
+      "flow": "request"
+    },
+    {
+      "from": 150,
+      "number": 3,
+      "count": 7,
+      "title": "The page hands the slug to the views",
+      "flow": "request"
+    },
+    {
+      "from": 225,
+      "number": 4,
+      "count": 7,
+      "title": "The views read the machine",
+      "flow": "request"
+    },
+    {
+      "from": 300,
+      "number": 5,
+      "count": 7,
+      "title": "The views ask the engine for a snapshot",
+      "flow": "request"
+    },
+    {
+      "from": 375,
+      "number": 6,
+      "count": 7,
+      "title": "The page goes back to the visitor",
+      "flow": "response"
+    },
+    {
+      "from": 450,
+      "number": 7,
+      "count": 7,
+      "title": "The stage draws the machine in the browser",
+      "flow": "request"
+    },
+    {
+      "from": 540,
+      "number": 1,
+      "count": 4,
+      "title": "The visitor presses Play",
+      "flow": "request"
+    },
+    {
+      "from": 670,
+      "number": 2,
+      "count": 5,
+      "title": "The engine advances the player",
+      "flow": "request"
+    },
+    {
+      "from": 740,
+      "number": 3,
+      "count": 5,
+      "title": "The scene lights the step",
+      "flow": "request"
+    },
+    {
+      "from": 810,
+      "number": 4,
+      "count": 5,
+      "title": "The scene reads the route geometry",
+      "flow": "response"
+    },
+    {
+      "from": 880,
+      "number": 5,
+      "count": 5,
+      "title": "The engine imports the scene",
+      "flow": "error"
+    }
+  ],
+  "clicks": [
+    {
+      "frame": 540,
+      "name": "Play a step on the stage",
+      "box": {
+        "x": 1584,
+        "y": 212.1875,
+        "w": 243.125,
+        "h": 44
+      },
+      "at": {
+        "x": 1705.5625,
+        "y": 234.1875
+      }
+    },
+    {
+      "frame": 580,
+      "name": "Import the scene in the engine",
+      "box": {
+        "x": 1584,
+        "y": 348.671875,
+        "w": 312,
+        "h": 166.078125
+      },
+      "at": {
+        "x": 1615,
+        "y": 371.671875
+      }
+    }
+  ]
+}

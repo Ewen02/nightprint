@@ -89,8 +89,10 @@ try {
       result = { blueprint, input };
     } else {
       console.error(`Surveyed ${survey.units.length} units, ${survey.edges.length} imports.`);
-      const composed = await compose(survey, options, claudeAsk(), (attempt, issues) => {
-        console.error(`Attempt ${attempt}: ${issues.length} issue(s); asking again.`);
+      const composed = await compose(survey, options, claudeAsk(), {
+        part: (answer, part) => console.error(`Answer ${answer}: ${part.label}`),
+        rejected: (answer, issues) =>
+          console.error(`Answer ${answer}: ${issues.length} issue(s); asking again.`),
       });
       console.error(
         `Drawn in ${composed.attempts} attempt(s), about $${costOf(composed.usage).toFixed(3)}.`,

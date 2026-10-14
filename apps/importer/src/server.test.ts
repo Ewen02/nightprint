@@ -43,7 +43,11 @@ async function start(overrides: Partial<ImporterDeps> = {}, ...answers: Answer[]
     },
     commitsSince: async () => 3,
     draw: drawRepository({
-      read: async (c) => ({ ...snapshot, name: `${c.owner}/${c.name}`, ref: c.sha }),
+      read: async (c, onProgress) => {
+        onProgress(0, snapshot.files.length);
+        onProgress(snapshot.files.length, snapshot.files.length);
+        return { ...snapshot, name: `${c.owner}/${c.name}`, ref: c.sha };
+      },
       ask: async () => {
         const next = queue.shift();
         if (!next) {
@@ -76,6 +80,7 @@ interface Reply {
   readonly stage?: string;
   readonly error?: string;
   readonly newer?: { readonly sha: string; readonly commits?: number };
+  readonly events?: readonly { readonly type: string; readonly at: number }[];
   readonly result?: {
     readonly repo: string;
     readonly sha: string;
@@ -143,6 +148,16 @@ describe("the importer's API", () => {
     expect((await read(again)).result?.sha).toBe(SHA);
     const shared = await fetch(`${base}/api/drawings/acme/tiny/${SHA}`);
     expect(shared.status).toBe(200);
+  });
+
+  it("tells its visitor what it reads, finds and draws, in order", async () => {
+    await start();
+    const done = await settle((await read(await post("acme/tiny"))).id);
+    expect(done.events?.map((e) => e.type)).toEqual(["listed", "surveyed", "answer", "accepted"]);
+    expect(done.events?.[1]).toMatchObject({
+      type: "surveyed",
+      sketch: { units: [{ id: "root" }], edges: [] },
+    });
   });
 
   it("keeps the model's plan with the machine, so a better layout can redraw it for free", async () => {

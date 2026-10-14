@@ -1,6 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
+// The SDK's tolerant JSON parser, the one it reads streaming tool inputs with.
+import { partialParse } from "@anthropic-ai/sdk/_vendor/partial-json-parser/parser";
 import {
   type Blueprint,
+  type BlueprintPart,
   blueprintSchema,
   checkBlueprint,
   type DrawOptions,
@@ -81,8 +84,108 @@ export interface Answer {
   >;
 }
 
+/** What a caller hears of an answer while it streams, a piece at a time. */
+export interface Listen {
+  /** The answer's text: the blueprint being written. */
+  readonly text?: (delta: string) => void;
+  /** A summary of the model's reasoning, before it writes. */
+  readonly thinking?: (delta: string) => void;
+}
+
 /** One round trip to the model: the conversation so far in, its answer out. */
-export type Ask = (messages: readonly Anthropic.Beta.BetaMessageParam[]) => Promise<Answer>;
+export type Ask = (
+  messages: readonly Anthropic.Beta.BetaMessageParam[],
+  listen?: Listen,
+) => Promise<Answer>;
+
+/** What compose says while it works, for a visitor watching the drawing. */
+export interface ComposeEvents {
+  /** The drafter starts answer `answer`. */
+  readonly answer?: (answer: number) => void;
+  /** A part written whole, while the answer still streams. */
+  readonly part?: (answer: number, part: BlueprintPart) => void;
+  /** The latest sentence of the model's reasoning summary, while it thinks. */
+  readonly musing?: (answer: number, sentence: string) => void;
+  /** The answer broke these rules, and goes back to the drafter. */
+  readonly rejected?: (answer: number, issues: readonly string[]) => void;
+}
+
+const MUSING_EVERY_MS = 1500;
+const MUSING_CHARS = 160;
+
+/**
+ * Hands over the latest whole sentence of a streaming reasoning summary, at most every
+ * 1.5 s: enough to follow what the model weighs, not a transcript.
+ */
+function sentencesAsTheyCome(
+  onSentence: (sentence: string) => void,
+  now: () => number = Date.now,
+): (delta: string) => void {
+  let text = "";
+  let last = "";
+  let at = 0;
+  return (delta) => {
+    text += delta;
+    if (now() - at < MUSING_EVERY_MS) {
+      return;
+    }
+    const sentences = text
+      .replace(/\s+/g, " ")
+      .split(/(?<=[.!?])\s/)
+      .map((s) => s.trim())
+      .filter((s) => /[.!?]$/.test(s) && s.length > 12);
+    const sentence = sentences.at(-1);
+    if (!sentence || sentence === last) {
+      return;
+    }
+    last = sentence;
+    at = now();
+    onSentence(
+      sentence.length > MUSING_CHARS ? `${sentence.slice(0, MUSING_CHARS - 1)}…` : sentence,
+    );
+  };
+}
+
+/**
+ * Hands each part of a streaming blueprint over once it is whole: when another part, or the
+ * next key, follows it. The parse is tolerant, and only attempted when an object may have
+ * closed.
+ */
+function partsAsTheyCome(onPart: (part: BlueprintPart) => void): (delta: string) => void {
+  let text = "";
+  let handed = 0;
+  return (delta) => {
+    text += delta;
+    if (!delta.includes("}") && !delta.includes("]")) {
+      return;
+    }
+    const start = text.indexOf("{");
+    if (start < 0) {
+      return;
+    }
+    let partial: unknown;
+    try {
+      partial = partialParse(text.slice(start));
+    } catch {
+      return;
+    }
+    if (typeof partial !== "object" || partial === null || !("parts" in partial)) {
+      return;
+    }
+    const parts = partial.parts;
+    if (!Array.isArray(parts)) {
+      return;
+    }
+    // The key after `parts` has begun: the last part is closed too.
+    const closed = "leftOut" in partial ? parts.length : parts.length - 1;
+    for (; handed < closed; handed++) {
+      const part = blueprintSchema.shape.parts.element.safeParse(parts[handed]);
+      if (part.success) {
+        onPart(part.data);
+      }
+    }
+  };
+}
 
 /**
  * The answer's shape, told rather than enforced: structured outputs refuse a schema this
@@ -94,12 +197,13 @@ ${JSON.stringify(z.toJSONSchema(blueprintSchema))}`;
 
 /** Asks Claude, streaming so a long answer never hits a request timeout. */
 export function claudeAsk(client = new Anthropic()): Ask {
-  return async (messages) => {
+  return async (messages, listen) => {
     const stream = client.beta.messages.stream({
       model: MODEL,
       max_tokens: 64_000,
       // Haiku 5.5 has no server-side fallback: a refusal ends the run, see `compose`.
-      thinking: { type: "adaptive" },
+      // Summarized, so a visitor can follow what the model weighs while it thinks.
+      thinking: { type: "adaptive", display: "summarized" },
       output_config: { effort: "high" },
       system: [
         {
@@ -110,6 +214,12 @@ export function claudeAsk(client = new Anthropic()): Ask {
       ],
       messages: [...messages],
     });
+    if (listen?.text) {
+      stream.on("text", listen.text);
+    }
+    if (listen?.thinking) {
+      stream.on("thinking", listen.thinking);
+    }
     return stream.finalMessage();
   };
 }
@@ -151,7 +261,7 @@ export async function compose(
   survey: Survey,
   options: DrawOptions,
   ask: Ask,
-  onAttempt?: (attempt: number, issues: readonly string[]) => void,
+  events: ComposeEvents = {},
 ): Promise<Composed> {
   const messages: Anthropic.Beta.BetaMessageParam[] = [
     {
@@ -162,7 +272,12 @@ export async function compose(
   const usage = { inputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 };
   let issues: string[] = [];
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const message = await ask(messages);
+    events.answer?.(attempt);
+    const { part, musing } = events;
+    const message = await ask(messages, {
+      ...(part ? { text: partsAsTheyCome((p) => part(attempt, p)) } : {}),
+      ...(musing ? { thinking: sentencesAsTheyCome((s) => musing(attempt, s)) } : {}),
+    });
     usage.inputTokens += message.usage.input_tokens;
     usage.cacheReadTokens += message.usage.cache_read_input_tokens ?? 0;
     usage.cacheWriteTokens += message.usage.cache_creation_input_tokens ?? 0;
@@ -190,7 +305,7 @@ export async function compose(
         }
       }
     }
-    onAttempt?.(attempt, issues);
+    events.rejected?.(attempt, issues);
     messages.push(
       { role: "assistant", content: message.content },
       {

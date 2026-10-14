@@ -1,8 +1,52 @@
 import { describe, expect, it } from "vitest";
-import { ComposeError, compose } from "./compose";
+import { ComposeError, compose, type Listen } from "./compose";
 import { answer, invented, options, scripted, survey, valid } from "./fixture.test-helper";
 
 describe("compose", () => {
+  it("hands each part over as soon as the streaming answer has written it whole", async () => {
+    const text = JSON.stringify(valid);
+    const seen: { answer: number; label: string; at: number }[] = [];
+    let streamed = 0;
+    const ask = async (_messages: unknown, listen?: Listen) => {
+      // The answer arrives in small pieces, as the model writes it.
+      for (let i = 0; i < text.length; i += 7) {
+        streamed = i;
+        listen?.text?.(text.slice(i, i + 7));
+      }
+      return answer(valid);
+    };
+    await compose(survey, options, ask, {
+      part: (n, part) => seen.push({ answer: n, label: part.label, at: streamed }),
+    });
+    expect(seen.map((p) => [p.answer, p.label])).toEqual([
+      [1, "User"],
+      [1, "Server"],
+    ]);
+    // The first part is handed over while the answer is still being written.
+    expect(seen[0]?.at).toBeLessThan(text.indexOf('"leftOut"'));
+  });
+
+  it("shares what the model weighs while it thinks, a whole sentence at a time", async () => {
+    const said: string[] = [];
+    const ask = async (_messages: unknown, listen?: Listen) => {
+      listen?.thinking?.("The web app imports the dom");
+      listen?.thinking?.("ain, so the domain is the core. Next I group");
+      return answer(valid);
+    };
+    await compose(survey, options, ask, { musing: (_n, sentence) => said.push(sentence) });
+    expect(said).toEqual(["The web app imports the domain, so the domain is the core."]);
+  });
+
+  it("says when each answer starts and why one went back", async () => {
+    const model = scripted(answer(invented), answer(valid));
+    const said: string[] = [];
+    await compose(survey, options, model.ask, {
+      answer: (n) => said.push(`answer ${n}`),
+      rejected: (n, issues) => said.push(`rejected ${n}: ${issues.length}`),
+    });
+    expect(said).toEqual(["answer 1", "rejected 1: 1", "answer 2"]);
+  });
+
   it("draws the first blueprint that keeps every rule", async () => {
     const model = scripted(answer(valid));
     const composed = await compose(survey, options, model.ask);
@@ -36,7 +80,9 @@ describe("compose", () => {
     const model = scripted(answer(invented), answer(invented), answer(invented));
     const failure = compose(survey, options, model.ask);
     await expect(failure).rejects.toBeInstanceOf(ComposeError);
-    await expect(failure).rejects.toMatchObject({ issues: [expect.stringContaining("made-up")] });
+    await expect(failure).rejects.toMatchObject({
+      issues: [expect.stringContaining("made-up")],
+    });
   });
 
   it("stops at once when the model declines", async () => {

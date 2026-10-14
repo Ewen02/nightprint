@@ -8,18 +8,29 @@ import { randomUUID } from "node:crypto";
 
 export type JobStage = "queued" | "reading" | "surveying" | "drawing" | "done" | "failed";
 
-export interface JobState<Result> {
+/** An event, with when it happened: ms since the job started. */
+export type Timed<Event> = Event & { readonly at: number };
+
+export interface JobState<Result, Event = never> {
   readonly id: string;
   readonly stage: JobStage;
   /** Which answer of the model is being checked, while drawing. */
   readonly attempt?: number | undefined;
+  /** What the job has done so far, in order. */
+  readonly events: readonly Timed<Event>[];
+  /** Files read so far, while reading. */
+  readonly reading?: { readonly done: number; readonly total: number } | undefined;
   /** Why it failed, in words a visitor can act on. */
   readonly error?: string | undefined;
   readonly result?: Result | undefined;
 }
 
-/** How a job tells where it is. */
-export type Report = (stage: "reading" | "surveying" | "drawing", attempt?: number) => void;
+/** How a running job tells where it is. */
+export interface Reporter<Event = never> {
+  stage(stage: "reading" | "surveying" | "drawing", attempt?: number): void;
+  event(event: Event): void;
+  reading(done: number, total: number): void;
+}
 
 export interface QueueOptions {
   /** Jobs run at once: a drawing mostly waits on GitHub and the model, not on the CPU. */
@@ -35,9 +46,9 @@ export class QueueFullError extends Error {
   override name = "QueueFullError";
 }
 
-export class JobQueue<Result> {
-  readonly #jobs = new Map<string, { state: JobState<Result>; finishedAt?: number }>();
-  readonly #waiting: { id: string; run: (report: Report) => Promise<Result> }[] = [];
+export class JobQueue<Result, Event = never> {
+  readonly #jobs = new Map<string, { state: JobState<Result, Event>; finishedAt?: number }>();
+  readonly #waiting: { id: string; run: (report: Reporter<Event>) => Promise<Result> }[] = [];
   #running = 0;
   readonly #options: QueueOptions;
   readonly #now: () => number;
@@ -52,13 +63,16 @@ export class JobQueue<Result> {
     return this.#waiting.length + this.#running;
   }
 
-  add(run: (report: Report) => Promise<Result>, describe: (error: unknown) => string): string {
+  add(
+    run: (report: Reporter<Event>) => Promise<Result>,
+    describe: (error: unknown) => string,
+  ): string {
     this.#forgetOld();
     if (this.#waiting.length >= this.#options.maxWaiting) {
       throw new QueueFullError("Too many drawings in progress; try again in a few minutes.");
     }
     const id = randomUUID();
-    this.#jobs.set(id, { state: { id, stage: "queued" } });
+    this.#jobs.set(id, { state: { id, stage: "queued", events: [] } });
     this.#waiting.push({
       id,
       run: async (report) => {
@@ -73,7 +87,7 @@ export class JobQueue<Result> {
     return id;
   }
 
-  get(id: string): JobState<Result> | undefined {
+  get(id: string): JobState<Result, Event> | undefined {
     this.#forgetOld();
     return this.#jobs.get(id)?.state;
   }
@@ -87,17 +101,23 @@ export class JobQueue<Result> {
       return;
     }
     this.#running += 1;
-    const set = (state: JobState<Result>, finished = false) => {
+    const startedAt = this.#now();
+    let state: JobState<Result, Event> = { id: job.id, stage: "reading", events: [] };
+    const set = (patch: Partial<JobState<Result, Event>>, finished = false) => {
+      state = { ...state, ...patch };
       this.#jobs.set(job.id, finished ? { state, finishedAt: this.#now() } : { state });
     };
+    const reporter: Reporter<Event> = {
+      stage: (stage, attempt) => set({ stage, attempt }),
+      event: (event) =>
+        set({ events: [...state.events, { ...event, at: this.#now() - startedAt }] }),
+      reading: (done, total) => set({ reading: { done, total } }),
+    };
     try {
-      const result = await job.run((stage, attempt) => set({ id: job.id, stage, attempt }));
-      set({ id: job.id, stage: "done", result }, true);
+      const result = await job.run(reporter);
+      set({ stage: "done", result }, true);
     } catch (error) {
-      set(
-        { id: job.id, stage: "failed", error: error instanceof Error ? error.message : "" },
-        true,
-      );
+      set({ stage: "failed", error: error instanceof Error ? error.message : "" }, true);
     } finally {
       this.#running -= 1;
       void this.#next();

@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { ComposeError } from "./compose";
-import { type JobQueue, QueueFullError, type Report, type VisitorLimit } from "./jobs";
+import { type JobQueue, QueueFullError, type Reporter, type VisitorLimit } from "./jobs";
+import type { ProgressEvent } from "./progress";
 import { type GitHubCommit, type GitHubRepo, parseGitHubRepo, SourceError } from "./sources";
 import { type Drawing, type DrawingStore, dayOf, type Ledger } from "./store";
 
@@ -21,12 +22,12 @@ import { type Drawing, type DrawingStore, dayOf, type Ledger } from "./store";
 
 export interface ImporterDeps {
   readonly resolve: (repo: GitHubRepo) => Promise<GitHubCommit>;
-  readonly draw: (commit: GitHubCommit, report: Report) => Promise<Drawing>;
+  readonly draw: (commit: GitHubCommit, report: Reporter<ProgressEvent>) => Promise<Drawing>;
   /** How many commits `commit` is ahead of an older one, when GitHub can tell. */
   readonly commitsSince?: (commit: GitHubCommit, base: string) => Promise<number | undefined>;
   readonly store: DrawingStore;
   readonly ledger: Ledger;
-  readonly queue: JobQueue<Drawing>;
+  readonly queue: JobQueue<Drawing, ProgressEvent>;
   readonly visitors: VisitorLimit;
   /** Dollars the model may cost in a UTC day. */
   readonly dailyBudget: number;

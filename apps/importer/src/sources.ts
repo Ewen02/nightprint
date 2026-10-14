@@ -175,6 +175,8 @@ export async function commitsSince(
 export async function readGitHubAt(
   commit: GitHubCommit,
   options: GitHubOptions = {},
+  /** Files read so far, out of the files wanted, after each one. */
+  onProgress?: (done: number, total: number) => void,
 ): Promise<RepoSnapshot> {
   const { get, api } = githubApi(options);
   const tree = await api(commit, `/git/trees/${commit.sha}?recursive=1`, treeInfo);
@@ -201,8 +203,10 @@ export async function readGitHubAt(
         throw new SourceError("unreadable", `Could not read ${entry.path} (${response.status}).`);
       }
       files.push({ path: entry.path, text: await response.text() });
+      onProgress?.(files.length, wanted.length);
     }
   };
+  onProgress?.(0, wanted.length);
   await Promise.all(Array.from({ length: options.concurrency ?? 16 }, worker));
 
   return {

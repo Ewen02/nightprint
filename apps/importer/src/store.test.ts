@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { JobQueue, QueueFullError, type Report, VisitorLimit } from "./jobs";
+import { JobQueue, QueueFullError, type Reporter, VisitorLimit } from "./jobs";
 import { type Drawing, dayOf, fileDrawingStore, fileLedger } from "./store";
 
 let dir: string;
@@ -73,12 +73,20 @@ describe("fileLedger", () => {
 
 describe("JobQueue", () => {
   it("runs jobs one at a time and reports where each one is", async () => {
-    const queue = new JobQueue<string>({ maxWaiting: 2, keepFor: 1000 });
+    let now = 1000;
+    const queue = new JobQueue<string, { type: string }>({
+      maxWaiting: 2,
+      keepFor: 1000,
+      now: () => now,
+    });
     let release = () => {};
     const id = queue.add(
       (report) =>
         new Promise((resolve) => {
-          report("drawing", 2);
+          report.reading(3, 5);
+          now += 250;
+          report.event({ type: "surveyed" });
+          report.stage("drawing", 2);
           release = () => resolve("drawn");
         }),
       () => "failed",
@@ -88,7 +96,12 @@ describe("JobQueue", () => {
       () => "failed",
     );
     await Promise.resolve();
-    expect(queue.get(id)).toMatchObject({ stage: "drawing", attempt: 2 });
+    expect(queue.get(id)).toMatchObject({
+      stage: "drawing",
+      attempt: 2,
+      reading: { done: 3, total: 5 },
+      events: [{ type: "surveyed", at: 250 }],
+    });
     expect(queue.get(second)?.stage).toBe("queued");
     release();
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -98,8 +111,8 @@ describe("JobQueue", () => {
 
   it("runs as many jobs at once as it is told, the rest waiting in line", async () => {
     const queue = new JobQueue<string>({ concurrency: 2, maxWaiting: 2, keepFor: 1000 });
-    const starts = (report: Report) => {
-      report("reading");
+    const starts = (report: Reporter) => {
+      report.stage("reading");
       return new Promise<string>(() => {});
     };
     const ids = [

@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { claudeAsk } from "./compose";
 import { drawRepository } from "./drawing";
 import { JobQueue, VisitorLimit } from "./jobs";
+import type { ProgressEvent } from "./progress";
 import { createImporter } from "./server";
 import { commitsSince, readGitHubAt, resolveGitHub } from "./sources";
 import { type Drawing, fileDrawingStore, fileLedger } from "./store";
@@ -32,14 +33,18 @@ const handler = createImporter({
   resolve: (repo) => resolveGitHub(repo, github),
   commitsSince: (commit, base) => commitsSince(commit, base, github),
   draw: drawRepository({
-    read: (commit) => readGitHubAt(commit, github),
+    read: (commit, onProgress) => readGitHubAt(commit, github, onProgress),
     ask: claudeAsk(),
     store,
     ledger,
   }),
   store,
   ledger,
-  queue: new JobQueue<Drawing>({ concurrency: 2, maxWaiting: 5, keepFor: 60 * 60 * 1000 }),
+  queue: new JobQueue<Drawing, ProgressEvent>({
+    concurrency: 2,
+    maxWaiting: 5,
+    keepFor: 60 * 60 * 1000,
+  }),
   visitors: new VisitorLimit(number(env.DRAWINGS_PER_VISITOR, 5), 24 * 60 * 60 * 1000),
   dailyBudget: number(env.DAILY_BUDGET_USD, 1),
   estimate: number(env.DRAWING_ESTIMATE_USD, 0.05),

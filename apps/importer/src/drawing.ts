@@ -1,12 +1,16 @@
 import type { RepoSnapshot } from "@nightprint/blueprint";
 import { surveyRepo } from "@nightprint/blueprint";
 import { type Ask, ComposeError, compose, costOf, MODEL } from "./compose";
-import type { Report } from "./jobs";
+import type { Reporter } from "./jobs";
+import { type ProgressEvent, sketchOf } from "./progress";
 import { type GitHubCommit, SourceError } from "./sources";
 import { type Drawing, type DrawingStore, dayOf, type Ledger } from "./store";
 
 export interface DrawDeps {
-  readonly read: (commit: GitHubCommit) => Promise<RepoSnapshot>;
+  readonly read: (
+    commit: GitHubCommit,
+    onProgress: (done: number, total: number) => void,
+  ) => Promise<RepoSnapshot>;
   readonly ask: Ask;
   readonly store: DrawingStore;
   readonly ledger: Ledger;
@@ -29,15 +33,22 @@ export function slugOf(owner: string, name: string): string {
  */
 export function drawRepository(deps: DrawDeps) {
   const now = deps.now ?? (() => new Date());
-  return async (commit: GitHubCommit, report: Report): Promise<Drawing> => {
-    report("reading");
-    const snapshot = await deps.read(commit);
-    report("surveying");
+  return async (commit: GitHubCommit, report: Reporter<ProgressEvent>): Promise<Drawing> => {
+    report.stage("reading");
+    let listed = false;
+    const snapshot = await deps.read(commit, (done, total) => {
+      if (!listed) {
+        listed = true;
+        report.event({ type: "listed", files: total });
+      }
+      report.reading(done, total);
+    });
+    report.stage("surveying");
     const survey = surveyRepo(snapshot);
     if (survey.units.length === 0) {
       throw new SourceError("empty", "No JavaScript or TypeScript code to draw in it.");
     }
-    report("drawing", 1);
+    report.event({ type: "surveyed", sketch: sketchOf(survey) });
     const day = dayOf(now());
     let composed: Awaited<ReturnType<typeof compose>>;
     try {
@@ -50,7 +61,22 @@ export function drawRepository(deps: DrawDeps) {
           sourceUrl: `${commit.url}/tree/${commit.sha}`,
         },
         deps.ask,
-        (attempt) => report("drawing", attempt + 1),
+        {
+          answer: (answer) => {
+            report.stage("drawing", answer);
+            report.event({ type: "answer", answer });
+          },
+          part: (answer, part) =>
+            report.event({
+              type: "part",
+              answer,
+              label: part.label,
+              kind: part.kind,
+              units: part.units,
+            }),
+          musing: (answer, text) => report.event({ type: "musing", answer, text }),
+          rejected: (answer, issues) => report.event({ type: "rejected", answer, issues }),
+        },
       );
     } catch (error) {
       if (error instanceof ComposeError && error.usage) {
@@ -58,6 +84,7 @@ export function drawRepository(deps: DrawDeps) {
       }
       throw error;
     }
+    report.event({ type: "accepted", answer: composed.attempts });
     const cost = costOf(composed.usage);
     await deps.ledger.add(day, cost);
     const drawing: Drawing = {

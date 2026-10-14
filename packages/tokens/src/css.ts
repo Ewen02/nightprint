@@ -55,6 +55,39 @@ export function toThemeCss(): string {
   // `animate-dash`: a dashed line runs along itself, the way a flow travels a pipe on a
   // plan view. One cycle moves two dash patterns of 0.45 plate units (see PlanView).
   lines.push("  --animate-dash: dash 1.4s linear infinite;");
+  // `animate-draw`: a line draws itself once, from its start, as a pencil would. The path
+  // carries pathLength="1" and stroke-dasharray="1" (see SurveySketch).
+  lines.push(
+    `  --animate-draw: draw ${motion.slow * 2}ms cubic-bezier(${motion.ease.join(", ")}) both;`,
+  );
+  // `animate-sweep`: a survey line crosses the plate and back while the drafter works.
+  lines.push("  --animate-sweep: sweep 3.2s ease-in-out infinite alternate;");
+  // `animate-arrive`: a drawn machine settles onto the page instead of popping in.
+  lines.push(
+    `  --animate-arrive: arrive ${motion.slow * 2}ms cubic-bezier(${motion.ease.join(", ")}) both;`,
+  );
+  lines.push("  @keyframes draw {");
+  lines.push("    from {");
+  lines.push("      stroke-dashoffset: 1;");
+  lines.push("    }");
+  lines.push("    to {");
+  lines.push("      stroke-dashoffset: 0;");
+  lines.push("    }");
+  lines.push("  }");
+  lines.push("  @keyframes sweep {");
+  lines.push("    from {");
+  lines.push("      transform: translateX(0%);");
+  lines.push("    }");
+  lines.push("    to {");
+  lines.push("      transform: translateX(100%);");
+  lines.push("    }");
+  lines.push("  }");
+  lines.push("  @keyframes arrive {");
+  lines.push("    from {");
+  lines.push("      opacity: 0;");
+  lines.push("      transform: translateY(16px) scale(0.985);");
+  lines.push("    }");
+  lines.push("  }");
   lines.push("  @keyframes dash {");
   lines.push("    to {");
   lines.push("      stroke-dashoffset: -0.9;");

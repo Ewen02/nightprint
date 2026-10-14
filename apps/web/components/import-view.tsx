@@ -2,6 +2,7 @@
 
 import { defineMachine, type Machine, type MachineInput } from "@nightprint/engine";
 import {
+  Button,
   ConceptArticle,
   ImportPanel,
   type ImportStage,
@@ -33,6 +34,13 @@ interface Reply {
     readonly model: string;
     readonly machine: MachineInput;
   };
+  /** The repository has moved on since this drawing: its latest commit, and how far ahead. */
+  readonly newer?: Newer;
+}
+
+interface Newer {
+  readonly sha: string;
+  readonly commits?: number;
 }
 
 interface Drawn {
@@ -40,6 +48,7 @@ interface Drawn {
   readonly sha: string;
   readonly model: string;
   readonly machine: Machine;
+  readonly newer?: Newer | undefined;
 }
 
 type View =
@@ -91,7 +100,13 @@ function accept(reply: Reply): View {
     const { repo, sha, model } = reply.result;
     return {
       kind: "drawn",
-      drawing: { repo, sha, model, machine: defineMachine(reply.result.machine) },
+      drawing: {
+        repo,
+        sha,
+        model,
+        machine: defineMachine(reply.result.machine),
+        newer: reply.newer,
+      },
     };
   } catch {
     return { kind: "failed", error: "The drawing came back broken; try another commit." };
@@ -131,21 +146,25 @@ export function ImportView() {
     [show],
   );
 
-  const draw = useCallback(async () => {
-    window.clearTimeout(polling.current);
-    setView({ kind: "working", stage: "queued" });
-    const reply = await ask("/drawings", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ repo: input.trim() }),
-    });
-    if (reply.stage === "done" || reply.stage === "failed" || !reply.id) {
-      show(accept(reply));
-    } else {
-      setView({ kind: "working", stage: reply.stage ?? "queued", attempt: reply.attempt });
-      follow(reply.id);
-    }
-  }, [input, follow, show]);
+  /** Asks for a repository's drawing; `redraw` draws its latest commit even when an older one exists. */
+  const draw = useCallback(
+    async (repo: string, redraw = false) => {
+      window.clearTimeout(polling.current);
+      setView({ kind: "working", stage: "queued" });
+      const reply = await ask("/drawings", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ repo: repo.trim(), redraw }),
+      });
+      if (reply.stage === "done" || reply.stage === "failed" || !reply.id) {
+        show(accept(reply));
+      } else {
+        setView({ kind: "working", stage: reply.stage ?? "queued", attempt: reply.attempt });
+        follow(reply.id);
+      }
+    },
+    [follow, show],
+  );
 
   // A shared address opens its drawing; a repository alone only fills the form, since
   // drawing it anew costs the drafter's time and the site's budget.
@@ -173,7 +192,7 @@ export function ImportView() {
       form={{
         value: input,
         onChange: setInput,
-        onSubmit: () => void draw(),
+        onSubmit: () => void draw(input),
         busy: view.kind === "working",
         label: "GitHub repository",
         placeholder: "owner/name or https://github.com/owner/name",
@@ -216,8 +235,20 @@ export function ImportView() {
               lead={[
                 "Every route between two parts stands on an import in the code at this commit, and its arrowhead runs the way the import does.",
                 `The grouping and the words are a language model's (${drawing.model}), checked against the code's imports but not read by a person: a scenario says which part calls which, not what the code does in detail.`,
+                ...(drawing.newer
+                  ? [
+                      `The repository has moved on since: its latest commit is ${drawing.newer.sha.slice(0, 7)}${drawing.newer.commits === undefined ? "" : `, ${drawing.newer.commits} commit${drawing.newer.commits === 1 ? "" : "s"} ahead`}. Drawing it takes two or three minutes.`,
+                    ]
+                  : []),
               ]}
             />
+            {drawing.newer && (
+              <div className="mt-6">
+                <Button onClick={() => void draw(drawing.repo, true)}>
+                  Draw the latest commit
+                </Button>
+              </div>
+            )}
           </PageSection>
           <PageSection id="concept" tone="surface">
             <ConceptArticle

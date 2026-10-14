@@ -12,17 +12,31 @@ export interface ButtonProps {
   readonly pressed?: boolean;
   /** One primary per screen: `text` fill, `bg` mono label. */
   readonly variant?: keyof typeof variants;
+  /** `submit` sends the form it sits in. */
+  readonly type?: "button" | "submit";
+  readonly disabled?: boolean;
   readonly onClick?: () => void;
 }
 
 /** An action in a mono label: primary (one per screen) or secondary, on `plate`. */
-export function Button({ children, pressed, variant = "primary", onClick }: ButtonProps) {
+export function Button({
+  children,
+  pressed,
+  variant = "primary",
+  type = "button",
+  disabled,
+  onClick,
+}: ButtonProps) {
   return (
     <button
-      type="button"
+      type={type}
       aria-pressed={pressed}
+      disabled={disabled}
       onClick={onClick}
-      className={cx("mono-label h-11 rounded-md px-4 transition-colors", variants[variant])}
+      className={cx(
+        "mono-label h-11 rounded-md px-4 transition-colors disabled:opacity-60",
+        variants[variant],
+      )}
     >
       {children}
     </button>

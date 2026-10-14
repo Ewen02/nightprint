@@ -4,6 +4,7 @@ import { Balloon } from "./atoms/balloon";
 import { ButtonLink } from "./atoms/button-link";
 import { IconButton } from "./atoms/icon-button";
 import { LogoMark } from "./atoms/logo-mark";
+import { TextField } from "./atoms/text-field";
 import { TokenTag } from "./atoms/token-tag";
 import { Breadcrumb } from "./molecules/breadcrumb";
 import { FilterChips } from "./molecules/filter-chips";
@@ -12,6 +13,7 @@ import { LogLine } from "./molecules/log-line";
 import { MachineCard } from "./molecules/machine-card";
 import { PartCallout } from "./molecules/part-callout";
 import { PlanView } from "./molecules/plan-view";
+import { RepoForm } from "./molecules/repo-form";
 import { SheetPreview } from "./molecules/sheet-preview";
 import { StageAction } from "./molecules/stage-action";
 import { StepDots } from "./molecules/step-dots";
@@ -25,6 +27,7 @@ import { DrawingLegend } from "./organisms/drawing-legend";
 import { DrawingRegister } from "./organisms/drawing-register";
 import { HomeHeader } from "./organisms/home-header";
 import { HomeIntro } from "./organisms/home-intro";
+import { ImportPanel } from "./organisms/import-panel";
 import { RunTranscript } from "./organisms/run-transcript";
 import { ScenarioPicker } from "./organisms/scenario-picker";
 import { SiteFooter } from "./organisms/site-footer";
@@ -659,5 +662,56 @@ describe("build log", () => {
     expect(log).toMatch(
       /<\/table><a href="https:\/\/example.org\/commits"[^>]*>Full history on GitHub/,
     );
+  });
+});
+
+describe("import", () => {
+  const form = {
+    value: "",
+    onChange: () => {},
+    onSubmit: () => {},
+    label: "GitHub repository",
+    placeholder: "owner/name",
+    action: "Draw it",
+  };
+
+  it("names its field by its label, and points it at what reports on it", () => {
+    const field = html(
+      <TextField
+        id="repo"
+        label="GitHub repository"
+        value=""
+        onChange={() => {}}
+        describedBy="s"
+      />,
+    );
+    expect(field).toMatch(/<label for="repo"[^>]*>GitHub repository<\/label>/);
+    expect(field).toMatch(/<input id="repo"[^>]*aria-describedby="s"/);
+  });
+
+  it("submits a repository, and only once one is typed", () => {
+    expect(html(<RepoForm {...form} />)).toMatch(/<button type="submit"[^>]*disabled=""/);
+    expect(html(<RepoForm {...form} value="acme/shop" />)).not.toMatch(/disabled=""/);
+    expect(html(<RepoForm {...form} value="acme/shop" busy />)).toMatch(/disabled=""/);
+  });
+
+  it("reads out where the drawing is, and why it failed", () => {
+    const panel = html(
+      <ImportPanel
+        eyebrow="Import"
+        title="Draw a repository."
+        lead={[]}
+        form={form}
+        stages={[
+          { label: "Reading the repository", state: "done" },
+          { label: "Drawing", state: "current" },
+        ]}
+        error="No public repository acme/missing."
+      />,
+    );
+    expect(panel).toMatch(/<input id="repo"[^>]*aria-describedby="import-status"/);
+    expect(panel).toMatch(/<div id="import-status" role="status" aria-live="polite"/);
+    expect(panel).toContain("<ol");
+    expect(panel).toContain("No public repository acme/missing.");
   });
 });

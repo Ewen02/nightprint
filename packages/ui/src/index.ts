@@ -15,6 +15,7 @@ export { LogoMark, type LogoMarkProps } from "./atoms/logo-mark";
 export { MonoLabel, type MonoLabelProps } from "./atoms/mono-label";
 export { NavLink, type NavLinkProps } from "./atoms/nav-link";
 export { StepDot, type StepDotProps } from "./atoms/step-dot";
+export { TextField, type TextFieldProps } from "./atoms/text-field";
 export { Toggle, type ToggleProps } from "./atoms/toggle";
 export { TokenTag, type TokenTagProps } from "./atoms/token-tag";
 
@@ -37,6 +38,7 @@ export {
   type PlanViewProps,
   type PlanZone,
 } from "./molecules/plan-view";
+export { RepoForm, type RepoFormProps } from "./molecules/repo-form";
 export { ScenarioEnd, type ScenarioEndProps } from "./molecules/scenario-end";
 export { SectionHeading, type SectionHeadingProps } from "./molecules/section-heading";
 export { SheetPreview, type SheetPreviewProps } from "./molecules/sheet-preview";
@@ -72,6 +74,7 @@ export { DrawingSheet, type DrawingSheetProps } from "./organisms/drawing-sheet"
 export { EventLog, type EventLogEntry, type EventLogProps } from "./organisms/event-log";
 export { HomeHeader, type HomeHeaderProps } from "./organisms/home-header";
 export { HomeIntro, type HomeIntroProps } from "./organisms/home-intro";
+export { ImportPanel, type ImportPanelProps, type ImportStage } from "./organisms/import-panel";
 export {
   type RunScenario,
   type RunStep,

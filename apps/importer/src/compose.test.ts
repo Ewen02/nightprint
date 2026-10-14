@@ -66,7 +66,7 @@ describe("compose", () => {
     expect(composed.attempts).toBe(2);
     const feedback = model.sent[1]?.at(-1)?.content;
     expect(feedback).toContain(
-      'route "made-up" comes from outside the code: its dependsOn is "none"',
+      'step "in": "call" starts at "user", not where "call" ends ("server")',
     );
   });
 
@@ -81,7 +81,7 @@ describe("compose", () => {
     const failure = compose(survey, options, model.ask);
     await expect(failure).rejects.toBeInstanceOf(ComposeError);
     await expect(failure).rejects.toMatchObject({
-      issues: [expect.stringContaining("made-up")],
+      issues: [expect.stringContaining('"call" starts at "user"')],
     });
   });
 

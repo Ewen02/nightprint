@@ -93,13 +93,18 @@ export const valid: Blueprint = {
   actions: [],
   glossary: [],
 };
-/** The same machine with a route nothing in the code shows. */
+/**
+ * The same machine with a token whose path does not chain: the second route starts where
+ * the first one started. No repair can tell which way was meant; the model must.
+ */
 export const invented: Blueprint = {
   ...valid,
-  routes: [
-    ...valid.routes,
-    { id: "made-up", from: "server", to: "user", kind: "pipe", dependsOn: "to" },
-  ],
+  scenarios: valid.scenarios.map((scenario) => ({
+    ...scenario,
+    steps: scenario.steps.map((step) =>
+      step.id === "in" ? { ...step, path: ["call", "call"] } : step,
+    ),
+  })),
 };
 
 export function answer(blueprint: unknown, stop: Answer["stop_reason"] = "end_turn"): Answer {

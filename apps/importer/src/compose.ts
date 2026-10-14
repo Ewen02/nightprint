@@ -8,6 +8,7 @@ import {
   checkBlueprint,
   type DrawOptions,
   drawMachine,
+  repairBlueprint,
   type Survey,
   surveySheet,
 } from "@nightprint/blueprint";
@@ -50,7 +51,7 @@ Zones, drawn left to right in the order you give them: who uses the project, the
 
 Routes: draw the imports that explain the architecture, not every edge; every route a scenario travels must exist. A pipe carries tokens. A wire is configuration (the configurator plugging a part in): it carries none and its dependsOn is "none".
 
-Scenarios: 1 to 3, of 3 to 8 steps. Each follows one real use of the project, from a way in through its parts, and says when each step runs: at build time, at startup, on a request, or in the browser. A static site's pages are built once and then run in the browser; a token goes back only along routes an answer really takes. A step moves one token along a path of routes that chain end to end (each route starts where the one before it ends; to come back, travel the same routes with reverse true), or holds a token on a part, or moves nothing. Flows: request (a call going in), write (a change stored or sent), response (an answer going back), error (a failure or a violation).
+Scenarios: 1 to 3, of 3 to 8 steps. Each plays at least two steps with every switch off: the steps that show a what-if sit inside a scenario that also plays without it, never in a scenario of their own. Each follows one real use of the project, from a way in through its parts, and says when each step runs: at build time, at startup, on a request, or in the browser. A static site's pages are built once and then run in the browser; a token goes back only along routes an answer really takes. A step moves one token along a path of routes that chain end to end (each route starts where the one before it ends; to come back, travel the same routes with reverse true), or holds a token on a part, or moves nothing. Flows: request (a call going in), write (a change stored or sent), response (an answer going back), error (a failure or a violation).
 
 Words, in English: step titles of 2 to 6 words in sentence case; bodies of one or two plain sentences in the present tense that name the parts and what the code does; log lines short, like "Page /m/[slug] → MachineView". The article: 2 to 5 short paragraphs on how the project is organised and the rule its imports keep. A glossary of up to 8 terms a reader needs, each with the parts it names. No marketing, no superlatives, no emoji. Ids are kebab-case.`;
 
@@ -195,8 +196,16 @@ function partsAsTheyCome(onPart: (part: BlueprintPart) => void): (delta: string)
 const ANSWER_FORMAT = `Answer with the blueprint as one JSON object and nothing else: no prose, no code fence. It follows this JSON Schema:
 ${JSON.stringify(z.toJSONSchema(blueprintSchema))}`;
 
+/** How long the model thinks before it writes: the main lever on a drawing's time and cost. */
+export type Effort = "low" | "medium" | "high";
+
 /** Asks Claude, streaming so a long answer never hits a request timeout. */
-export function claudeAsk(client = new Anthropic()): Ask {
+/**
+ * Medium by default, measured on two repositories (15/10/2026): with mechanical slips
+ * repaired, it drew both in one answer, in 69 and 98 s for $0.010 and $0.014. High took
+ * 175 to 182 s for $0.030 to $0.035; low once needed three answers.
+ */
+export function claudeAsk(client = new Anthropic(), effort: Effort = "medium"): Ask {
   return async (messages, listen) => {
     const stream = client.beta.messages.stream({
       model: MODEL,
@@ -204,7 +213,7 @@ export function claudeAsk(client = new Anthropic()): Ask {
       // Haiku 5.5 has no server-side fallback: a refusal ends the run, see `compose`.
       // Summarized, so a visitor can follow what the model weighs while it thinks.
       thinking: { type: "adaptive", display: "summarized" },
-      output_config: { effort: "high" },
+      output_config: { effort },
       system: [
         {
           type: "text",
@@ -291,12 +300,14 @@ export async function compose(
     const read = blueprintOf(message);
     issues = read.issues;
     if (read.blueprint) {
-      issues = checkBlueprint(read.blueprint, survey);
+      // Mechanical slips are mended here; only what the model must decide goes back to it.
+      const { blueprint } = repairBlueprint(read.blueprint, survey);
+      issues = checkBlueprint(blueprint, survey);
       if (issues.length === 0) {
         try {
-          const input = drawMachine(read.blueprint, survey, options);
+          const input = drawMachine(blueprint, survey, options);
           const machine = defineMachine(input);
-          return { blueprint: read.blueprint, input, machine, attempts: attempt, usage };
+          return { blueprint, input, machine, attempts: attempt, usage };
         } catch (error) {
           if (!(error instanceof MachineDefinitionError)) {
             throw error;

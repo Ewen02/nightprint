@@ -11,7 +11,7 @@ const run = promisify(execFile);
 export class SourceError extends Error {
   override name = "SourceError";
   constructor(
-    readonly reason: "not-found" | "private" | "too-big" | "rate-limited" | "unreadable",
+    readonly reason: "not-found" | "private" | "too-big" | "rate-limited" | "unreadable" | "empty",
     message: string,
   ) {
     super(message);
@@ -61,7 +61,8 @@ export function parseGitHubRepo(input: string): GitHubRepo | undefined {
     /^(?:https?:\/\/)?(?:www\.)?(?:github\.com\/)?([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+?)(?:\.git)?(?:\/tree\/([^?#]+))?\/?(?:[?#].*)?$/.exec(
       input.trim(),
     );
-  if (!match?.[1] || !match[2]) {
+  // "." and ".." are no repository names, and would climb out of a cache folder.
+  if (!match?.[1] || !match[2] || /^\.+$/.test(match[2])) {
     return undefined;
   }
   return { owner: match[1], name: match[2], ref: match[3] };
@@ -77,26 +78,28 @@ export interface GitHubOptions {
 
 /** The fields read from GitHub's answers; anything else they carry is ignored. */
 const repoInfo = z.object({
+  full_name: z.string(),
   private: z.boolean().optional(),
   default_branch: z.string().optional(),
   description: z.string().nullish(),
   html_url: z.string().optional(),
 });
-const commitInfo = z.object({ sha: z.string() });
+const commitInfo = z.object({ sha: z.string().regex(/^[0-9a-f]{40}$/) });
 const treeInfo = z.object({
   truncated: z.boolean().optional(),
   tree: z.array(z.object({ path: z.string(), type: z.string(), size: z.number().optional() })),
 });
 
-/**
- * Reads a public GitHub repository at one commit: one call for the repository, one for the
- * commit, one for the tree, then each wanted file from raw.githubusercontent.com, which the
- * API's rate limit does not count.
- */
-export async function readGitHub(
-  repo: GitHubRepo,
-  options: GitHubOptions = {},
-): Promise<RepoSnapshot> {
+/** A public repository pinned to one commit, as GitHub names it. */
+export interface GitHubCommit {
+  readonly owner: string;
+  readonly name: string;
+  readonly sha: string;
+  readonly url: string;
+  readonly description?: string | undefined;
+}
+
+function githubApi(options: GitHubOptions) {
   const get = options.fetch ?? fetch;
   const headers: Record<string, string> = {
     accept: "application/vnd.github+json",
@@ -106,11 +109,11 @@ export async function readGitHub(
   if (options.token) {
     headers.authorization = `Bearer ${options.token}`;
   }
-  const api = async <T>(path: string, schema: z.ZodType<T>): Promise<T> => {
+  const api = async <T>(repo: GitHubRepo, path: string, schema: z.ZodType<T>): Promise<T> => {
     const response = await get(`https://api.github.com/repos/${repo.owner}/${repo.name}${path}`, {
       headers,
     });
-    if (response.status === 404) {
+    if (response.status === 404 || response.status === 422) {
       throw new SourceError("not-found", `No public repository ${repo.owner}/${repo.name}.`);
     }
     if (response.status === 403 || response.status === 429) {
@@ -125,14 +128,41 @@ export async function readGitHub(
     }
     return parsed.data;
   };
+  return { get, api };
+}
 
-  const info = await api("", repoInfo);
+/** Which commit a repository's branch, tag or default branch points at: two API calls. */
+export async function resolveGitHub(
+  repo: GitHubRepo,
+  options: GitHubOptions = {},
+): Promise<GitHubCommit> {
+  const { api } = githubApi(options);
+  const info = await api(repo, "", repoInfo);
   if (info.private) {
     throw new SourceError("private", "Only public repositories can be drawn.");
   }
+  const [owner = repo.owner, name = repo.name] = info.full_name.split("/");
   const ref = repo.ref ?? info.default_branch ?? "main";
-  const commit = await api(`/commits/${encodeURIComponent(ref)}`, commitInfo);
-  const tree = await api(`/git/trees/${commit.sha}?recursive=1`, treeInfo);
+  const commit = await api(repo, `/commits/${encodeURIComponent(ref)}`, commitInfo);
+  return {
+    owner,
+    name,
+    sha: commit.sha,
+    url: info.html_url ?? `https://github.com/${owner}/${name}`,
+    description: info.description ?? undefined,
+  };
+}
+
+/**
+ * Reads a public repository at a known commit: one API call for the tree, then each wanted
+ * file from raw.githubusercontent.com, which the API's rate limit does not count.
+ */
+export async function readGitHubAt(
+  commit: GitHubCommit,
+  options: GitHubOptions = {},
+): Promise<RepoSnapshot> {
+  const { get, api } = githubApi(options);
+  const tree = await api(commit, `/git/trees/${commit.sha}?recursive=1`, treeInfo);
   if (tree.truncated) {
     throw new SourceError("too-big", "The repository is too big for GitHub to list in one go.");
   }
@@ -149,11 +179,9 @@ export async function readGitHub(
       if (!entry) {
         return;
       }
-      const url = `https://raw.githubusercontent.com/${repo.owner}/${repo.name}/${commit.sha}/${entry.path
-        .split("/")
-        .map(encodeURIComponent)
-        .join("/")}`;
-      const response = await get(url, { headers: { "user-agent": headers["user-agent"] ?? "" } });
+      const path = entry.path.split("/").map(encodeURIComponent).join("/");
+      const url = `https://raw.githubusercontent.com/${commit.owner}/${commit.name}/${commit.sha}/${path}`;
+      const response = await get(url, { headers: { "user-agent": "nightprint-importer" } });
       if (!response.ok) {
         throw new SourceError("unreadable", `Could not read ${entry.path} (${response.status}).`);
       }
@@ -163,10 +191,18 @@ export async function readGitHub(
   await Promise.all(Array.from({ length: options.concurrency ?? 16 }, worker));
 
   return {
-    name: `${repo.owner}/${repo.name}`,
+    name: `${commit.owner}/${commit.name}`,
     ref: commit.sha,
-    url: info.html_url,
-    description: info.description ?? undefined,
+    url: commit.url,
+    description: commit.description,
     files: files.sort((a, b) => a.path.localeCompare(b.path)),
   };
+}
+
+/** Reads a public GitHub repository at the commit its ref points at. */
+export async function readGitHub(
+  repo: GitHubRepo,
+  options: GitHubOptions = {},
+): Promise<RepoSnapshot> {
+  return readGitHubAt(await resolveGitHub(repo, options), options);
 }

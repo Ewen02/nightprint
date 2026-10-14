@@ -233,9 +233,15 @@ export function drawsDependencies(machine: Machine): boolean {
   return [...machine.routes, ...added].some((route) => route.dependsOn !== undefined);
 }
 
-/** The exploded view has something to unplug: adapters. */
+/**
+ * The exploded view has something to unplug: adapters plugged into ports. A real project's
+ * machine has adapters but no ports, and nothing to unplug them from.
+ */
 export function hasAdapters(machine: Machine): boolean {
-  return machine.parts.some((part) => part.kind === "adapter");
+  return (
+    machine.parts.some((part) => part.kind === "adapter") &&
+    machine.parts.some((part) => part.kind === "port")
+  );
 }
 
 /** The machine's glossary, each term with the balloon numbers of the parts it names. */

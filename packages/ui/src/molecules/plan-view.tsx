@@ -84,6 +84,8 @@ export interface PlanTitleBlock extends PlanBox {
 export interface PlanZone extends PlanBox {
   readonly id: string;
   readonly label: string;
+  /** `round`: the circle inscribed in the box, for a hub's rings. */
+  readonly shape?: "rect" | "round" | undefined;
 }
 
 export interface PlanViewProps {
@@ -141,19 +143,32 @@ export function PlanView({
       height={height}
       className={className}
     >
-      {zones.map((zone) => (
-        <rect
-          key={zone.id}
-          x={zone.x}
-          y={zone.y}
-          width={zone.width}
-          height={zone.height}
-          fill="none"
-          stroke={neutral.lineStrong}
-          strokeWidth={0.025}
-          strokeDasharray="0.12 0.12"
-        />
-      ))}
+      {zones.map((zone) =>
+        zone.shape === "round" ? (
+          <circle
+            key={zone.id}
+            cx={zone.x + zone.width / 2}
+            cy={zone.y + zone.height / 2}
+            r={Math.min(zone.width, zone.height) / 2}
+            fill="none"
+            stroke={neutral.lineStrong}
+            strokeWidth={0.025}
+            strokeDasharray="0.12 0.12"
+          />
+        ) : (
+          <rect
+            key={zone.id}
+            x={zone.x}
+            y={zone.y}
+            width={zone.width}
+            height={zone.height}
+            fill="none"
+            stroke={neutral.lineStrong}
+            strokeWidth={0.025}
+            strokeDasharray="0.12 0.12"
+          />
+        ),
+      )}
       {zoneLabels &&
         zones.map((zone) => (
           <text

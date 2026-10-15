@@ -625,6 +625,19 @@ describe("drawing set", () => {
     expect(plan).toContain('stroke="#7BE38A"');
   });
 
+  it("draws a round zone as the circle inside its box", () => {
+    const plan = html(
+      <PlanView
+        label="A hub"
+        box={{ x: 0, y: 0, width: 10, height: 10 }}
+        zones={[{ id: "ring", label: "Ring", x: 1, y: 1, width: 8, height: 8, shape: "round" }]}
+        parts={[]}
+        routes={[]}
+      />,
+    );
+    expect(plan).toMatch(/<circle cx="5" cy="5" r="4" fill="none"/);
+  });
+
   it("draws what a what-if switch breaks in vermillon, whatever flow travels it", () => {
     const plan = html(
       <PlanView

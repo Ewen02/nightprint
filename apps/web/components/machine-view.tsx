@@ -7,6 +7,7 @@ import {
   Cartouche,
   CodeListing,
   EventLog,
+  FilmPreview,
   FlowLegend,
   MachineTemplate,
   NavLink,
@@ -17,6 +18,7 @@ import {
   WhatIfPanel,
 } from "@nightprint/ui";
 import { type ReactNode, useEffect, useState } from "react";
+import { filmButton, filmPreview, useFilm } from "./film/use-film";
 import { momentLink } from "./machine-link";
 import {
   billOfPartsItems,
@@ -99,6 +101,7 @@ export function MachineView({
   useTransportKeys(player);
   useOpeningMoment(player);
   useMomentLinks(player);
+  const film = useFilm(machine);
   const [shared, setShared] = useState<"no" | "copied" | "address">("no");
   useEffect(() => {
     if (shared === "no") {
@@ -136,114 +139,121 @@ export function MachineView({
     />
   );
   const inspected = resolved.parts.find((p) => p.id === selected);
+  const preview = filmPreview(film);
 
   return (
-    <MachineTemplate
-      header={
-        <SiteHeader
-          breadcrumb={[{ label: "Nightprint", href: "/" }, { label: machine.code }]}
-          meta={`${machine.family} · ${machine.category}`}
-        />
-      }
-      title={machine.title}
-      summary={machine.summary}
-      titleAside={<NavLink href="#concept">Read the concept</NavLink>}
-      stage={
-        <Stage
-          player={player}
-          label={stageLabel(snapshot)}
-          selected={selected}
-          hovered={hovered}
-          callouts={stageCallouts(snapshot, selected, hovered, wide ? 2 : 1)}
-          onSelect={setSelected}
-          onHover={setHovered}
-          // From wide screens up, the title block sits over the stage's top left.
-          insetTop={wide ? TITLE_ROOM : 0}
-          // The listing stands on the stage's right: the machine is framed beside it.
-          insetRight={wide && listing ? LISTING_ROOM : 0}
-          exploded={exploded}
-        />
-      }
-      tools={
-        (listing || unplug) && (
-          // The button first: it stays in view while the listing gives up height.
-          <div className="flex min-h-0 flex-col items-end gap-3">
-            {unplug}
-            {listing && <CodeListing {...listing} />}
-          </div>
-        )
-      }
-      legend={
-        <FlowLegend
-          items={flowLegend(machine)}
-          dependency={drawsDependencies(machine) ? "Depends on" : undefined}
-          latency="Modelled, not measured"
-          hint="Click a part · drag to turn · pinch to zoom"
-        />
-      }
-      cartouche={<Cartouche {...cartoucheProps(machine)} />}
-      transport={
-        <Transport
-          {...transportData(snapshot)}
-          onPrev={() => player.dispatch({ type: "prev" })}
-          onNext={() => player.dispatch({ type: "next" })}
-          onTogglePlay={() => player.dispatch({ type: "togglePlay" })}
-          onSeek={(index) => player.dispatch({ type: "seek", step: index })}
-          ending={scenarioEnding(machine, snapshot)}
-          onSuggestion={(id) => {
-            const [kind, target = ""] = id.split(":");
-            if (kind === "scenario") {
-              player.dispatch({ type: "setScenario", scenario: target });
-              return;
-            }
-            // Flip the switch, then watch the whole scenario again with it.
-            player.dispatch({ type: "setAction", action: target, active: true });
-            player.dispatch({ type: "seek", step: 0 });
-            player.dispatch({ type: "play" });
-          }}
-          share={{
-            label: { no: "Copy link", copied: "Link copied", address: "Link in address bar" }[
-              shared
-            ],
-            status: {
-              no: "",
-              copied: "A link to this step is in your clipboard.",
-              address: "The address bar now links to this step.",
-            }[shared],
-            onShare: share,
-          }}
-        />
-      }
-      aside={
-        <>
-          <ScenarioPicker
-            scenarios={machine.scenarios.map((s) => ({ id: s.id, label: s.title }))}
-            value={snapshot.state.scenarioId}
-            onChange={(scenario) => player.dispatch({ type: "setScenario", scenario })}
+    <>
+      {film.stage}
+      <MachineTemplate
+        header={
+          <SiteHeader
+            breadcrumb={[{ label: "Nightprint", href: "/" }, { label: machine.code }]}
+            meta={`${machine.family} · ${machine.category}`}
           />
-          <WhatIfPanel
-            description="Flip one: the step replays with the change."
-            actions={whatIfItems(machine, snapshot)}
-            onToggle={(action, active) => player.dispatch({ type: "setAction", action, active })}
-          />
-          <BillOfParts
-            description="Point at a row to find its part, click to read it."
-            items={billOfPartsItems(snapshot)}
-            selectedId={selected}
-            hoveredId={hovered}
+        }
+        title={machine.title}
+        summary={machine.summary}
+        titleAside={<NavLink href="#concept">Read the concept</NavLink>}
+        stage={
+          <Stage
+            player={player}
+            label={stageLabel(snapshot)}
+            selected={selected}
+            hovered={hovered}
+            callouts={stageCallouts(snapshot, selected, hovered, wide ? 2 : 1)}
             onSelect={setSelected}
             onHover={setHovered}
-            inspected={
-              inspected?.description
-                ? { label: inspected.label, description: inspected.description }
-                : null
-            }
+            // From wide screens up, the title block sits over the stage's top left.
+            insetTop={wide ? TITLE_ROOM : 0}
+            // The listing stands on the stage's right: the machine is framed beside it.
+            insetRight={wide && listing ? LISTING_ROOM : 0}
+            exploded={exploded}
           />
-        </>
-      }
-      log={<EventLog entries={eventLogEntries(snapshot)} />}
-      after={after}
-      footer={footer}
-    />
+        }
+        tools={
+          (preview || listing || unplug) && (
+            // The video being made first, then the button: they stay in view while the
+            // listing gives up height.
+            <div className="flex min-h-0 flex-col items-end gap-3">
+              {preview && <FilmPreview {...preview} />}
+              {unplug}
+              {listing && <CodeListing {...listing} />}
+            </div>
+          )
+        }
+        legend={
+          <FlowLegend
+            items={flowLegend(machine)}
+            dependency={drawsDependencies(machine) ? "Depends on" : undefined}
+            latency="Modelled, not measured"
+            hint="Click a part · drag to turn · pinch to zoom"
+          />
+        }
+        cartouche={<Cartouche {...cartoucheProps(machine)} />}
+        transport={
+          <Transport
+            {...transportData(snapshot)}
+            onPrev={() => player.dispatch({ type: "prev" })}
+            onNext={() => player.dispatch({ type: "next" })}
+            onTogglePlay={() => player.dispatch({ type: "togglePlay" })}
+            onSeek={(index) => player.dispatch({ type: "seek", step: index })}
+            ending={scenarioEnding(machine, snapshot)}
+            onSuggestion={(id) => {
+              const [kind, target = ""] = id.split(":");
+              if (kind === "scenario") {
+                player.dispatch({ type: "setScenario", scenario: target });
+                return;
+              }
+              // Flip the switch, then watch the whole scenario again with it.
+              player.dispatch({ type: "setAction", action: target, active: true });
+              player.dispatch({ type: "seek", step: 0 });
+              player.dispatch({ type: "play" });
+            }}
+            share={{
+              label: { no: "Copy link", copied: "Link copied", address: "Link in address bar" }[
+                shared
+              ],
+              status: {
+                no: "",
+                copied: "A link to this step is in your clipboard.",
+                address: "The address bar now links to this step.",
+              }[shared],
+              onShare: share,
+            }}
+            film={film.supported ? filmButton(film) : undefined}
+          />
+        }
+        aside={
+          <>
+            <ScenarioPicker
+              scenarios={machine.scenarios.map((s) => ({ id: s.id, label: s.title }))}
+              value={snapshot.state.scenarioId}
+              onChange={(scenario) => player.dispatch({ type: "setScenario", scenario })}
+            />
+            <WhatIfPanel
+              description="Flip one: the step replays with the change."
+              actions={whatIfItems(machine, snapshot)}
+              onToggle={(action, active) => player.dispatch({ type: "setAction", action, active })}
+            />
+            <BillOfParts
+              description="Point at a row to find its part, click to read it."
+              items={billOfPartsItems(snapshot)}
+              selectedId={selected}
+              hoveredId={hovered}
+              onSelect={setSelected}
+              onHover={setHovered}
+              inspected={
+                inspected?.description
+                  ? { label: inspected.label, description: inspected.description }
+                  : null
+              }
+            />
+          </>
+        }
+        log={<EventLog entries={eventLogEntries(snapshot)} />}
+        after={after}
+        footer={footer}
+      />
+    </>
   );
 }

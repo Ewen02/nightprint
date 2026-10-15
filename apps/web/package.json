@@ -16,6 +16,7 @@
     "@nightprint/scene": "workspace:*",
     "@nightprint/tokens": "workspace:*",
     "@nightprint/ui": "workspace:*",
+    "mediabunny": "1.61.0",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"

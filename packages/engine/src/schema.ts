@@ -101,6 +101,8 @@ export const zoneSchema = z.object({
   /** Opposite corners on the plate, as [x, z]. */
   from: z.tuple([z.number(), z.number()]).readonly(),
   to: z.tuple([z.number(), z.number()]).readonly(),
+  /** `round`: the circle inscribed between the corners, for a hub's rings. */
+  shape: z.enum(["rect", "round"]).default("rect"),
 });
 export type Zone = z.infer<typeof zoneSchema>;
 

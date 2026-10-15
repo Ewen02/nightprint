@@ -119,7 +119,7 @@ function settleOverlaps(labels: LabelRegistry) {
   }
 }
 
-interface ScreenPosition {
+export interface ScreenPosition {
   /** CSS pixels from the canvas' top left, rounded to half a pixel. */
   readonly x: number;
   readonly y: number;
@@ -144,6 +144,26 @@ function toScreen(
     z: Math.round(((1 - point.z) / 2) * DEPTH_LAYERS),
     side: point.x > OPEN_LEFT_FROM ? "left" : "right",
   };
+}
+
+/**
+ * Where every anchor stands on the canvas now, by id: what a film paints its labels at.
+ * Anchors behind the camera are left out.
+ */
+export function projectAnchors(
+  labels: LabelRegistry,
+  camera: Camera,
+  size: { width: number; height: number },
+): Map<string, ScreenPosition> {
+  camera.updateMatrixWorld();
+  const projected = new Map<string, ScreenPosition>();
+  for (const [id, anchor] of labels.anchors) {
+    const screen = toScreen(anchor, camera, size);
+    if (screen) {
+      projected.set(id, screen);
+    }
+  }
+  return projected;
 }
 
 /**

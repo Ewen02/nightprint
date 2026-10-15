@@ -56,6 +56,22 @@ const shop: RepoFile[] = [
 
 export const snapshot: RepoSnapshot = { name: "acme/shop", ref: "abc1234def", files: shop };
 
+/** The shop with a command line that places orders too: three parts of the code import the domain. */
+export const hubSnapshot: RepoSnapshot = {
+  ...snapshot,
+  files: [
+    ...shop,
+    {
+      path: "apps/cli/package.json",
+      text: JSON.stringify({ name: "@shop/cli", bin: { shop: "./src/index.ts" } }),
+    },
+    {
+      path: "apps/cli/src/index.ts",
+      text: 'import { placeOrder } from "@shop/core";\nplaceOrder(1);',
+    },
+  ],
+};
+
 /** The shop's machine as a draftsman would plan it: every route stands on an import. */
 export const shopBlueprint: Blueprint = {
   title: "Shop",
@@ -67,6 +83,11 @@ export const shopBlueprint: Blueprint = {
     { id: "code", label: "Shop", note: "The repository's code" },
     { id: "services", label: "Services", note: "Used by the code" },
   ],
+  layout: {
+    kind: "bands",
+    core: null,
+    why: "Calls run one way: the site, the domain, the database.",
+  },
   parts: [
     {
       id: "visitor",
@@ -188,4 +209,46 @@ export const shopBlueprint: Blueprint = {
     },
   ],
   glossary: [{ term: "Core", definition: "The order rules.", parts: ["core"] }],
+};
+
+/**
+ * The shop again, its code leaning on the domain: the site, the command line and the
+ * database package all import it, from a zone of their own around the domain's.
+ */
+export const hubBlueprint: Blueprint = {
+  ...shopBlueprint,
+  zones: [
+    { id: "callers", label: "Callers", note: "Use the shop" },
+    { id: "apps", label: "Apps", note: "Built on the domain" },
+    { id: "heart", label: "Domain", note: "What the rest imports" },
+    { id: "services", label: "Services", note: "Used by the code" },
+  ],
+  layout: {
+    kind: "hub",
+    core: "core",
+    why: "The site, the command line and the database package all import the domain.",
+  },
+  parts: [
+    ...shopBlueprint.parts.map((part) =>
+      part.id === "core"
+        ? { ...part, zone: "heart" }
+        : part.zone === "code"
+          ? { ...part, zone: "apps" }
+          : part,
+    ),
+    {
+      id: "cli",
+      label: "Command line",
+      role: "CLI",
+      kind: "adapter",
+      zone: "apps",
+      units: ["apps-cli"],
+      libraries: [],
+      description: "Places orders from a terminal.",
+    },
+  ],
+  routes: [
+    ...shopBlueprint.routes,
+    { id: "cli-core", from: "cli", to: "core", kind: "pipe", dependsOn: "to" },
+  ],
 };

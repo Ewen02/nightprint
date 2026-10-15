@@ -41,6 +41,7 @@ export const valid: Blueprint = {
     { id: "outside", label: "Outside", note: "Calls the server" },
     { id: "code", label: "Code", note: "The repository" },
   ],
+  layout: { kind: "bands", core: null, why: "Calls run one way: the server, then the domain." },
   parts: [
     {
       id: "user",

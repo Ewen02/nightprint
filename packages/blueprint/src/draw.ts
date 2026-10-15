@@ -1,12 +1,13 @@
 import type { MachineInput, Shape, Vec3 } from "@nightprint/engine";
 import type { Blueprint, BlueprintPart } from "./blueprint";
+import { type Hub, hubAround } from "./layouts";
 import type { Survey } from "./survey";
 
 /**
- * Lays a blueprint out on a plate: zones as bands from left to right, parts in rows on one
- * lattice shared by every column, routes squared off along the gaps between columns and the
- * corridors between rows. No judgement here, only geometry: the same blueprint always gives
- * the same drawing.
+ * Lays a blueprint out on a plate, in the composition it chose (see `layouts.ts`): bands
+ * from left to right, or a hub around the core most of the code leans on. Each part
+ * stands as tall as the code it holds. No judgement here, only geometry: the same
+ * blueprint always gives the same drawing.
  */
 
 export interface DrawOptions {
@@ -94,15 +95,34 @@ function laneOffset(n: number): number {
   return (n % 2 === 0 ? -1 : 1) * Math.ceil(n / 2) * LANE;
 }
 
-export function drawMachine(
-  blueprint: Blueprint,
-  survey: Survey,
-  options: DrawOptions,
-): MachineInput {
+const columnsOf = (n: number) => Math.max(1, Math.ceil(n / MAX_ROWS));
+
+type Point = { readonly x: number; readonly z: number };
+type Rect = { readonly from: readonly [number, number]; readonly to: readonly [number, number] };
+/** The face of a part a plug is on. */
+type Plug = { readonly axis: "x" | "z"; readonly sign: 1 | -1 };
+
+/** Where a layout puts the parts, their routes and the zones. Only geometry. */
+interface Layout {
+  /** Where each part stands, seen from above. */
+  readonly point: (id: string) => Point;
+  /** The bends of a route between two parts, at height y. */
+  readonly via: (from: string, to: string, y: number) => Vec3[];
+  /** The face an adapter's plug is on: towards what it plugs into. */
+  readonly plug: (id: string) => Plug;
+  /** Each zone's rectangle, in the blueprint's order. */
+  readonly zones: readonly Rect[];
+  readonly plate: { readonly size: [number, number]; readonly center: [number, number] };
+}
+
+/**
+ * The bands: zones from left to right, parts in rows on one lattice shared by every
+ * column, routes squared off along the gaps between columns and the corridors between rows.
+ */
+function bandsLayout(blueprint: Blueprint, neighbours: ReadonlyMap<string, string[]>): Layout {
   const zoneParts = blueprint.zones.map((zone) =>
     blueprint.parts.filter((p) => p.zone === zone.id),
   );
-  const columnsOf = (n: number) => Math.max(1, Math.ceil(n / MAX_ROWS));
   const rows = Math.max(
     1,
     ...zoneParts.map((parts) => Math.ceil(parts.length / columnsOf(parts.length))),
@@ -110,12 +130,6 @@ export function drawMachine(
   const totalColumns = zoneParts.reduce((sum, parts) => sum + columnsOf(parts.length), 0);
   const width = totalColumns * COLUMN + 2 * MARGIN_X;
   const zOfRow = (row: number) => (row - (rows - 1) / 2) * ROW;
-
-  const neighbours = new Map<string, string[]>();
-  for (const route of blueprint.routes) {
-    neighbours.set(route.from, [...(neighbours.get(route.from) ?? []), route.to]);
-    neighbours.set(route.to, [...(neighbours.get(route.to) ?? []), route.from]);
-  }
 
   // Each zone's parts fill its columns top to bottom, centred on the lattice; a few passes
   // reorder them by where their neighbours sit, which untangles most crossings.
@@ -156,22 +170,7 @@ export function drawMachine(
     }
     place();
   }
-
   const slotOf = (id: string): Slot => slots.get(id) ?? { x: 0, row: 0 };
-  const sized = sizes(blueprint, survey);
-  const sizeOf = (part: BlueprintPart) => sized.get(part.id) ?? SHAPES[part.kind];
-  const socketOf = (part: BlueprintPart): Vec3 => {
-    const { height } = sizeOf(part);
-    if (part.kind !== "adapter" || SHAPES.adapter.shape.type !== "box") {
-      return [0, PIPE_Y - height / 2, 0];
-    }
-    // An adapter's plug faces the side most of its routes leave from.
-    const own = slotOf(part.id).x;
-    const sides = (neighbours.get(part.id) ?? []).map((id) => Math.sign(slotOf(id).x - own));
-    const side = sides.reduce((a, b) => a + b, 0) < 0 ? -1 : 1;
-    return [(side * SHAPES.adapter.shape.size[0]) / 2, PIPE_Y - height / 2, 0];
-  };
-  const partById = new Map(blueprint.parts.map((p) => [p.id, p]));
 
   // Routes leave a part along x to the gap beside its column, run along it, and cross to a
   // far column through the corridor between two rows.
@@ -183,7 +182,7 @@ export function drawMachine(
     uses.set(key, n + 1);
     return at + laneOffset(n);
   };
-  const viaOf = (fromId: string, toId: string, y: number): Vec3[] => {
+  const via = (fromId: string, toId: string, y: number): Vec3[] => {
     const a = slotOf(fromId);
     const b = slotOf(toId);
     const za = zOfRow(a.row);
@@ -224,38 +223,280 @@ export function drawMachine(
     ];
   };
 
-  /** A what-if import arcs over the plate, so it never reads as one of the code's own routes. */
-  const arcOver = (fromId: string, toId: string): Vec3 => {
-    const a = slotOf(fromId);
-    const b = slotOf(toId);
-    return [(a.x + b.x) / 2, ARC_Y, (zOfRow(a.row) + zOfRow(b.row)) / 2];
+  // An adapter's plug faces the side most of its routes leave from.
+  const plug = (id: string): Plug => {
+    const own = slotOf(id).x;
+    const sides = (neighbours.get(id) ?? []).map((n) => Math.sign(slotOf(n).x - own));
+    return { axis: "x", sign: sides.reduce((a, b) => a + b, 0) < 0 ? -1 : 1 };
   };
-
-  // Bill of parts numbered left to right, back to front.
-  const numbered = [...blueprint.parts].sort((p, q) => {
-    const a = slotOf(p.id);
-    const b = slotOf(q.id);
-    return a.x - b.x || a.row - b.row;
-  });
-  const refOf = new Map(numbered.map((p, i) => [p.id, i + 1]));
 
   const zMin = zOfRow(0) - 0.5 - MARGIN_BACK;
   const zMax = zOfRow(rows - 1) + 0.5 + MARGIN_FRONT;
   let column = 0;
-  const zones = blueprint.zones.map((zone, i) => {
+  const zones = blueprint.zones.map((_, i): Rect => {
     const columns = columnsOf(zoneParts[i]?.length ?? 0);
     const x0 = i === 0 ? -width / 2 : -width / 2 + MARGIN_X + column * COLUMN;
     column += columns;
     const last = i === blueprint.zones.length - 1;
     const x1 = last ? width / 2 : -width / 2 + MARGIN_X + column * COLUMN;
-    return {
-      id: zone.id,
-      label: zone.label,
-      note: zone.note,
-      from: [x0, zMin] as const,
-      to: [x1, zMax] as const,
+    return { from: [x0, zMin], to: [x1, zMax] };
+  });
+  return {
+    point: (id) => {
+      const slot = slotOf(id);
+      return { x: slot.x, z: zOfRow(slot.row) };
+    },
+    via,
+    plug,
+    zones,
+    plate: { size: [width, zMax - zMin], center: [0, (zMin + zMax) / 2] },
+  };
+}
+
+/** Radius of the circle the core's zone-mates stand on, and room between parts on the ring. */
+const INNER = 2.6;
+const RING_GAP = 2.6;
+const RING_MIN = 3.1;
+/** Room around a ring of parts, inside its zone's square. */
+const RING_MARGIN = 1.35;
+/**
+ * How far inside the ring its own routes run, how far outside it the routes to the bands
+ * run, and the longest straight piece of their arcs.
+ */
+const CORRIDOR = 1.2;
+const OUTER = 1.0;
+const ARC_STEP = 0.35;
+
+/**
+ * The hub: the core at the centre of its zone, drawn as a square; its zone-mates on a small
+ * circle around it; the code of the zone beside it on a ring around that, in a square of its
+ * own; the zones before and after as bands on either side. Routes run straight, the ring's
+ * own along a circular corridor inside it, those to the bands along one outside it, out to
+ * their side; a band reaches the centre through a gap between two parts of the ring.
+ * Every plug faces the core.
+ */
+function hubLayout(
+  blueprint: Blueprint,
+  hub: Hub,
+  neighbours: ReadonlyMap<string, string[]>,
+): Layout {
+  const { zones } = blueprint;
+  const partsOf = (i: number) => blueprint.parts.filter((p) => p.zone === zones[i]?.id);
+  const ringIds = (
+    hub.ringZone === undefined
+      ? partsOf(hub.coreZone).filter((p) => p.id !== hub.core)
+      : partsOf(hub.ringZone)
+  ).map((p) => p.id);
+  const innerIds =
+    hub.ringZone === undefined
+      ? []
+      : partsOf(hub.coreZone)
+          .filter((p) => p.id !== hub.core)
+          .map((p) => p.id);
+  const firstMiddle = Math.min(hub.coreZone, hub.ringZone ?? hub.coreZone);
+  const lastMiddle = Math.max(hub.coreZone, hub.ringZone ?? hub.coreZone);
+  const left = zones.map((_, i) => i).filter((i) => i < firstMiddle);
+  const right = zones.map((_, i) => i).filter((i) => i > lastMiddle);
+
+  const inner = Math.max(INNER, (innerIds.length * RING_GAP) / (2 * Math.PI));
+  const innerHalf = innerIds.length > 0 ? inner + 1.15 : 1.25;
+  const ring = Math.max(
+    RING_MIN,
+    (ringIds.length * RING_GAP) / (2 * Math.PI),
+    innerHalf + CORRIDOR + 0.5,
+  );
+  const ringHalf = ring + RING_MARGIN;
+  const sideWidth = (indices: readonly number[]) =>
+    indices.reduce((sum, i) => sum + columnsOf(partsOf(i).length) * COLUMN, 0);
+  const width = sideWidth(left) + 2 * ringHalf + sideWidth(right) + 2 * MARGIN_X;
+  const sideRows = Math.max(
+    1,
+    ...[...left, ...right].map((i) => Math.ceil(partsOf(i).length / columnsOf(partsOf(i).length))),
+  );
+  const half = Math.max(ringHalf, (sideRows * ROW) / 2);
+  const zMin = -half - MARGIN_BACK;
+  const zMax = half + MARGIN_FRONT;
+
+  const points = new Map<string, Point>();
+  const angles = new Map<string, number>();
+  const rects: Rect[] = [];
+  let cursor = -width / 2 + MARGIN_X;
+  const xc = cursor + sideWidth(left) + ringHalf;
+  points.set(hub.core, { x: xc, z: 0 });
+
+  // The ring first: a part tied to the bands on the left takes the ring's left side, one
+  // tied to the right takes its right side; the angles are shared out evenly.
+  const sideOf = (id: string) =>
+    left.some((i) => partsOf(i).some((p) => p.id === id))
+      ? -1
+      : right.some((i) => partsOf(i).some((p) => p.id === id))
+        ? 1
+        : 0;
+  const lean = (id: string) => {
+    const sides = (neighbours.get(id) ?? []).map(sideOf).filter((side) => side !== 0);
+    return sides.length > 0 ? sides.reduce((a, b) => a + b, 0) / sides.length : 0;
+  };
+  const slots = ringIds
+    .map((_, k) => Math.PI / 2 + ((k + 0.5) * 2 * Math.PI) / ringIds.length)
+    .sort((a, b) => Math.cos(a) - Math.cos(b) || Math.sin(a) - Math.sin(b));
+  [...ringIds]
+    .sort((a, b) => lean(a) - lean(b))
+    .forEach((id, k) => {
+      const angle = slots[k] ?? 0;
+      angles.set(id, angle);
+      points.set(id, { x: xc + ring * Math.cos(angle), z: ring * Math.sin(angle) });
+    });
+  innerIds.forEach((id, k) => {
+    const angle = -Math.PI / 2 + (k * 2 * Math.PI) / innerIds.length;
+    points.set(id, { x: xc + inner * Math.cos(angle), z: inner * Math.sin(angle) });
+  });
+
+  // The bands, each zone's parts in columns, ordered by where their neighbours stand.
+  const band = (i: number, x0: number) => {
+    const parts = [...partsOf(i)];
+    const columns = columnsOf(parts.length);
+    const perColumn = Math.ceil(parts.length / columns);
+    const depthOf = (id: string) => {
+      const around = (neighbours.get(id) ?? []).flatMap((n) => points.get(n)?.z ?? []);
+      return around.length > 0 ? around.reduce((a, b) => a + b, 0) / around.length : 0;
+    };
+    parts.sort((a, b) => depthOf(a.id) - depthOf(b.id));
+    parts.forEach((part, k) => {
+      const c = Math.floor(k / perColumn);
+      const inColumn = Math.min(perColumn, parts.length - c * perColumn);
+      points.set(part.id, {
+        x: x0 + (c + 0.5) * COLUMN,
+        z: ((k % perColumn) - (inColumn - 1) / 2) * ROW,
+      });
+    });
+    return columns * COLUMN;
+  };
+  zones.forEach((_, i) => {
+    if (i >= firstMiddle && i <= lastMiddle) {
+      const square = i === hub.coreZone && hub.ringZone !== undefined ? innerHalf : ringHalf;
+      rects[i] = { from: [xc - square, -square], to: [xc + square, square] };
+      if (i === lastMiddle) {
+        cursor = xc + ringHalf;
+      }
+      return;
+    }
+    const x0 = cursor;
+    cursor += band(i, x0);
+    rects[i] = {
+      from: [i === 0 ? -width / 2 : x0, zMin],
+      to: [i === zones.length - 1 ? width / 2 : cursor, zMax],
     };
   });
+
+  const pointOf = (id: string): Point => points.get(id) ?? { x: xc, z: 0 };
+  const corridor = ring - CORRIDOR;
+  const outer = ring + OUTER;
+  /** Points along a circle round the core, the shorter way from one angle to another. */
+  const arc = (radius: number, from: number, to: number, y: number): Vec3[] => {
+    const turn = Math.atan2(Math.sin(to - from), Math.cos(to - from));
+    const steps = Math.max(1, Math.ceil(Math.abs(turn) / ARC_STEP));
+    return Array.from({ length: steps + 1 }, (_, k): Vec3 => {
+      const angle = from + (turn * k) / steps;
+      return [xc + radius * Math.cos(angle), y, radius * Math.sin(angle)];
+    });
+  };
+  const step = (2 * Math.PI) / Math.max(1, ringIds.length);
+  /** The gap between two parts of the ring nearest to an angle, where a spoke goes through. */
+  const gapNear = (angle: number) =>
+    slots
+      .map((slot) => slot + step / 2)
+      .reduce((best, gap) => (Math.cos(gap - angle) > Math.cos(best - angle) ? gap : best), angle);
+  const sideAngle = (id: string) => (sideOf(id) < 0 ? Math.PI : 0);
+  const centred = (id: string) => id === hub.core || innerIds.includes(id);
+  /** The bends from `a` to `b`, when this layout has a way for them; the reverse is reversed. */
+  const bends = (a: string, b: string, y: number): Vec3[] | undefined => {
+    const ta = angles.get(a);
+    const tb = angles.get(b);
+    if (ta !== undefined && tb !== undefined) {
+      return arc(corridor, ta, tb, y);
+    }
+    if (sideOf(b) === 0) {
+      return undefined;
+    }
+    if (ta !== undefined) {
+      return arc(outer, ta, sideAngle(b), y);
+    }
+    if (centred(a)) {
+      return arc(outer, gapNear(sideAngle(b)), sideAngle(b), y);
+    }
+    return undefined;
+  };
+  const via = (fromId: string, toId: string, y: number): Vec3[] =>
+    bends(fromId, toId, y) ?? bends(toId, fromId, y)?.reverse() ?? [];
+  const plug = (id: string): Plug => {
+    const own = pointOf(id);
+    const centred = id !== hub.core && (angles.has(id) || innerIds.includes(id));
+    const dx = centred ? xc - own.x : Math.sign(xc - own.x) || 1;
+    const dz = centred ? -own.z : 0;
+    return Math.abs(dx) >= Math.abs(dz)
+      ? { axis: "x", sign: dx < 0 ? -1 : 1 }
+      : { axis: "z", sign: dz < 0 ? -1 : 1 };
+  };
+  return {
+    point: pointOf,
+    via,
+    plug,
+    zones: rects,
+    plate: { size: [width, zMax - zMin], center: [0, (zMin + zMax) / 2] },
+  };
+}
+
+export function drawMachine(
+  blueprint: Blueprint,
+  survey: Survey,
+  options: DrawOptions,
+): MachineInput {
+  const neighbours = new Map<string, string[]>();
+  for (const route of blueprint.routes) {
+    neighbours.set(route.from, [...(neighbours.get(route.from) ?? []), route.to]);
+    neighbours.set(route.to, [...(neighbours.get(route.to) ?? []), route.from]);
+  }
+  // The blueprint's composition, as checkBlueprint let it through; bands when it cannot hold.
+  const hub =
+    blueprint.layout.kind === "hub" ? hubAround(blueprint, blueprint.layout.core) : undefined;
+  const layout =
+    hub && typeof hub !== "string"
+      ? hubLayout(blueprint, hub, neighbours)
+      : bandsLayout(blueprint, neighbours);
+  const sized = sizes(blueprint, survey);
+  const sizeOf = (part: BlueprintPart) => sized.get(part.id) ?? SHAPES[part.kind];
+  const socketOf = (part: BlueprintPart): Vec3 => {
+    const { shape, height } = sizeOf(part);
+    const y = PIPE_Y - height / 2;
+    if (part.kind !== "adapter" || shape.type !== "box") {
+      return [0, y, 0];
+    }
+    const { axis, sign } = layout.plug(part.id);
+    return axis === "x" ? [(sign * shape.size[0]) / 2, y, 0] : [0, y, (sign * shape.size[2]) / 2];
+  };
+  const partById = new Map(blueprint.parts.map((p) => [p.id, p]));
+
+  /** A what-if import arcs over the plate, so it never reads as one of the code's own routes. */
+  const arcOver = (fromId: string, toId: string): Vec3 => {
+    const a = layout.point(fromId);
+    const b = layout.point(toId);
+    return [(a.x + b.x) / 2, ARC_Y, (a.z + b.z) / 2];
+  };
+
+  // Bill of parts numbered left to right, back to front.
+  const numbered = [...blueprint.parts].sort((p, q) => {
+    const a = layout.point(p.id);
+    const b = layout.point(q.id);
+    return a.x - b.x || a.z - b.z;
+  });
+  const refOf = new Map(numbered.map((p, i) => [p.id, i + 1]));
+  const zones = blueprint.zones.map((zone, i) => ({
+    id: zone.id,
+    label: zone.label,
+    note: zone.note,
+    from: layout.zones[i]?.from ?? [0, 0],
+    to: layout.zones[i]?.to ?? [0, 0],
+  }));
 
   const routeKind = (id: string) => blueprint.routes.find((r) => r.id === id)?.kind;
   return {
@@ -278,12 +519,12 @@ export function drawMachine(
       parts: g.parts,
     })),
     stage: {
-      plate: { size: [width, zMax - zMin], center: [0, (zMin + zMax) / 2] },
+      plate: layout.plate,
       zones,
     },
     parts: numbered.map((part) => {
       const { shape, height } = sizeOf(part);
-      const slot = slotOf(part.id);
+      const at = layout.point(part.id);
       return {
         id: part.id,
         ref: refOf.get(part.id),
@@ -291,7 +532,7 @@ export function drawMachine(
         role: part.role,
         kind: part.kind,
         shape,
-        position: [slot.x, height / 2, zOfRow(slot.row)] as const,
+        position: [at.x, height / 2, at.z] as const,
         socket: socketOf(part),
         description: part.description,
       };
@@ -301,7 +542,7 @@ export function drawMachine(
       from: route.from,
       to: route.to,
       kind: route.kind,
-      via: viaOf(route.from, route.to, route.kind === "wire" ? WIRE_Y : PIPE_Y),
+      via: layout.via(route.from, route.to, route.kind === "wire" ? WIRE_Y : PIPE_Y),
       ...(route.dependsOn === "none" ? {} : { dependsOn: route.dependsOn }),
     })),
     scenarios: blueprint.scenarios.map((scenario) => ({

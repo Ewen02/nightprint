@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type Blueprint, checkBlueprint } from "./blueprint";
-import { shopBlueprint, snapshot } from "./fixture.test-helper";
+import { hubBlueprint, hubSnapshot, shopBlueprint, snapshot } from "./fixture.test-helper";
 import { surveyRepo } from "./survey";
 
 const survey = surveyRepo(snapshot);
@@ -66,6 +66,26 @@ describe("checkBlueprint", () => {
     }));
     expect(issues).toContain('unit "packages-db" is neither drawn nor left out with a reason');
     expect(issues).toContain('adapter "db" is the project\'s code: it must stand for units');
+  });
+
+  it("accepts a hub around the core most of the code imports", () => {
+    expect(checkBlueprint(hubBlueprint, surveyRepo(hubSnapshot))).toEqual([]);
+  });
+
+  it("refuses a hub too few parts lean on, and says to choose bands", () => {
+    const issues = with_((b) => ({ ...b, layout: { kind: "hub", core: "core", why: "" } }));
+    expect(issues).toEqual([
+      `layout "hub": 2 of the code's 2 other parts lean on "core"; a hub needs 3 and most of them, so choose "bands"`,
+    ]);
+  });
+
+  it("refuses a hub that names no core of the code", () => {
+    expect(with_((b) => ({ ...b, layout: { kind: "hub", core: "web", why: "" } }))).toEqual([
+      `layout "hub": "web" is an adapter, not a core of the code`,
+    ]);
+    expect(with_((b) => ({ ...b, layout: { kind: "hub", core: null, why: "" } }))[0]).toMatch(
+      /names no core/,
+    );
   });
 
   it("refuses a what-if that adds an import the code already has", () => {

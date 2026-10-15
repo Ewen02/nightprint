@@ -1,5 +1,6 @@
 import { flows } from "@nightprint/engine";
 import { z } from "zod";
+import { hubAround, layoutKinds } from "./layouts";
 import type { Survey } from "./survey";
 
 /**
@@ -39,7 +40,19 @@ export const blueprintSchema = z.object({
         note: z.string().describe("One line, 40 characters at most"),
       }),
     )
-    .describe("2 to 4 zones, drawn left to right in this order"),
+    .describe("2 to 4 zones, in the order the layout reads them"),
+  layout: z
+    .object({
+      kind: z.enum(layoutKinds).describe("How the machine is composed on the plate"),
+      core: z
+        .string()
+        .nullable()
+        .describe("For a hub, the id of the core part most of the code imports; null otherwise"),
+      why: z
+        .string()
+        .describe("One sentence, 120 characters at most: why this composition fits the code"),
+    })
+    .default({ kind: "bands", core: null, why: "" }),
   parts: z.array(
     z.object({
       id: z.string(),
@@ -214,6 +227,13 @@ export function checkBlueprint(blueprint: Blueprint, survey: Survey): string[] {
   count("actions", blueprint.actions.length, 0, 4);
   count("article paragraphs", blueprint.article.length, 1, 5);
   count("glossary terms", blueprint.glossary.length, 0, 8);
+  atMost("layout why", blueprint.layout.why, 120);
+  if (blueprint.layout.kind === "hub") {
+    const hub = hubAround(blueprint, blueprint.layout.core);
+    if (typeof hub === "string") {
+      issues.push(hub);
+    }
+  }
   for (const zone of blueprint.zones) {
     atMost("zone label", zone.label, 24);
     atMost("zone note", zone.note, 40);

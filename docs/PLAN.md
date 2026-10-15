@@ -60,7 +60,7 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 | Vidéo de lancement pour X et LinkedIn | v1 | Publiée : `apps/video` filme le site image par image, Remotion monte ; final « Unplug the adapters » ajouté le 13/10 |
 | Site statique sur le VPS, domaine nightprint.dev | v1 | En ligne sur nightprint.dev (12/10), publié à chaque push sur main ; www et l'ancienne adresse sslip.io de préversion redirigent vers l'apex |
 | Machines MCH-002 à MCH-008 | Après le lancement | Une par semaine ; MCH-002 (event loop JavaScript) et MCH-003 (Redis cache-aside) publiées le 13/10 |
-| Export vidéo intégré (WebCodecs) | Après le lancement | Au lancement, la vidéo vient d'`apps/video` |
+| Export vidéo intégré (WebCodecs) | Après le lancement | Fait (15/10) : « Download video » sur chaque machine, dessinée ou du catalogue ; MP4 1080p fait dans la page (assemblage, premier scénario, premier interrupteur, carton final). Les vidéos postées restent celles d'`apps/video` |
 | Planche de concepts : grille de mini-machines animées | À trancher, après MCH-003 | Voir les décisions ouvertes |
 | Série PRJ : un vrai dépôt GitHub dessiné en machine, par un visiteur sur /import | Après le lancement | Décidée le 14/10 ; PRJ-001 (Nightprint) en ligne, API et page /import prêtes, voir Vrais projets |
 | Génération d'une machine par IA à partir d'une phrase | v2 | Claude écrit une définition à partir du kit |

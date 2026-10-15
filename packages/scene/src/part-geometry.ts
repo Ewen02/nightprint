@@ -7,8 +7,10 @@ import { createShapeGeometry } from "./geometry";
  * The drawn model of a part, built from its kind, shape and socket. The machine
  * data stays abstract (a box, a prism); the scene turns it into the grammar of
  * the drawing: an adapter is a module with a plug facing its port, a port is a
- * socket set in the glass wall, the core sits on a plinth. Every adapter shares
- * one form factor, so a swap reads as unplugging one module and plugging another.
+ * socket set in the glass wall, the core sits on a plinth, an actor is a terminal, a
+ * module of a project's code a stepped block, a store a stack of disks or frames. Every
+ * adapter shares one form factor, so a swap reads as unplugging one module and plugging
+ * another.
  */
 
 /** Round details: enough sides that no facet crease reaches the edge threshold. */
@@ -165,14 +167,60 @@ function stackPieces(size: Vec3): BufferGeometry[] {
   });
 }
 
-/** A module on a plinth with a raised panel on its lid, like an adapter without a plug. */
-function actorPieces(size: Vec3): BufferGeometry[] {
+/** How far a terminal's screen leans back, in radians. */
+const SCREEN_LEAN = 0.32;
+
+/**
+ * Someone or something outside the code: a terminal, a low desk on a plinth and a screen
+ * leaning back from its rear edge, facing the plate's front.
+ */
+function terminalPieces(size: Vec3): BufferGeometry[] {
   const [w, h, d] = size;
+  const desk = h * 0.42;
+  const tall = h * 0.85;
+  const thick = 0.06;
+  const screen = new BoxGeometry(w * 0.84, tall, thick)
+    .rotateX(-SCREEN_LEAN)
+    .translate(0, -h / 2 + desk + (tall / 2) * Math.cos(SCREEN_LEAN), -d / 2 + 0.22);
   return [
     box([w + 0.08, PLINTH, d + 0.08], [0, -h / 2 + PLINTH / 2, 0]),
-    box([w, h - PLINTH, d], [0, PLINTH / 2, 0]),
-    box([w - 0.24, LID, d - 0.24], [0, h / 2 + LID / 2, 0]),
+    box([w, desk - PLINTH, d], [0, -h / 2 + PLINTH + (desk - PLINTH) / 2, 0]),
+    screen,
   ];
+}
+
+/**
+ * A unit of a project's own code: a block in two steps, its rear half raised, with
+ * vents along the raised top, so a row of modules reads as a skyline, not a row of crates.
+ */
+function modulePieces(size: Vec3): BufferGeometry[] {
+  const [w, h, d] = size;
+  const low = h * 0.6;
+  const rear = d * 0.52;
+  const top = h / 2;
+  const pieces = [
+    box([w + 0.08, PLINTH, d + 0.08], [0, -h / 2 + PLINTH / 2, 0]),
+    box([w, low - PLINTH, d], [0, -h / 2 + PLINTH + (low - PLINTH) / 2, 0]),
+    box([w, h - low, rear], [0, -h / 2 + low + (h - low) / 2, -d / 2 + rear / 2]),
+  ];
+  for (const x of [-0.25, 0, 0.25]) {
+    pieces.push(box([w * 0.16, RIB, rear * 0.62], [x * w, top + RIB / 2, -d / 2 + rear / 2]));
+  }
+  return pieces;
+}
+
+/** A store drawn as the database it is: disks stacked with a gap between them. */
+function diskPieces(radius: number, height: number): BufferGeometry[] {
+  const disks = 3;
+  const gap = 0.05;
+  const disk = (height - gap * (disks - 1)) / disks;
+  return Array.from({ length: disks }, (_, i) =>
+    new CylinderGeometry(radius, radius, disk, ROUND * 2).translate(
+      0,
+      -height / 2 + disk / 2 + i * (disk + gap),
+      0,
+    ),
+  );
 }
 
 function pieces(part: PartModelSpec): BufferGeometry[] {
@@ -182,9 +230,14 @@ function pieces(part: PartModelSpec): BufferGeometry[] {
   if (part.kind === "store" && part.shape.type === "box") {
     return stackPieces(part.shape.size);
   }
-  // A module of a real project is drawn like an actor: a block on a plinth, no plug.
-  if ((part.kind === "actor" || part.kind === "module") && part.shape.type === "box") {
-    return actorPieces(part.shape.size);
+  if (part.kind === "store" && part.shape.type === "cylinder") {
+    return diskPieces(part.shape.radius, part.shape.height);
+  }
+  if (part.kind === "actor" && part.shape.type === "box") {
+    return terminalPieces(part.shape.size);
+  }
+  if (part.kind === "module" && part.shape.type === "box") {
+    return modulePieces(part.shape.size);
   }
   if (part.kind === "configurator" && part.shape.type === "box") {
     return configuratorPieces(part.shape.size);

@@ -8,7 +8,6 @@ import {
   HomeHeader,
   HomeIntro,
   HomeTemplate,
-  MachineCard,
   PageSection,
   SectionHeading,
   SiteFooter,
@@ -17,12 +16,13 @@ import type { Metadata } from "next";
 import { familyLabels, registerSheets } from "../components/catalogue-cards";
 import { HomeLegend } from "../components/home/home-legend";
 import { HomeRegister } from "../components/home/home-register";
+import { ProjectSheet } from "../components/home/project-sheet";
 import { RunStory } from "../components/home/run-story";
 import { routeLatency, runDuration, scenarioFor } from "../components/home-view-model";
 import { JsonLd } from "../components/json-ld";
 import { formatMs } from "../components/machine-view-model";
 import { annotatedPlan, legendCallouts } from "../components/plan-view-model";
-import { machinePath, previewImage, site, socialMetadata, websiteJsonLd } from "../components/seo";
+import { previewImage, site, socialMetadata, websiteJsonLd } from "../components/seo";
 import { siteFooter } from "../components/site-footer-content";
 
 // The topic first: nobody searches for the name yet.
@@ -50,6 +50,9 @@ export const metadata: Metadata = {
 
 /** The machine the home page runs and quotes. */
 const featured = hexagonal;
+
+/** The real project on the home page's sheet: the newest one. */
+const project = projects.at(-1);
 
 /** Rows the build log shows: the rest is on GitHub. */
 const BUILD_LOG_SHOWN = 8;
@@ -297,37 +300,11 @@ export default function HomePage() {
         />
       </PageSection>
 
-      <PageSection id="projects" tone="surface" entrance="rise">
-        <div className="flex flex-col gap-8">
-          <div className="max-w-155">
-            <SectionHeading
-              id="projects-title"
-              eyebrow="Real projects"
-              title="Real repositories, drawn from their code."
-              lead={[
-                "The same drawing, made from a real repository: its packages and folders become parts, and every route between two of them stands on an import the code has. Each machine here was read against its code before it was published.",
-                "Draw a public JavaScript or TypeScript repository yourself: it takes two or three minutes, and the drawing gets a link you can share.",
-              ]}
-            />
-          </div>
-          <ol className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
-            {projects.map((project) => (
-              <li key={project.code}>
-                <MachineCard
-                  code={project.code}
-                  title={project.title}
-                  family={familyLabels[project.family]}
-                  href={machinePath(project)}
-                  summary={project.summary}
-                />
-              </li>
-            ))}
-          </ol>
-          <div className="flex flex-wrap gap-3">
-            <ButtonLink href="/import/">Draw your repository</ButtonLink>
-          </div>
-        </div>
-      </PageSection>
+      {project && (
+        <PageSection id="projects" tone="surface" entrance="rise">
+          <ProjectSheet slug={project.slug} />
+        </PageSection>
+      )}
 
       <PageSection id="legend" entrance="rise">
         <HomeLegend

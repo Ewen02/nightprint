@@ -98,7 +98,12 @@ function laneOffset(n: number): number {
 const columnsOf = (n: number) => Math.max(1, Math.ceil(n / MAX_ROWS));
 
 type Point = { readonly x: number; readonly z: number };
-type Rect = { readonly from: readonly [number, number]; readonly to: readonly [number, number] };
+type Rect = {
+  readonly from: readonly [number, number];
+  readonly to: readonly [number, number];
+  /** A hub's zones are drawn as circles. */
+  readonly shape?: "round";
+};
 /** The face of a part a plug is on. */
 type Plug = { readonly axis: "x" | "z"; readonly sign: 1 | -1 };
 
@@ -374,7 +379,7 @@ function hubLayout(
   zones.forEach((_, i) => {
     if (i >= firstMiddle && i <= lastMiddle) {
       const square = i === hub.coreZone && hub.ringZone !== undefined ? innerHalf : ringHalf;
-      rects[i] = { from: [xc - square, -square], to: [xc + square, square] };
+      rects[i] = { from: [xc - square, -square], to: [xc + square, square], shape: "round" };
       if (i === lastMiddle) {
         cursor = xc + ringHalf;
       }
@@ -496,6 +501,7 @@ export function drawMachine(
     note: zone.note,
     from: layout.zones[i]?.from ?? [0, 0],
     to: layout.zones[i]?.to ?? [0, 0],
+    ...(layout.zones[i]?.shape ? { shape: layout.zones[i]?.shape } : {}),
   }));
 
   const routeKind = (id: string) => blueprint.routes.find((r) => r.id === id)?.kind;

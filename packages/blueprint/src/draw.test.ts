@@ -109,6 +109,15 @@ describe("drawMachine, for a project whose code leans on one core", () => {
     expect(apps?.to[1]).toBeGreaterThan(heart?.to[1] ?? 0);
   });
 
+  it("draws the core's zone and the ring's as circles, the bands as they are", () => {
+    expect(hub.stage.zones.map((z) => [z.id, z.shape])).toEqual([
+      ["callers", "rect"],
+      ["apps", "round"],
+      ["heart", "round"],
+      ["services", "rect"],
+    ]);
+  });
+
   it("rings the code that imports the core around it, at one distance", () => {
     const [cx, , cz] = at("core");
     const distances = ["web", "db", "cli"].map((id) => {

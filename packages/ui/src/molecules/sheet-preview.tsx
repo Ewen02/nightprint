@@ -65,16 +65,31 @@ export function SheetPreview({ code, title, status, drawing, facts, action }: Sh
           </>
         )}
       </div>
-      <figcaption className="grid grid-cols-[minmax(0,1fr)_auto] border-t border-frame">
-        <p className="flex items-center px-3 py-2.5 text-small font-semibold text-text">{title}</p>
-        <dl className="flex font-mono text-micro tracking-[0.08em]">
-          {facts.map((fact) => (
-            <div key={fact.term} className="flex flex-col gap-0.5 border-l border-frame px-3 py-2">
-              <dt className="text-text-faint uppercase">{fact.term}</dt>
-              <dd className="whitespace-nowrap text-text-body">{fact.value}</dd>
-            </div>
-          ))}
-        </dl>
+      {/* The title on its own row, as on a cartouche: a long source never squeezes it. */}
+      <figcaption className="border-t border-frame">
+        <p className="px-3 py-2.5 text-small font-semibold text-text">{title}</p>
+        {facts.length > 0 && (
+          <dl className="flex border-t border-frame font-mono text-micro tracking-[0.08em]">
+            {facts.map((fact, index) => {
+              const last = index === facts.length - 1;
+              return (
+                <div
+                  key={fact.term}
+                  className={cx(
+                    "flex flex-col gap-0.5 px-3 py-2",
+                    index > 0 && "border-l border-frame",
+                    last ? "min-w-0 flex-1" : "shrink-0",
+                  )}
+                >
+                  <dt className="text-text-faint uppercase">{fact.term}</dt>
+                  <dd className={cx("text-text-body", last ? "break-words" : "whitespace-nowrap")}>
+                    {fact.value}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+        )}
       </figcaption>
       {action && (
         <a

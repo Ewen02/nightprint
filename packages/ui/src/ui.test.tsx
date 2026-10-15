@@ -580,6 +580,8 @@ describe("drawing set", () => {
     expect(issued).not.toContain("Not for construction");
     expect(issued).toContain('aria-label="plan"');
     expect(issued).toContain('href="/m/hex/"');
+    // The title has a row of its own, above the facts: a long source cannot squeeze it.
+    expect(issued).toMatch(/<figcaption[^>]*><p[^>]*>Hexagonal<\/p><dl/);
   });
 
   it("says each annotation in words, draws its leader line for the eye only, numbers the notes", () => {

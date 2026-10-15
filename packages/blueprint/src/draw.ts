@@ -1,6 +1,6 @@
 import type { MachineInput, Shape, Vec3 } from "@nightprint/engine";
 import type { Blueprint, BlueprintPart } from "./blueprint";
-import { type Hub, hubAround } from "./layouts";
+import { type Bus, busAlong, type Hub, hubAround, type Mirror, mirrorAround } from "./layouts";
 import type { Survey } from "./survey";
 
 /**
@@ -115,9 +115,104 @@ interface Layout {
   readonly via: (from: string, to: string, y: number) => Vec3[];
   /** The face an adapter's plug is on: towards what it plugs into. */
   readonly plug: (id: string) => Plug;
-  /** Each zone's rectangle, in the blueprint's order. */
-  readonly zones: readonly Rect[];
+  /** Each zone's rectangle, in the blueprint's order; none for a zone drawn without a frame. */
+  readonly zones: readonly (Rect | undefined)[];
   readonly plate: { readonly size: [number, number]; readonly center: [number, number] };
+  /** A part drawn longer than its kind, along x: a bus's queue, stretched into a rail. */
+  readonly stretch?: (id: string) => number | undefined;
+}
+
+/** Puts parts in columns from `x0`, at most MAX_ROWS to a column, centred on z = 0. */
+function columnsFrom(ids: readonly string[], x0: number, points: Map<string, Point>): number {
+  const columns = columnsOf(ids.length);
+  const perColumn = Math.ceil(ids.length / columns);
+  ids.forEach((id, k) => {
+    const c = Math.floor(k / perColumn);
+    const inColumn = Math.min(perColumn, ids.length - c * perColumn);
+    points.set(id, {
+      x: x0 + (c + 0.5) * COLUMN,
+      z: ((k % perColumn) - (inColumn - 1) / 2) * ROW,
+    });
+  });
+  return ids.length === 0 ? 0 : columns * COLUMN;
+}
+
+/**
+ * Puts parts in a row at depth `z`, each as near the x it wants as the row allows: in the
+ * order of those x, a column apart at least, the row then shifted onto them on average.
+ */
+function spread(
+  wanted: readonly { readonly id: string; readonly x: number }[],
+  z: number,
+  points: Map<string, Point>,
+): void {
+  const sorted = [...wanted].sort((a, b) => a.x - b.x);
+  const xs: number[] = [];
+  for (const { x } of sorted) {
+    const previous = xs.at(-1);
+    xs.push(previous === undefined ? x : Math.max(x, previous + COLUMN));
+  }
+  const shift =
+    sorted.reduce((sum, { x }, k) => sum + x - (xs[k] ?? x), 0) / Math.max(1, sorted.length);
+  sorted.forEach(({ id }, k) => {
+    points.set(id, { x: (xs[k] ?? 0) + shift, z });
+  });
+}
+
+/**
+ * Each zone as the rectangle round its parts, and the plate round them all: for the
+ * compositions where zones follow the parts instead of setting their places. There a zone's
+ * parts need not stand together, so a frame that would take in a part of another zone is
+ * left out, and a stretched part, the spine the others stand along, is in no frame.
+ */
+function framed(
+  blueprint: Blueprint,
+  points: ReadonlyMap<string, Point>,
+  stretch: (id: string) => number | undefined = () => undefined,
+): Pick<Layout, "zones" | "plate"> {
+  const reach = (id: string) => Math.max(COLUMN / 2 - 0.15, (stretch(id) ?? 0) / 2 + 0.3);
+  const at = (id: string) => points.get(id) ?? { x: 0, z: 0 };
+  const frameOf = (parts: readonly BlueprintPart[]): Rect => ({
+    from: [
+      Math.min(...parts.map((p) => at(p.id).x - reach(p.id))),
+      Math.min(...parts.map((p) => at(p.id).z)) - ROW / 2,
+    ],
+    to: [
+      Math.max(...parts.map((p) => at(p.id).x + reach(p.id))),
+      Math.max(...parts.map((p) => at(p.id).z)) + ROW / 2,
+    ],
+  });
+  const framedParts = blueprint.parts.filter((p) => stretch(p.id) === undefined);
+  const zones = blueprint.zones.map((zone): Rect | undefined => {
+    const inside = framedParts.filter((p) => p.zone === zone.id);
+    if (inside.length === 0) {
+      return undefined;
+    }
+    const rect = frameOf(inside);
+    // A stranger's own frame overlapping this one: its centre may sit right on the edge.
+    const takesIn = framedParts.some((p) => {
+      if (p.zone === zone.id) {
+        return false;
+      }
+      const own = frameOf([p]);
+      return (
+        own.from[0] < rect.to[0] &&
+        rect.from[0] < own.to[0] &&
+        own.from[1] < rect.to[1] &&
+        rect.from[1] < own.to[1]
+      );
+    });
+    return takesIn ? undefined : rect;
+  });
+  const all = frameOf(blueprint.parts);
+  const x0 = all.from[0] - MARGIN_X;
+  const x1 = all.to[0] + MARGIN_X;
+  const z0 = all.from[1] - MARGIN_BACK;
+  const z1 = all.to[1] + MARGIN_FRONT;
+  return {
+    zones,
+    plate: { size: [x1 - x0, z1 - z0], center: [(x0 + x1) / 2, (z0 + z1) / 2] },
+  };
 }
 
 /**
@@ -451,6 +546,175 @@ function hubLayout(
   };
 }
 
+/** Room between the groups of a mirror or a bus, along x. */
+const GROUP_GAP = 0.8;
+
+/**
+ * The mirror: the shared zone in the middle, each half of the code on its side, and outside
+ * them, on the side of the half that uses them, who uses the project and what it uses; what
+ * only the shared zone uses stands in front of it, in the middle. Routes run straight; every
+ * plug faces the middle.
+ */
+function mirrorLayout(
+  blueprint: Blueprint,
+  mirror: Mirror,
+  neighbours: ReadonlyMap<string, string[]>,
+): Layout {
+  const [left, right] = mirror.sides;
+  const halfOf = (id: string) => (left.includes(id) ? -1 : right.includes(id) ? 1 : 0);
+  const inner = new Set([...left, ...right, ...mirror.shared]);
+  const shared = new Set(mirror.shared);
+  const underShared = blueprint.parts
+    .filter((p) => !inner.has(p.id))
+    .filter((p) => {
+      const near = neighbours.get(p.id) ?? [];
+      return near.length > 0 && near.every((id) => shared.has(id));
+    })
+    .map((p) => p.id);
+  const outside = blueprint.parts.filter((p) => !inner.has(p.id) && !underShared.includes(p.id));
+  const lean = (id: string) =>
+    (neighbours.get(id) ?? []).reduce((sum, other) => sum + halfOf(other), 0);
+  const outLeft = outside
+    .filter((p) => lean(p.id) < 0 || (lean(p.id) === 0 && p.kind === "actor"))
+    .map((p) => p.id);
+  const outRight = outside.map((p) => p.id).filter((id) => !outLeft.includes(id));
+  const points = new Map<string, Point>();
+  let cursor = 0;
+  for (const group of [outLeft, left, mirror.shared, right, outRight]) {
+    const width = columnsFrom(group, cursor, points);
+    cursor += width + (width > 0 ? GROUP_GAP : 0);
+  }
+  const middle =
+    mirror.shared.reduce((sum, id) => sum + (points.get(id)?.x ?? 0), 0) / mirror.shared.length;
+  for (const [id, point] of points) {
+    points.set(id, { x: point.x - middle, z: point.z });
+  }
+  const front = Math.max(...mirror.shared.map((id) => points.get(id)?.z ?? 0)) + ROW;
+  spread(
+    underShared.map((id) => ({ id, x: 0 })),
+    front,
+    points,
+  );
+  const plug = (id: string): Plug => {
+    const x = points.get(id)?.x ?? 0;
+    return underShared.includes(id) ? { axis: "z", sign: -1 } : { axis: "x", sign: x > 0 ? -1 : 1 };
+  };
+  return {
+    point: (id) => points.get(id) ?? { x: 0, z: 0 },
+    via: () => [],
+    plug,
+    ...framed(blueprint, points),
+  };
+}
+
+/** How far behind and in front of a bus its producers and consumers stand. */
+const BUS_ROW = 1.9;
+/** Room behind a zone's frame for its name: the scene sets it 1.1 behind, two lines deep. */
+const NAME_LANE = 2.4;
+/** How far out what the code uses stands: a row further, past the name of the zone in front. */
+const BUS_OUT = BUS_ROW + ROW + NAME_LANE;
+
+/**
+ * The bus: the queue stretched into a rail across the middle, the parts that send to it in a
+ * row behind, those that read from it in a row in front. What the code uses stands a row
+ * further out, on the side of the parts that use it and as near them as the row allows; the
+ * rest of the code stands on the left, zone by zone, and who uses the project beyond it. A
+ * route to the rail meets it in front of its part, then runs inside it.
+ */
+function busLayout(
+  blueprint: Blueprint,
+  bus: Bus,
+  neighbours: ReadonlyMap<string, string[]>,
+): Layout {
+  const onBus = new Set([bus.bus, ...bus.producers, ...bus.consumers]);
+  const isVisitor = (p: BlueprintPart) =>
+    p.kind === "actor" && p.units.length === 0 && p.libraries.length === 0;
+  const rest = blueprint.parts.filter((p) => !onBus.has(p.id));
+  const span = Math.max(bus.producers.length, bus.consumers.length, 2) * COLUMN;
+  const points = new Map<string, Point>();
+  points.set(bus.bus, { x: 0, z: 0 });
+  const row = (ids: readonly string[], z: number) =>
+    ids.forEach((id, k) => {
+      points.set(id, { x: -span / 2 + ((k + 0.5) * span) / ids.length, z });
+    });
+  row(bus.producers, -BUS_ROW);
+  row(bus.consumers, BUS_ROW);
+  // The rest of the code, its last zone nearest the rail, and the visitors beyond it.
+  const leftGroups = [
+    ...blueprint.zones
+      .map((zone) => rest.filter((p) => p.zone === zone.id && p.units.length > 0).map((p) => p.id))
+      .reverse(),
+    rest.filter(isVisitor).map((p) => p.id),
+  ].filter((ids) => ids.length > 0);
+  const left = new Set(leftGroups.flat());
+  let cursor = -span / 2 - GROUP_GAP;
+  for (const ids of leftGroups) {
+    const width = columnsOf(ids.length) * COLUMN;
+    columnsFrom(ids, cursor - width, points);
+    cursor -= width + GROUP_GAP;
+  }
+  // What the code uses: behind the senders unless readers use it more, near its users.
+  const side = (id: string) =>
+    bus.producers.includes(id) ? -1 : bus.consumers.includes(id) ? 1 : 0;
+  const rows = {
+    back: [] as { id: string; x: number }[],
+    front: [] as { id: string; x: number }[],
+  };
+  for (const part of rest.filter((p) => !left.has(p.id))) {
+    const near = (neighbours.get(part.id) ?? []).flatMap((id) => points.get(id) ?? []);
+    const lean = (neighbours.get(part.id) ?? []).reduce((sum, id) => sum + side(id), 0);
+    const x = near.length > 0 ? near.reduce((sum, p) => sum + p.x, 0) / near.length : -span / 2;
+    (lean > 0 ? rows.front : rows.back).push({ id: part.id, x });
+  }
+  spread(rows.back, -BUS_OUT, points);
+  spread(rows.front, BUS_OUT, points);
+  const stretch = (id: string) => (id === bus.bus ? span : undefined);
+  const via = (fromId: string, toId: string, y: number): Vec3[] => {
+    const other = fromId === bus.bus ? toId : toId === bus.bus ? fromId : undefined;
+    const at = other === undefined ? undefined : points.get(other);
+    if (!at || at.z === 0) {
+      return [];
+    }
+    // Meet the rail in front of the part, at its edge; the rest runs inside the rail.
+    return [[at.x, y, Math.sign(at.z) * 0.4]];
+  };
+  const plug = (id: string): Plug => {
+    const at = points.get(id) ?? { x: 0, z: 0 };
+    return left.has(id) ? { axis: "x", sign: 1 } : { axis: "z", sign: at.z < 0 ? 1 : -1 };
+  };
+  return {
+    point: (id) => points.get(id) ?? { x: 0, z: 0 },
+    via,
+    plug,
+    stretch,
+    ...framed(blueprint, points, stretch),
+  };
+}
+
+/** The composition the blueprint chose, as checkBlueprint let it through; bands otherwise. */
+function chosenLayout(blueprint: Blueprint, neighbours: ReadonlyMap<string, string[]>): Layout {
+  const { kind, center } = blueprint.layout;
+  if (kind === "hub") {
+    const hub = hubAround(blueprint, center);
+    if (typeof hub !== "string") {
+      return hubLayout(blueprint, hub, neighbours);
+    }
+  }
+  if (kind === "mirror") {
+    const mirror = mirrorAround(blueprint, center);
+    if (typeof mirror !== "string") {
+      return mirrorLayout(blueprint, mirror, neighbours);
+    }
+  }
+  if (kind === "bus") {
+    const bus = busAlong(blueprint, center);
+    if (typeof bus !== "string") {
+      return busLayout(blueprint, bus, neighbours);
+    }
+  }
+  return bandsLayout(blueprint, neighbours);
+}
+
 export function drawMachine(
   blueprint: Blueprint,
   survey: Survey,
@@ -461,15 +725,15 @@ export function drawMachine(
     neighbours.set(route.from, [...(neighbours.get(route.from) ?? []), route.to]);
     neighbours.set(route.to, [...(neighbours.get(route.to) ?? []), route.from]);
   }
-  // The blueprint's composition, as checkBlueprint let it through; bands when it cannot hold.
-  const hub =
-    blueprint.layout.kind === "hub" ? hubAround(blueprint, blueprint.layout.core) : undefined;
-  const layout =
-    hub && typeof hub !== "string"
-      ? hubLayout(blueprint, hub, neighbours)
-      : bandsLayout(blueprint, neighbours);
+  const layout = chosenLayout(blueprint, neighbours);
   const sized = sizes(blueprint, survey);
-  const sizeOf = (part: BlueprintPart) => sized.get(part.id) ?? SHAPES[part.kind];
+  const sizeOf = (part: BlueprintPart): { readonly shape: Shape; readonly height: number } => {
+    const own = sized.get(part.id) ?? SHAPES[part.kind];
+    const length = layout.stretch?.(part.id);
+    return length !== undefined && own.shape.type === "box"
+      ? { ...own, shape: { ...own.shape, size: [length, own.shape.size[1], own.shape.size[2]] } }
+      : own;
+  };
   const socketOf = (part: BlueprintPart): Vec3 => {
     const { shape, height } = sizeOf(part);
     const y = PIPE_Y - height / 2;
@@ -495,14 +759,21 @@ export function drawMachine(
     return a.x - b.x || a.z - b.z;
   });
   const refOf = new Map(numbered.map((p, i) => [p.id, i + 1]));
-  const zones = blueprint.zones.map((zone, i) => ({
-    id: zone.id,
-    label: zone.label,
-    note: zone.note,
-    from: layout.zones[i]?.from ?? [0, 0],
-    to: layout.zones[i]?.to ?? [0, 0],
-    ...(layout.zones[i]?.shape ? { shape: layout.zones[i]?.shape } : {}),
-  }));
+  const zones = blueprint.zones.flatMap((zone, i) => {
+    const rect = layout.zones[i];
+    return rect
+      ? [
+          {
+            id: zone.id,
+            label: zone.label,
+            note: zone.note,
+            from: rect.from,
+            to: rect.to,
+            ...(rect.shape ? { shape: rect.shape } : {}),
+          },
+        ]
+      : [];
+  });
 
   const routeKind = (id: string) => blueprint.routes.find((r) => r.id === id)?.kind;
   return {

@@ -1,7 +1,16 @@
 import { defineMachine, type Machine, resolveMachine } from "@nightprint/engine";
 import { describe, expect, it } from "vitest";
+import type { Blueprint } from "./blueprint";
 import { drawMachine } from "./draw";
-import { hubBlueprint, hubSnapshot, shopBlueprint, snapshot } from "./fixture.test-helper";
+import {
+  busBlueprint,
+  busSnapshot,
+  hubBlueprint,
+  hubSnapshot,
+  mirrorBlueprint,
+  shopBlueprint,
+  snapshot,
+} from "./fixture.test-helper";
 import { surveyRepo } from "./survey";
 
 const survey = surveyRepo(snapshot);
@@ -165,11 +174,124 @@ describe("drawMachine, for a project whose code leans on one core", () => {
 
   it("draws bands when the blueprint chose bands, whatever the code leans on", () => {
     const bands = drawMachine(
-      { ...hubBlueprint, layout: { kind: "bands", core: null, why: "" } },
+      { ...hubBlueprint, layout: { kind: "bands", center: null, why: "" } },
       hubSurvey,
       options,
     );
     const depths = (bands.stage.zones ?? []).map((z) => `${z.from[1]}:${z.to[1]}`);
     expect(new Set(depths).size).toBe(1);
+  });
+});
+
+describe("drawMachine, for a mirror and a bus", () => {
+  const mirror: Machine = defineMachine(
+    drawMachine(mirrorBlueprint, surveyRepo(hubSnapshot), options),
+  );
+  const bus: Machine = defineMachine(drawMachine(busBlueprint, surveyRepo(busSnapshot), options));
+  const x = (m: Machine, id: string) => m.parts.find((p) => p.id === id)?.position[0] ?? 0;
+  const z = (m: Machine, id: string) => m.parts.find((p) => p.id === id)?.position[2] ?? 0;
+
+  it("sets the shared part in the middle of a mirror, one half of the code on each side", () => {
+    expect(x(mirror, "core")).toBeCloseTo(0);
+    expect(Math.sign(x(mirror, "web"))).toBe(Math.sign(x(mirror, "db")));
+    expect(Math.sign(x(mirror, "cli"))).toBe(-Math.sign(x(mirror, "web")));
+    // Outside parts stand beyond the half that uses them.
+    expect(Math.abs(x(mirror, "visitor"))).toBeGreaterThan(Math.abs(x(mirror, "web")));
+    expect(Math.sign(x(mirror, "visitor"))).toBe(Math.sign(x(mirror, "web")));
+  });
+
+  it("stands what only a mirror's shared zone uses in front of it, in the middle", () => {
+    const withRates: Blueprint = {
+      ...mirrorBlueprint,
+      parts: [
+        ...mirrorBlueprint.parts,
+        {
+          id: "rates",
+          label: "Exchange rates",
+          role: "RATES",
+          kind: "actor",
+          zone: "services",
+          units: [],
+          libraries: ["rates-api"],
+          description: "Converts prices.",
+        },
+      ],
+      routes: [
+        ...mirrorBlueprint.routes,
+        { id: "core-rates", from: "core", to: "rates", kind: "pipe", dependsOn: "to" },
+      ],
+    };
+    const drawn = defineMachine(drawMachine(withRates, surveyRepo(hubSnapshot), options));
+    expect(x(drawn, "rates")).toBeCloseTo(x(drawn, "core"));
+    expect(z(drawn, "rates")).toBeGreaterThan(z(drawn, "core"));
+  });
+
+  it("stretches a bus's queue into a rail, senders behind it and readers in front", () => {
+    const rail = bus.parts.find((p) => p.id === "broker")?.shape;
+    expect(rail?.type === "box" && rail.size[0]).toBeGreaterThan(3);
+    expect(z(bus, "web")).toBeLessThan(0);
+    expect(z(bus, "cli")).toBeLessThan(0);
+    expect(z(bus, "db")).toBeGreaterThan(0);
+  });
+
+  it("meets the rail in front of each part routed to it", () => {
+    for (const id of ["web-broker", "cli-broker", "broker-db"]) {
+      const route = bus.routes.find((r) => r.id === id);
+      const part = route?.from === "broker" ? route.to : route?.from;
+      expect(route?.via[0]?.[0]).toBeCloseTo(x(bus, part ?? ""));
+    }
+  });
+
+  it("stands what a bus's code uses a row further out, by the parts that use it", () => {
+    // The database is read only by the database package, which reads from the rail.
+    expect(z(bus, "postgres")).toBeGreaterThan(z(bus, "db"));
+    expect(x(bus, "postgres")).toBeCloseTo(x(bus, "db"));
+    // The rest of the code on the left, and the visitor beyond it.
+    const senders = Math.min(x(bus, "web"), x(bus, "cli"));
+    expect(x(bus, "core")).toBeLessThan(senders);
+    expect(x(bus, "visitor")).toBeLessThan(x(bus, "core"));
+  });
+
+  it("frames no zone round a part of another, and leaves the rail out of every frame", () => {
+    // A caller on each side: their zone would span the middle, so it goes unframed.
+    const twoCallers: Blueprint = {
+      ...mirrorBlueprint,
+      parts: [
+        ...mirrorBlueprint.parts,
+        {
+          id: "operator",
+          label: "Operator",
+          role: "ACTOR",
+          kind: "actor",
+          zone: "callers",
+          units: [],
+          libraries: [],
+          description: "Runs the command line.",
+        },
+      ],
+      routes: [
+        ...mirrorBlueprint.routes,
+        { id: "operator-cli", from: "operator", to: "cli", kind: "pipe", dependsOn: "none" },
+      ],
+    };
+    const callers = defineMachine(drawMachine(twoCallers, surveyRepo(hubSnapshot), options));
+    for (const [machine, blueprint] of [
+      [mirror, mirrorBlueprint],
+      [callers, twoCallers],
+      [bus, busBlueprint],
+    ] as const) {
+      for (const zone of machine.stage.zones ?? []) {
+        const strangers = blueprint.parts.filter((p) => p.zone !== zone.id && p.id !== "broker");
+        for (const part of strangers) {
+          const inside =
+            x(machine, part.id) >= zone.from[0] &&
+            x(machine, part.id) <= zone.to[0] &&
+            z(machine, part.id) >= zone.from[1] &&
+            z(machine, part.id) <= zone.to[1];
+          expect(inside, `${part.id} inside ${zone.id}`).toBe(false);
+        }
+      }
+    }
+    expect(callers.stage.zones?.map((zone) => zone.id)).not.toContain("callers");
   });
 });

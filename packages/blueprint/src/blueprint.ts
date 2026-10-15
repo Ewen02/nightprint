@@ -1,6 +1,6 @@
 import { flows } from "@nightprint/engine";
 import { z } from "zod";
-import { hubAround, layoutKinds } from "./layouts";
+import { busAlong, hubAround, layoutKinds, mirrorAround } from "./layouts";
 import type { Survey } from "./survey";
 
 /**
@@ -44,15 +44,17 @@ export const blueprintSchema = z.object({
   layout: z
     .object({
       kind: z.enum(layoutKinds).describe("How the machine is composed on the plate"),
-      core: z
+      center: z
         .string()
         .nullable()
-        .describe("For a hub, the id of the core part most of the code imports; null otherwise"),
+        .describe(
+          "The id of the part at the centre: a hub's core, a mirror's shared part, a bus's queue; null for bands",
+        ),
       why: z
         .string()
         .describe("One sentence, 120 characters at most: why this composition fits the code"),
     })
-    .default({ kind: "bands", core: null, why: "" }),
+    .default({ kind: "bands", center: null, why: "" }),
   parts: z.array(
     z.object({
       id: z.string(),
@@ -228,11 +230,15 @@ export function checkBlueprint(blueprint: Blueprint, survey: Survey): string[] {
   count("article paragraphs", blueprint.article.length, 1, 5);
   count("glossary terms", blueprint.glossary.length, 0, 8);
   atMost("layout why", blueprint.layout.why, 120);
-  if (blueprint.layout.kind === "hub") {
-    const hub = hubAround(blueprint, blueprint.layout.core);
-    if (typeof hub === "string") {
-      issues.push(hub);
-    }
+  // The composition holds against the routes, or the model is told why it does not.
+  const held = {
+    bands: () => undefined,
+    hub: () => hubAround(blueprint, blueprint.layout.center),
+    mirror: () => mirrorAround(blueprint, blueprint.layout.center),
+    bus: () => busAlong(blueprint, blueprint.layout.center),
+  }[blueprint.layout.kind]();
+  if (typeof held === "string") {
+    issues.push(held);
   }
   for (const zone of blueprint.zones) {
     atMost("zone label", zone.label, 24);

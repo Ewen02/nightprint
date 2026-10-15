@@ -85,7 +85,7 @@ export const shopBlueprint: Blueprint = {
   ],
   layout: {
     kind: "bands",
-    core: null,
+    center: null,
     why: "Calls run one way: the site, the domain, the database.",
   },
   parts: [
@@ -225,7 +225,7 @@ export const hubBlueprint: Blueprint = {
   ],
   layout: {
     kind: "hub",
-    core: "core",
+    center: "core",
     why: "The site, the command line and the database package all import the domain.",
   },
   parts: [
@@ -250,5 +250,63 @@ export const hubBlueprint: Blueprint = {
   routes: [
     ...shopBlueprint.routes,
     { id: "cli-core", from: "cli", to: "core", kind: "pipe", dependsOn: "to" },
+  ],
+};
+
+/** The hub's shop drawn as a mirror: the site and its database package on one side, the command line on the other. */
+export const mirrorBlueprint: Blueprint = {
+  ...hubBlueprint,
+  layout: {
+    kind: "mirror",
+    center: "core",
+    why: "The site and the command line both build on the domain, and never on each other.",
+  },
+};
+
+/** The shop whose site and command line send orders to a Kafka topic the database package reads. */
+export const busSnapshot: RepoSnapshot = {
+  ...hubSnapshot,
+  files: [
+    ...hubSnapshot.files,
+    {
+      path: "apps/web/app/api/orders/events.ts",
+      text: 'import { Kafka } from "kafkajs";\nexport const kafka = new Kafka({ brokers: [] });',
+    },
+    {
+      path: "apps/cli/src/events.ts",
+      text: 'import { Kafka } from "kafkajs";\nexport const kafka = new Kafka({ brokers: [] });',
+    },
+    {
+      path: "packages/db/src/events.ts",
+      text: 'import { Kafka } from "kafkajs";\nexport const kafka = new Kafka({ brokers: [] });',
+    },
+  ],
+};
+
+export const busBlueprint: Blueprint = {
+  ...hubBlueprint,
+  layout: {
+    kind: "bus",
+    center: "broker",
+    why: "Orders travel through one topic, from the site and the command line to the database package.",
+  },
+  parts: [
+    ...hubBlueprint.parts,
+    {
+      id: "broker",
+      label: "Order topic",
+      role: "QUEUE",
+      kind: "queue",
+      zone: "services",
+      units: [],
+      libraries: ["kafkajs"],
+      description: "Where orders wait.",
+    },
+  ],
+  routes: [
+    ...hubBlueprint.routes,
+    { id: "web-broker", from: "web", to: "broker", kind: "pipe", dependsOn: "to" },
+    { id: "cli-broker", from: "cli", to: "broker", kind: "pipe", dependsOn: "to" },
+    { id: "broker-db", from: "broker", to: "db", kind: "pipe", dependsOn: "from" },
   ],
 };

@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { type Blueprint, checkBlueprint } from "./blueprint";
-import { hubBlueprint, hubSnapshot, shopBlueprint, snapshot } from "./fixture.test-helper";
+import {
+  busBlueprint,
+  busSnapshot,
+  hubBlueprint,
+  hubSnapshot,
+  mirrorBlueprint,
+  shopBlueprint,
+  snapshot,
+} from "./fixture.test-helper";
 import { surveyRepo } from "./survey";
 
 const survey = surveyRepo(snapshot);
@@ -73,19 +81,43 @@ describe("checkBlueprint", () => {
   });
 
   it("refuses a hub too few parts lean on, and says to choose bands", () => {
-    const issues = with_((b) => ({ ...b, layout: { kind: "hub", core: "core", why: "" } }));
+    const issues = with_((b) => ({ ...b, layout: { kind: "hub", center: "core", why: "" } }));
     expect(issues).toEqual([
       `layout "hub": 2 of the code's 2 other parts lean on "core"; a hub needs 3 and most of them, so choose "bands"`,
     ]);
   });
 
   it("refuses a hub that names no core of the code", () => {
-    expect(with_((b) => ({ ...b, layout: { kind: "hub", core: "web", why: "" } }))).toEqual([
+    expect(with_((b) => ({ ...b, layout: { kind: "hub", center: "web", why: "" } }))).toEqual([
       `layout "hub": "web" is an adapter, not a core of the code`,
     ]);
-    expect(with_((b) => ({ ...b, layout: { kind: "hub", core: null, why: "" } }))[0]).toMatch(
+    expect(with_((b) => ({ ...b, layout: { kind: "hub", center: null, why: "" } }))[0]).toMatch(
       /names no core/,
     );
+  });
+
+  it("accepts a mirror around the part both halves of the code import", () => {
+    expect(checkBlueprint(mirrorBlueprint, surveyRepo(hubSnapshot))).toEqual([]);
+  });
+
+  it("refuses a mirror whose code does not split in two", () => {
+    expect(with_((b) => ({ ...b, layout: { kind: "mirror", center: "core", why: "" } }))).toEqual([
+      `layout "mirror": without the zone of "core", the code falls in 0 groups that do not import each other; a mirror needs exactly two`,
+    ]);
+  });
+
+  it("accepts a bus along the queue three parts of the code are routed to", () => {
+    expect(checkBlueprint(busBlueprint, surveyRepo(busSnapshot))).toEqual([]);
+  });
+
+  it("refuses a bus with too few parts on its queue", () => {
+    const thin = {
+      ...busBlueprint,
+      routes: busBlueprint.routes.filter((r) => r.id !== "cli-broker"),
+    };
+    expect(checkBlueprint(thin, surveyRepo(busSnapshot))).toEqual([
+      `layout "bus": 2 parts of the code are routed to "broker"; a bus needs 3, so choose another layout`,
+    ]);
   });
 
   it("refuses a what-if that adds an import the code already has", () => {

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "NEXT_PUBLIC_IMPORTER_URL=${NEXT_PUBLIC_IMPORTER_URL:-http://localhost:8787} next dev",
     "build": "next build",
     "typecheck": "next typegen && tsc --noEmit"
   },

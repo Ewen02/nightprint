@@ -10,7 +10,9 @@ not in the v1 scope waits for the launch, and open decisions are not yours to se
 ## Commands
 
 - `pnpm install` — Node ≥ 22.12, pnpm 10 (`packageManager` field)
-- `pnpm dev` — builds the tokens, then `next dev` on apps/web
+- `pnpm dev` — builds the tokens, then `next dev` on apps/web and the importer on :8787
+  (`tsx watch`), which /import calls in development; drawing needs `ANTHROPIC_API_KEY` in
+  `apps/importer/.env`, and costs what it costs in production
 - `pnpm check` — Biome lint + typecheck + Vitest + the architecture rules of this file
   (`scripts/architecture.test.mjs`, outside Turborepo's cache), run before every commit
 - `pnpm build` — static export in `apps/web/out`

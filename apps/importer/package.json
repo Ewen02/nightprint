@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "PORT=8787 DATA_DIR=node_modules/.cache/importer ALLOWED_ORIGIN=http://localhost:3000 tsx watch --env-file-if-exists=.env src/main.ts",
     "survey": "tsx --env-file-if-exists=.env src/cli.ts survey",
     "draw": "tsx --env-file-if-exists=.env src/cli.ts draw",
     "serve": "tsx --env-file-if-exists=.env src/main.ts",

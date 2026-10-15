@@ -77,12 +77,30 @@ export interface ZonesProps {
  * the middle it would run off the stage. A wide zone that spans the plate's centre
  * starts its label there, clear of its neighbour's on the left.
  */
-function labelPoint(zone: Zone, centreX: number): [number, number, number] {
+function labelPoint(zone: Zone, centreX: number, nested: boolean): [number, number, number] {
   const x0 = Math.min(zone.from[0], zone.to[0]);
   const x1 = Math.max(zone.from[0], zone.to[0]);
+  const z0 = Math.min(zone.from[1], zone.to[1]);
+  // A zone drawn inside another (a hub's core) is named in its own back corner, inside it.
+  if (nested) {
+    return [x0 + INSET * 2, 0, z0 + INSET * 2];
+  }
   const middle = (x0 + x1) / 2;
   const x = middle > centreX + 1e-6 ? Math.max(x0 + INSET, centreX) : middle;
-  return [x, 0, Math.min(zone.from[1], zone.to[1]) - LABEL_OUT];
+  return [x, 0, z0 - LABEL_OUT];
+}
+
+/** Whether `inner` lies wholly inside `outer`. */
+function within(inner: Zone, outer: Zone): boolean {
+  const box = (z: Zone) => ({
+    x0: Math.min(z.from[0], z.to[0]),
+    x1: Math.max(z.from[0], z.to[0]),
+    z0: Math.min(z.from[1], z.to[1]),
+    z1: Math.max(z.from[1], z.to[1]),
+  });
+  const a = box(inner);
+  const b = box(outer);
+  return a.x0 > b.x0 && a.x1 < b.x1 && a.z0 > b.z0 && a.z1 < b.z1;
 }
 
 /**
@@ -98,7 +116,11 @@ export function Zones({ zones, centreX, labels }: ZonesProps) {
           <LabelAnchor
             labels={labels}
             id={zoneLabelId(zone.id)}
-            position={labelPoint(zone, centreX)}
+            position={labelPoint(
+              zone,
+              centreX,
+              zones.some((other) => other !== zone && within(zone, other)),
+            )}
           />
         </group>
       ))}

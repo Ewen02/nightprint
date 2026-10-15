@@ -27,6 +27,7 @@ import { CodeListing } from "./organisms/code-listing";
 import { ConceptArticle } from "./organisms/concept-article";
 import { DrawingLegend } from "./organisms/drawing-legend";
 import { DrawingRegister } from "./organisms/drawing-register";
+import { DrawingStages } from "./organisms/drawing-stages";
 import { FieldNotes } from "./organisms/field-notes";
 import { HomeHeader } from "./organisms/home-header";
 import { HomeIntro } from "./organisms/home-intro";
@@ -723,6 +724,38 @@ describe("import", () => {
     const second = html(<RepoForm {...form} id="repo-next" />);
     expect(second).toMatch(/<label for="repo-next"/);
     expect(second).toMatch(/<input id="repo-next"/);
+  });
+
+  it("offers the stages of a drawing as tabs, the first one shown", () => {
+    const stages = html(
+      <DrawingStages
+        label="Stages of a drawing"
+        stages={[
+          {
+            key: "read",
+            label: "Read",
+            count: "176 files",
+            title: "Every file.",
+            body: "Read.",
+            figure: <p>grid</p>,
+          },
+          {
+            key: "survey",
+            label: "Survey",
+            count: "18 units",
+            title: "The imports.",
+            body: "Found.",
+            figure: <p>sketch</p>,
+          },
+        ]}
+      />,
+    );
+    expect(stages).toMatch(/<div role="tablist" aria-label="Stages of a drawing"/);
+    expect(stages.match(/role="tab"/g)).toHaveLength(2);
+    expect(stages.match(/aria-selected="true"/g)).toHaveLength(1);
+    expect(stages).toMatch(/role="tabpanel" id="([^"]+)-panel" aria-labelledby="\1-tab-0"/);
+    expect(stages).toContain('<h3 class="text-title">Every file.</h3>');
+    expect(stages).not.toContain("The imports.");
   });
 
   it("letters the next sheet's title as it is typed, the placeholder until then", () => {

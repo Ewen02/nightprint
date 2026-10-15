@@ -78,6 +78,11 @@ export {
   type RegisterRow,
 } from "./organisms/drawing-register";
 export { DrawingSheet, type DrawingSheetProps } from "./organisms/drawing-sheet";
+export {
+  type DrawingStage,
+  DrawingStages,
+  type DrawingStagesProps,
+} from "./organisms/drawing-stages";
 export { EventLog, type EventLogEntry, type EventLogProps } from "./organisms/event-log";
 export { type FieldNote, FieldNotes, type FieldNotesProps } from "./organisms/field-notes";
 export { HomeHeader, type HomeHeaderProps } from "./organisms/home-header";

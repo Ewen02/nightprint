@@ -40,9 +40,48 @@ const SHAPES: Record<BlueprintPart["kind"], { readonly shape: Shape; readonly he
   adapter: { shape: { type: "box", size: [1.5, 0.8, 1.0] }, height: 0.8 },
   core: { shape: { type: "prism", sides: 6, radius: 0.62, height: 0.6 }, height: 0.6 },
   configurator: { shape: { type: "box", size: [1.3, 0.45, 0.8] }, height: 0.45 },
-  store: { shape: { type: "box", size: [1.1, 0.9, 0.9] }, height: 0.9 },
+  store: { shape: { type: "cylinder", radius: 0.55, height: 0.9 }, height: 0.9 },
   queue: { shape: { type: "box", size: [1.6, 0.5, 0.7] }, height: 0.5 },
 };
+
+/** A part of the code stands this much taller than its kind, from the least code to the most. */
+const SHORTEST = 0.8;
+const TALLEST = 1.7;
+
+/**
+ * Each part's shape, its height grown with the lines of code it stands for, on a log
+ * scale: the tallest part holds the most code, and a part outside the code keeps its
+ * kind's height. A skyline that only this repository has.
+ */
+function sizes(
+  blueprint: Blueprint,
+  survey: Survey,
+): Map<string, { readonly shape: Shape; readonly height: number }> {
+  const lines = new Map(survey.units.map((unit) => [unit.id, unit.lines]));
+  const code = new Map(
+    blueprint.parts.map((part) => [
+      part.id,
+      part.units.reduce((sum, unit) => sum + (lines.get(unit) ?? 0), 0),
+    ]),
+  );
+  const most = Math.max(0, ...code.values());
+  return new Map(
+    blueprint.parts.map((part) => {
+      const base = SHAPES[part.kind];
+      const own = code.get(part.id) ?? 0;
+      if (own === 0 || most === 0) {
+        return [part.id, base];
+      }
+      const height =
+        base.height * (SHORTEST + ((TALLEST - SHORTEST) * Math.log1p(own)) / Math.log1p(most));
+      const shape: Shape =
+        base.shape.type === "box"
+          ? { type: "box", size: [base.shape.size[0], height, base.shape.size[2]] }
+          : { ...base.shape, height };
+      return [part.id, { shape, height }];
+    }),
+  );
+}
 
 interface Slot {
   readonly x: number;
@@ -119,8 +158,10 @@ export function drawMachine(
   }
 
   const slotOf = (id: string): Slot => slots.get(id) ?? { x: 0, row: 0 };
+  const sized = sizes(blueprint, survey);
+  const sizeOf = (part: BlueprintPart) => sized.get(part.id) ?? SHAPES[part.kind];
   const socketOf = (part: BlueprintPart): Vec3 => {
-    const { height } = SHAPES[part.kind];
+    const { height } = sizeOf(part);
     if (part.kind !== "adapter" || SHAPES.adapter.shape.type !== "box") {
       return [0, PIPE_Y - height / 2, 0];
     }
@@ -241,7 +282,7 @@ export function drawMachine(
       zones,
     },
     parts: numbered.map((part) => {
-      const { shape, height } = SHAPES[part.kind];
+      const { shape, height } = sizeOf(part);
       const slot = slotOf(part.id);
       return {
         id: part.id,

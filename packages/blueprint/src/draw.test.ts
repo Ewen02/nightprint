@@ -66,6 +66,24 @@ describe("drawMachine", () => {
     expect(added?.type === "addRoute" && added.route.via[0]?.[1]).toBeGreaterThan(1);
   });
 
+  it("raises a part of the code with the lines it stands for, and leaves the rest as they are", () => {
+    const lines = (id: string) =>
+      (shopBlueprint.parts.find((p) => p.id === id)?.units ?? []).reduce(
+        (sum, unit) => sum + (survey.units.find((u) => u.id === unit)?.lines ?? 0),
+        0,
+      );
+    const height = (id: string) => {
+      const shape = machine.parts.find((p) => p.id === id)?.shape;
+      return shape?.type === "box" ? shape.size[1] : (shape?.height ?? 0);
+    };
+    // Two adapters: the one with more code stands taller.
+    const [less = "", more = ""] = ["web", "db"].sort((a, b) => lines(a) - lines(b));
+    expect(lines(more)).toBeGreaterThan(lines(less));
+    expect(height(more)).toBeGreaterThan(height(less));
+    // The visitor stands for no code: its kind's height.
+    expect(height("visitor")).toBe(0.6);
+  });
+
   it("gives the same drawing for the same blueprint", () => {
     expect(drawMachine(shopBlueprint, survey, options)).toEqual(
       drawMachine(shopBlueprint, survey, options),

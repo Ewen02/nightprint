@@ -18,18 +18,31 @@ const LIFT = 0.004;
  */
 const LABEL_OUT = 1.1;
 
+/** A circle as short segments, enough that its dashes read as one round line. */
+function circle(cx: number, cz: number, r: number): number[][] {
+  const sides = 72;
+  return Array.from({ length: sides }, (_, i) => {
+    const a = (i / sides) * Math.PI * 2;
+    const b = ((i + 1) / sides) * Math.PI * 2;
+    return [cx + r * Math.cos(a), cz + r * Math.sin(a), cx + r * Math.cos(b), cz + r * Math.sin(b)];
+  });
+}
+
 function ZoneOutline({ zone }: { readonly zone: Zone }) {
   const object = useMemo(() => {
     const x0 = Math.min(zone.from[0], zone.to[0]) + INSET;
     const x1 = Math.max(zone.from[0], zone.to[0]) - INSET;
     const z0 = Math.min(zone.from[1], zone.to[1]) + INSET;
     const z1 = Math.max(zone.from[1], zone.to[1]) - INSET;
-    const corners = [
-      [x0, z0, x1, z0],
-      [x1, z0, x1, z1],
-      [x1, z1, x0, z1],
-      [x0, z1, x0, z0],
-    ];
+    const corners =
+      zone.shape === "round"
+        ? circle((x0 + x1) / 2, (z0 + z1) / 2, Math.min(x1 - x0, z1 - z0) / 2)
+        : [
+            [x0, z0, x1, z0],
+            [x1, z0, x1, z1],
+            [x1, z1, x0, z1],
+            [x0, z1, x0, z0],
+          ];
     const lines = new LineSegmentsGeometry().setPositions(
       corners.flatMap(([ax = 0, az = 0, bx = 0, bz = 0]) => [ax, LIFT, az, bx, LIFT, bz]),
     );
@@ -81,7 +94,14 @@ function labelPoint(zone: Zone, centreX: number, nested: boolean): [number, numb
   const x0 = Math.min(zone.from[0], zone.to[0]);
   const x1 = Math.max(zone.from[0], zone.to[0]);
   const z0 = Math.min(zone.from[1], zone.to[1]);
-  // A zone drawn inside another (a hub's core) is named in its own back corner, inside it.
+  // A zone drawn inside another (a hub's core) is named in its own back corner, inside it;
+  // a round one on its rim, at the back.
+  if (nested && zone.shape === "round") {
+    const x1r = Math.max(zone.from[0], zone.to[0]);
+    const z1 = Math.max(zone.from[1], zone.to[1]);
+    const r = Math.min(x1r - x0, z1 - z0) / 2;
+    return [(x0 + x1r) / 2 - r * Math.SQRT1_2, 0, (z0 + z1) / 2 - r * Math.SQRT1_2];
+  }
   if (nested) {
     return [x0 + INSET * 2, 0, z0 + INSET * 2];
   }

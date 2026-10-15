@@ -125,3 +125,8 @@ The engine never imports React, three or the DOM. Workspace packages export Type
 - `seo` and `core-web-vitals` (Addy Osmani): technical SEO, crawler controls, LCP / INP / CLS.
 - `ai-seo` and `schema-markup` (Corey Haines): GEO/AEO and JSON-LD. Written for SaaS marketing;
   their product context is `.claude/product-marketing.md`.
+- `design-taste-frontend` (tasteskill v2, Leonxlnx): art direction, open-licence pictures and a real-browser
+  inspector for public pages. Its house style bans what Nightprint's look is built on (Plex Mono labels,
+  step numbers, section rules) and its draw deals new palettes and type: tokens and the existing look win.
+  Use it for layout, copy, imagery, motion and the screenshot critique; its inspector FAILs on those points
+  are expected here, not bugs to fix.

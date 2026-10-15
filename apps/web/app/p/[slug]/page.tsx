@@ -1,5 +1,12 @@
 import { getMachine, projects } from "@nightprint/catalog";
-import { ConceptArticle, PageSection, RunTranscript, SiteFooter } from "@nightprint/ui";
+import {
+  ButtonLink,
+  ConceptArticle,
+  PageSection,
+  RunTranscript,
+  SectionHeading,
+  SiteFooter,
+} from "@nightprint/ui";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { JsonLd } from "../../../components/json-ld";
@@ -85,6 +92,22 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               scenarios={runTranscript(machine)}
               play="Play"
             />
+          </PageSection>
+          {/* Whoever read this far is the one most likely to want their own repository drawn. */}
+          <PageSection id="draw">
+            <div className="flex max-w-155 flex-col gap-6">
+              <SectionHeading
+                id="draw-title"
+                eyebrow="Real projects"
+                title="Draw your own repository."
+                lead={[
+                  "Paste a public JavaScript or TypeScript repository: it comes back drawn the same way, every route standing on an import its code has. It takes two or three minutes, and the drawing gets a link you can share.",
+                ]}
+              />
+              <div className="flex flex-wrap gap-3">
+                <ButtonLink href="/import/">Draw your repository</ButtonLink>
+              </div>
+            </div>
           </PageSection>
         </>
       }

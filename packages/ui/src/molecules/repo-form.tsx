@@ -3,6 +3,8 @@ import { Button } from "../atoms/button";
 import { TextField } from "../atoms/text-field";
 
 export interface RepoFormProps {
+  /** The field's id: two forms on one page need two. */
+  readonly id?: string;
   readonly value: string;
   readonly onChange: (value: string) => void;
   readonly onSubmit: () => void;
@@ -17,6 +19,7 @@ export interface RepoFormProps {
 
 /** The address of a repository and the button that draws it. */
 export function RepoForm({
+  id = "repo",
   value,
   onChange,
   onSubmit,
@@ -35,7 +38,7 @@ export function RepoForm({
   return (
     <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
       <TextField
-        id="repo"
+        id={id}
         label={label}
         value={value}
         onChange={onChange}

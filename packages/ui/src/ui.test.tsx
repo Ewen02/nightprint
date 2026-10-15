@@ -718,6 +718,12 @@ describe("import", () => {
     expect(html(<RepoForm {...form} value="acme/shop" busy />)).toMatch(/disabled=""/);
   });
 
+  it("gives a second form on the page its own field", () => {
+    const second = html(<RepoForm {...form} id="repo-next" />);
+    expect(second).toMatch(/<label for="repo-next"/);
+    expect(second).toMatch(/<input id="repo-next"/);
+  });
+
   it("reads out why the drawing failed", () => {
     const panel = html(
       <ImportPanel

@@ -31,7 +31,7 @@ export function SheetHero({ label, sheet, intro, caption, aside, introRef }: She
     >
       <div
         ref={introRef}
-        className={`z-10 flex flex-col gap-7 px-4 pt-14 pb-8 sm:px-6 lg:absolute lg:inset-y-0 lg:w-[min(44%,40rem)] lg:justify-center lg:px-0 lg:py-22 ${MARGIN}`}
+        className={`z-10 flex flex-col gap-7 px-4 pt-14 pb-8 sm:px-6 lg:absolute lg:inset-y-0 lg:w-[min(42%,36rem)] lg:justify-center lg:px-0 lg:py-22 ${MARGIN}`}
       >
         {intro}
       </div>

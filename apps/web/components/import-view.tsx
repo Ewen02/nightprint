@@ -6,7 +6,6 @@ import {
   ConceptArticle,
   FieldNotes,
   FileGrid,
-  ImportPanel,
   MonoLabel,
   PageSection,
   RunTranscript,
@@ -16,6 +15,8 @@ import {
   SurveySketch,
 } from "@nightprint/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ImportHero } from "./import-hero";
+import { ImportClose, ImportStages, ImportWhatIf } from "./import-sections";
 import { MachineView } from "./machine-view";
 import { conceptRevision, glossaryTerms, runTranscript } from "./machine-view-model";
 import { siteFooter } from "./site-footer-content";
@@ -279,6 +280,8 @@ export function ImportView() {
       const survey: Survey = { repo: repo.trim(), startedAt: Date.now() };
       setNow(survey.startedAt);
       setView({ kind: "working", ...survey });
+      // The survey takes the page's place: start reading it from the top.
+      window.scrollTo({ top: 0 });
       const reply = await ask("/drawings", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -347,26 +350,13 @@ export function ImportView() {
     };
   }, [arrive]);
 
-  const panel = (
-    <ImportPanel
-      eyebrow="Your repository, as a machine"
-      title={view.kind === "drawn" ? "Draw another repository." : "Draw a repository."}
-      lead={[
-        "Paste a public GitHub repository. Its code is read for its packages, imports and libraries; a model groups them into parts and writes the scenarios, and every route it draws must stand on an import the code has.",
-      ]}
-      form={{
-        value: input,
-        onChange: setInput,
-        onSubmit: () => void draw(input),
-        busy: surveying,
-        label: "GitHub repository",
-        placeholder: "owner/name or https://github.com/owner/name",
-        action: "Draw it",
-      }}
-      error={view.kind === "failed" ? view.error : undefined}
-      note="JavaScript and TypeScript, public repositories, up to 3,000 source files. A repository is drawn once per commit; a few new drawings per visitor a day."
-    />
-  );
+  // Both forms on the page share the address and say why the last drawing failed.
+  const form = {
+    repo: input,
+    onRepoChange: setInput,
+    onSubmit: () => void draw(input),
+    error: view.kind === "failed" ? view.error : undefined,
+  };
 
   if (view.kind !== "drawn") {
     return (
@@ -379,7 +369,12 @@ export function ImportView() {
           {view.kind === "working" || view.kind === "closing" ? (
             <SurveyStage view={view} now={now} shown={shown} />
           ) : (
-            <PageSection id="import">{panel}</PageSection>
+            <>
+              <ImportHero {...form} />
+              <ImportWhatIf />
+              <ImportStages />
+              <ImportClose title="Your repository is next." {...form} />
+            </>
           )}
         </main>
         <SiteFooter {...siteFooter} />
@@ -437,9 +432,7 @@ export function ImportView() {
                 play="Play"
               />
             </PageSection>
-            <PageSection id="import" tone="surface">
-              {panel}
-            </PageSection>
+            <ImportClose title="Draw another repository." {...form} />
           </>
         }
         footer={<SiteFooter {...siteFooter} />}

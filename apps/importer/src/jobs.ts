@@ -157,4 +157,12 @@ export class VisitorLimit {
     this.#starts.set(visitor, [...recent, now]);
     return true;
   }
+
+  /** Gives back the visitor's last start: it failed before it cost anything. */
+  giveBack(visitor: string): void {
+    const starts = this.#starts.get(visitor);
+    if (starts && starts.length > 0) {
+      this.#starts.set(visitor, starts.slice(0, -1));
+    }
+  }
 }

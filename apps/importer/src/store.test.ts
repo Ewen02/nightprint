@@ -157,4 +157,12 @@ describe("VisitorLimit", () => {
     now = 1001;
     expect(limit.take("a")).toBe(true);
   });
+
+  it("gives back a start that cost nothing", () => {
+    const limit = new VisitorLimit(1, 1000, () => 0);
+    expect(limit.take("a")).toBe(true);
+    limit.giveBack("a");
+    expect(limit.take("a")).toBe(true);
+    expect(limit.take("a")).toBe(false);
+  });
 });

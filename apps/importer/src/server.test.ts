@@ -44,6 +44,9 @@ async function start(overrides: Partial<ImporterDeps> = {}, ...answers: Answer[]
     commitsSince: async () => 3,
     draw: drawRepository({
       read: async (c, onProgress) => {
+        if (c.name === "empty") {
+          throw new SourceError("empty", "No JavaScript or TypeScript code to draw in it.");
+        }
         onProgress(0, snapshot.files.length);
         onProgress(snapshot.files.length, snapshot.files.length);
         return { ...snapshot, name: `${c.owner}/${c.name}`, ref: c.sha };
@@ -210,6 +213,16 @@ describe("the importer's API", () => {
     expect((await visit("acme/one", "203.0.113.1")).status).toBe(202);
     expect((await visit("acme/two", "203.0.113.1")).status).toBe(429);
     expect((await visit("acme/two", "203.0.113.2")).status).toBe(202);
+  });
+
+  it("gives a visitor's drawing back when the code cannot be read, before any model", async () => {
+    await start({ visitors: new VisitorLimit(1, 86_400_000) });
+    const failed = await settle((await read(await post("acme/empty"))).id);
+    expect(failed).toMatchObject({
+      stage: "failed",
+      error: "No JavaScript or TypeScript code to draw in it.",
+    });
+    expect((await post("acme/tiny")).status).toBe(202);
   });
 
   it("stops drawing once the day's budget is spent, and still opens cached drawings", async () => {

@@ -17,7 +17,7 @@ import { type Drawing, type DrawingStore, dayOf, type Ledger } from "./store";
  *   GET  /api/drawings/<owner>/<name>/<sha>  a cached drawing, for a shared link
  *
  * A new drawing costs model tokens: each visitor starts a few a day, and all of them
- * together stay under a daily budget.
+ * together stay under a daily budget. A drawing that fails before the model is given back.
  */
 
 export interface ImporterDeps {
@@ -131,7 +131,8 @@ export function createImporter(deps: ImporterDeps) {
     if (spent + (deps.queue.pending + 1) * deps.estimate > deps.dailyBudget) {
       throw new HttpError(503, "Today's drawing budget is spent; cached drawings still open.");
     }
-    if (!deps.visitors.take(visitorOf(request))) {
+    const visitor = visitorOf(request);
+    if (!deps.visitors.take(visitor)) {
       throw new HttpError(429, "You have drawn enough repositories for today; try tomorrow.");
     }
     const started = Date.now();
@@ -151,6 +152,10 @@ export function createImporter(deps: ImporterDeps) {
       (error) => {
         const message = error instanceof Error ? error.message : String(error);
         log({ event: "failed", repo: key, sha: commit.sha, error: message });
+        // The code could not be read, so the model was never asked: the visitor keeps the drawing.
+        if (error instanceof SourceError) {
+          deps.visitors.giveBack(visitor);
+        }
         // Our own errors speak to the visitor; anything else stays in the log.
         return error instanceof SourceError || error instanceof ComposeError
           ? message

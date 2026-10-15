@@ -93,6 +93,7 @@ export function planView(
       y: Math.min(zone.from[1], zone.to[1]),
       width: Math.abs(zone.to[0] - zone.from[0]),
       height: Math.abs(zone.to[1] - zone.from[1]),
+      shape: zone.shape,
     })),
     parts: resolved.parts.map(planPart),
     routes: resolved.routes

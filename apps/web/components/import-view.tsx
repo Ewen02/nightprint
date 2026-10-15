@@ -69,12 +69,21 @@ interface Layout {
   readonly why: string;
 }
 
+/** Each composition, as the sentence about it names it. */
+const COMPOSITIONS: Readonly<Record<string, string>> = {
+  bands: "bands",
+  hub: "a hub",
+  mirror: "a mirror",
+  bus: "a bus",
+};
+
 /** "Drawn as a hub. Most of the code leans on the engine." */
 function composition(layout: Layout | undefined): string[] {
-  if (!layout || layout.why === "") {
+  const name = layout && COMPOSITIONS[layout.kind];
+  if (!layout || !name || layout.why === "") {
     return [];
   }
-  return [`Drawn as ${layout.kind === "hub" ? "a hub" : "bands"}. ${layout.why}`];
+  return [`Drawn as ${name}. ${layout.why}`];
 }
 
 interface Newer {

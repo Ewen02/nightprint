@@ -107,4 +107,5 @@ export { type WhatIfItem, WhatIfPanel, type WhatIfPanelProps } from "./organisms
 export { HomeTemplate, type HomeTemplateProps } from "./templates/home-template";
 export { MachineTemplate, type MachineTemplateProps } from "./templates/machine-template";
 export { PageSection, type PageSectionProps } from "./templates/page-section";
+export { SheetHero, type SheetHeroProps } from "./templates/sheet-hero";
 export { type StoryBeat, StoryTemplate, type StoryTemplateProps } from "./templates/story-template";

@@ -42,6 +42,7 @@ import { Transport } from "./organisms/transport";
 import { UpNext } from "./organisms/up-next";
 import { WhatIfPanel } from "./organisms/what-if-panel";
 import { MachineTemplate } from "./templates/machine-template";
+import { SheetHero } from "./templates/sheet-hero";
 import { StoryTemplate } from "./templates/story-template";
 
 const html = (node: React.ReactElement) => renderToStaticMarkup(node);
@@ -724,6 +725,20 @@ describe("import", () => {
     const second = html(<RepoForm {...form} id="repo-next" />);
     expect(second).toMatch(/<label for="repo-next"/);
     expect(second).toMatch(/<input id="repo-next"/);
+  });
+
+  it("reads a sheet hero's intro before its sheet", () => {
+    const hero = html(
+      <SheetHero
+        label="Draw a repository"
+        intro={<h1>Draw your repository.</h1>}
+        sheet={<div>sheet</div>}
+        caption={<p>Step 2 / 7</p>}
+      />,
+    );
+    expect(hero).toMatch(/^<section aria-label="Draw a repository"/);
+    expect(hero.indexOf("<h1>")).toBeLessThan(hero.indexOf("sheet</div>"));
+    expect(hero).toContain("Step 2 / 7");
   });
 
   it("offers the stages of a drawing as tabs, the first one shown", () => {

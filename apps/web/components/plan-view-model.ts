@@ -14,10 +14,10 @@ const MARGIN = 0.5;
 /** Seen from above, three's turn about +y is a clockwise SVG rotation. */
 const degrees = (radians: number) => (-radians * 180) / Math.PI;
 
-/** The flow each route first carries in the machine's first scenario, switches off. */
-function routeFlows(machine: Machine): Map<string, Flow> {
+/** The flow each route first carries in the machine's first scenario, with these switches on. */
+function routeFlows(machine: Machine, actions: readonly string[]): Map<string, Flow> {
   const flows = new Map<string, Flow>();
-  for (const step of resolveMachine(machine, []).scenarios[0]?.steps ?? []) {
+  for (const step of resolveMachine(machine, actions).scenarios[0]?.steps ?? []) {
     for (const token of step.tokens) {
       if (token.kind === "travel") {
         for (const route of token.routes) {
@@ -31,7 +31,7 @@ function routeFlows(machine: Machine): Map<string, Flow> {
 
 function planPart(part: Part): PlanPart {
   const [x, , z] = part.position;
-  const common = { id: part.id, glass: part.material === "glass" };
+  const common = { id: part.id, glass: part.material === "glass", flag: part.flag };
   const { shape } = part;
   if (shape.type === "box") {
     const [w, , d] = shape.size;
@@ -66,13 +66,17 @@ function planPart(part: Part): PlanPart {
 }
 
 /**
- * A machine seen from above, switches off, as plain shapes: the plate's zones, every
- * part's outline, and every drawn route, in the colour of the flow that first travels
- * it. Uncarried routes come first, so a lit pipe is never drawn under a dark one.
+ * A machine seen from above, as plain shapes: the plate's zones, every part's outline,
+ * and every drawn route, in the colour of the flow that first travels it. Switches are
+ * off unless named: what one breaks is flagged, part and route. Uncarried routes come
+ * first, so a lit pipe is never drawn under a dark one.
  */
-export function planView(machine: Machine): Omit<PlanViewProps, "label"> {
-  const resolved = resolveMachine(machine, []);
-  const flows = routeFlows(machine);
+export function planView(
+  machine: Machine,
+  actions: readonly string[] = [],
+): Omit<PlanViewProps, "label"> {
+  const resolved = resolveMachine(machine, actions);
+  const flows = routeFlows(machine, actions);
   const [width, depth] = machine.stage.plate.size;
   const [cx, cz] = machine.stage.plate.center;
   return {
@@ -98,6 +102,7 @@ export function planView(machine: Machine): Omit<PlanViewProps, "label"> {
         id: route.id,
         kind: route.kind === "wire" ? "wire" : "pipe",
         flow: flows.get(route.id) ?? null,
+        flag: route.flag,
         points: routePoints(route, resolved.partById)
           .map(([x, , z]) => `${x},${z}`)
           .join(" "),

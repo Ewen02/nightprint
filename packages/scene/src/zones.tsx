@@ -88,9 +88,16 @@ export interface ZonesProps {
  * corner is the top of the drawing, where the stage's title sits. On the right of
  * the plate, the edge's inner end instead: the label opens to the right, and from
  * the middle it would run off the stage. A wide zone that spans the plate's centre
- * starts its label there, clear of its neighbour's on the left.
+ * starts its label there, clear of its neighbour's on the left. A zone with others behind
+ * it (a bus's row of what the code uses) is named past their right end: its name runs up
+ * to the right, over the ground behind it, and would cross them.
  */
-function labelPoint(zone: Zone, centreX: number, nested: boolean): [number, number, number] {
+function labelPoint(
+  zone: Zone,
+  centreX: number,
+  nested: boolean,
+  behind: readonly Zone[],
+): [number, number, number] {
   const x0 = Math.min(zone.from[0], zone.to[0]);
   const x1 = Math.max(zone.from[0], zone.to[0]);
   const z0 = Math.min(zone.from[1], zone.to[1]);
@@ -107,7 +114,22 @@ function labelPoint(zone: Zone, centreX: number, nested: boolean): [number, numb
   }
   const middle = (x0 + x1) / 2;
   const x = middle > centreX + 1e-6 ? Math.max(x0 + INSET, centreX) : middle;
-  return [x, 0, z0 - LABEL_OUT];
+  const past = Math.max(x, ...behind.map((other) => Math.max(other.from[0], other.to[0]) + INSET));
+  return [past < x1 ? past : x, 0, z0 - LABEL_OUT];
+}
+
+/** The zones wholly behind `zone` that share some of its width: its name would cross them. */
+function zonesBehind(zone: Zone, zones: readonly Zone[]): Zone[] {
+  const x0 = Math.min(zone.from[0], zone.to[0]);
+  const x1 = Math.max(zone.from[0], zone.to[0]);
+  const z0 = Math.min(zone.from[1], zone.to[1]);
+  return zones.filter(
+    (other) =>
+      other !== zone &&
+      Math.max(other.from[1], other.to[1]) <= z0 + 1e-6 &&
+      Math.max(other.from[0], other.to[0]) > x0 &&
+      Math.min(other.from[0], other.to[0]) < x1,
+  );
 }
 
 /** Whether `inner` lies wholly inside `outer`. */
@@ -140,6 +162,7 @@ export function Zones({ zones, centreX, labels }: ZonesProps) {
               zone,
               centreX,
               zones.some((other) => other !== zone && within(zone, other)),
+              zonesBehind(zone, zones),
             )}
           />
         </group>

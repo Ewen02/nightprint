@@ -31,6 +31,7 @@ import { FieldNotes } from "./organisms/field-notes";
 import { HomeHeader } from "./organisms/home-header";
 import { HomeIntro } from "./organisms/home-intro";
 import { ImportPanel } from "./organisms/import-panel";
+import { NextSheet } from "./organisms/next-sheet";
 import { RunTranscript } from "./organisms/run-transcript";
 import { ScenarioPicker } from "./organisms/scenario-picker";
 import { SiteFooter } from "./organisms/site-footer";
@@ -722,6 +723,24 @@ describe("import", () => {
     const second = html(<RepoForm {...form} id="repo-next" />);
     expect(second).toMatch(/<label for="repo-next"/);
     expect(second).toMatch(/<input id="repo-next"/);
+  });
+
+  it("letters the next sheet's title as it is typed, the placeholder until then", () => {
+    const sheet = (title: string) =>
+      html(
+        <NextSheet
+          heading="Next on the board"
+          title={title}
+          placeholder="owner/name"
+          cells={[
+            { term: "Code", value: "PRJ-000" },
+            { term: "Checked", value: "Not yet" },
+          ]}
+        />,
+      );
+    expect(sheet("")).toContain(">owner/name</p>");
+    expect(sheet("ab").match(/<span[^>]*>[ab]<\/span>/g)).toHaveLength(2);
+    expect(sheet("ab")).toMatch(/<dl[^>]*><div[^>]*><dt[^>]*>Code<\/dt><dd[^>]*>PRJ-000<\/dd>/);
   });
 
   it("reads out why the drawing failed", () => {

@@ -83,6 +83,7 @@ export { type FieldNote, FieldNotes, type FieldNotesProps } from "./organisms/fi
 export { HomeHeader, type HomeHeaderProps } from "./organisms/home-header";
 export { HomeIntro, type HomeIntroProps } from "./organisms/home-intro";
 export { ImportPanel, type ImportPanelProps } from "./organisms/import-panel";
+export { NextSheet, type NextSheetProps } from "./organisms/next-sheet";
 export {
   type RunScenario,
   type RunStep,

@@ -5,6 +5,14 @@ export {
   validateMachine,
 } from "./define";
 export {
+  directFilm,
+  FILM_FPS,
+  type FilmAct,
+  type FilmCue,
+  type FilmDirector,
+  filmSeconds,
+} from "./film";
+export {
   chain,
   clamp01,
   distance,

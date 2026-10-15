@@ -60,6 +60,41 @@ const BUILD_LOG_SHOWN = 8;
 /** Newest first. Posted on X as it happens. */
 const buildLog: readonly BuildLogEntry[] = [
   {
+    key: "video",
+    date: "15 OCT",
+    flow: "response",
+    tag: "SHIP",
+    text: "Every machine now downloads as a video: a 1080p MP4 shot in your browser, frame by frame, with no server involved.",
+  },
+  {
+    key: "compositions",
+    date: "15 OCT",
+    flow: "request",
+    tag: "ARCH",
+    text: "A drawn repository is no longer always laid out in bands: the model picks a hub, a mirror or a bus, and the imports must hold it.",
+  },
+  {
+    key: "languages",
+    date: "15 OCT",
+    flow: "write",
+    tag: "FIX",
+    text: "A repository with no JavaScript or TypeScript is turned down at once, before the model is paid for.",
+  },
+  {
+    key: "import",
+    date: "15 OCT",
+    flow: "response",
+    tag: "SHIP",
+    text: "Draw your own repository at /import: a public JavaScript or TypeScript repo becomes a machine you can run, in about two minutes.",
+  },
+  {
+    key: "prj-001",
+    date: "14 OCT",
+    flow: "response",
+    tag: "SHIP",
+    text: "PRJ-001: Nightprint drawn from its own code. Every route between two parts stands on an import the survey found.",
+  },
+  {
     key: "mch-003",
     date: "13 OCT",
     flow: "response",

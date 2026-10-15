@@ -228,9 +228,9 @@ export default function HomePage() {
           links={[
             { label: "The run", href: "#run" },
             { label: "Machines", href: "#machines" },
+            { label: "Projects", href: "#projects" },
             { label: "Legend", href: "#legend" },
             { label: "Build log", href: "#build-log" },
-            { label: "Projects", href: "#projects" },
           ]}
           status={{ label: `${featured.code} is running`, href: "#run" }}
         />

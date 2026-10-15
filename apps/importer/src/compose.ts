@@ -47,7 +47,11 @@ Kinds:
 - actor: outside the code: a visitor, a CLI user, or an outside API reached through its libraries.
 - store: a database or a cache, reached through its libraries. queue: a message broker, the same way.
 Labels are what a developer of the project calls the part ("Engine", "Scene", "Web app"), never a path. Roles are one or two upper-case words, 12 characters at most ("CORE", "UI KIT", "DATA").
-Zones, drawn left to right in the order you give them: who uses the project, then its own code (one or two zones, such as the delivery side and the core), then what it uses. 2 to 4 zones.
+Zones, 2 to 4, in this order: who uses the project, then its own code (one or two zones, such as the delivery side and the core), then what it uses.
+
+Layout: the composition that tells this project's architecture at a glance. Choose the most telling one whose condition holds; bands are what is left when no other holds. Then say why in one sentence for the reader of the drawing, in the project's own terms, not the rule's (120 characters at most): "Every binding and example is built on the engine", not "six parts import the core".
+- hub: one core most of the code imports, at the centre of its zone, the rest of the code on a ring around it, who uses the project on the left, what it uses on the right. It holds when at least three parts of the code, and most of them, import one core part that imports none of them, and the code stands in the core's zone and at most one zone beside it. Give that part's id as the core.
+- bands: the zones drawn left to right, the parts of each in columns: calls that run one way through layers, with no one core at the centre.
 
 Routes: draw the imports that explain the architecture, not every edge; every route a scenario travels must exist. A pipe carries tokens. A wire is configuration (the configurator plugging a part in): it carries none and its dependsOn is "none".
 

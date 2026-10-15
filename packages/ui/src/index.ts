@@ -21,6 +21,7 @@ export { TokenTag, type TokenTagProps } from "./atoms/token-tag";
 
 export { Breadcrumb, type BreadcrumbItem } from "./molecules/breadcrumb";
 export { DimensionLabel, type DimensionLabelProps } from "./molecules/dimension-label";
+export { DrawingNotes, type DrawingNotesProps } from "./molecules/drawing-notes";
 export { FileGrid, type FileGridProps } from "./molecules/file-grid";
 export { FilterChips, type FilterChipsProps, type FilterOption } from "./molecules/filter-chips";
 export { FlowLegend, type FlowLegendProps } from "./molecules/flow-legend";

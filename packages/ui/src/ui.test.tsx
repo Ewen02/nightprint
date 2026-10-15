@@ -7,6 +7,7 @@ import { LogoMark } from "./atoms/logo-mark";
 import { TextField } from "./atoms/text-field";
 import { TokenTag } from "./atoms/token-tag";
 import { Breadcrumb } from "./molecules/breadcrumb";
+import { DrawingNotes } from "./molecules/drawing-notes";
 import { FileGrid } from "./molecules/file-grid";
 import { FilterChips } from "./molecules/filter-chips";
 import { FlowLegend } from "./molecules/flow-legend";
@@ -164,6 +165,16 @@ describe("molecules", () => {
     expect(legend.match(/<li/g)).toHaveLength(3);
     expect(legend).toContain("Modelled, not measured");
     expect(legend).toContain("Click a part");
+  });
+
+  it("numbers a drawing's notes as a list, the numbers drawn out of the accessibility tree", () => {
+    const notes = html(
+      <DrawingNotes heading="Notes" notes={["Public repositories.", "Static imports only."]} />,
+    );
+    expect(notes).toMatch(/<h3[^>]*>Notes<\/h3><ol>(<li.*?<\/li>){2}<\/ol>/s);
+    expect(notes).toContain(
+      '<span aria-hidden="true" class="font-mono text-log text-text-faint">1.</span>',
+    );
   });
 
   it("marks the last breadcrumb item as the current page", () => {

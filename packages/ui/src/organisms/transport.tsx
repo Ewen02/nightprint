@@ -33,6 +33,19 @@ export interface TransportProps {
     readonly status: string;
     readonly onShare: () => void;
   };
+  /**
+   * A video of the machine, made in the page: the button's label ("Download video", or how
+   * far the filming is while a press cancels it) and the message read out as it starts and ends.
+   */
+  readonly film?: {
+    readonly label: string;
+    readonly status: string;
+    /** Filming: the button is pressed, and a press stops it. */
+    readonly filming: boolean;
+    /** How far the filming is, 0 to 1, while it lasts. */
+    readonly progress?: number | undefined;
+    readonly onFilm: () => void;
+  };
   readonly className?: string;
 }
 
@@ -51,6 +64,7 @@ export function Transport({
   ending = null,
   onSuggestion,
   share,
+  film,
   className,
 }: TransportProps) {
   return (
@@ -85,14 +99,33 @@ export function Transport({
           flow={caption.flow}
         />
       )}
-      {share && (
-        <div className="flex-none">
-          <Button variant="secondary" onClick={share.onShare}>
-            {share.label}
-          </Button>
-          <span aria-live="polite" className="sr-only">
-            {share.status}
-          </span>
+      {(share || film) && (
+        <div className="flex flex-none flex-wrap gap-2">
+          {share && (
+            <>
+              <Button variant="secondary" onClick={share.onShare}>
+                {share.label}
+              </Button>
+              <span aria-live="polite" className="sr-only">
+                {share.status}
+              </span>
+            </>
+          )}
+          {film && (
+            <>
+              <Button
+                variant="secondary"
+                pressed={film.filming}
+                progress={film.progress}
+                onClick={film.onFilm}
+              >
+                {film.label}
+              </Button>
+              <span aria-live="polite" className="sr-only">
+                {film.status}
+              </span>
+            </>
+          )}
         </div>
       )}
     </section>

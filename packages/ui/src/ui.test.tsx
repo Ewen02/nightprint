@@ -9,6 +9,7 @@ import { TokenTag } from "./atoms/token-tag";
 import { Breadcrumb } from "./molecules/breadcrumb";
 import { DrawingNotes } from "./molecules/drawing-notes";
 import { FileGrid } from "./molecules/file-grid";
+import { FilmPreview } from "./molecules/film-preview";
 import { FilterChips } from "./molecules/filter-chips";
 import { FlowLegend } from "./molecules/flow-legend";
 import { LogLine } from "./molecules/log-line";
@@ -449,6 +450,55 @@ describe("end of a scenario", () => {
 
   it("keeps the step bars while the scenario runs", () => {
     expect(transport(null)).toContain('aria-current="step"');
+  });
+});
+
+describe("video of a machine", () => {
+  const transport = (filming: boolean) =>
+    html(
+      <Transport
+        scenario="Place an order"
+        steps={[{ id: "a", title: "A", flow: "request" }]}
+        current={0}
+        caption={{ title: "A", body: "a.", flow: "request" }}
+        playing={false}
+        finished={false}
+        film={{
+          label: filming ? "Cancel · 42 %" : "Download video",
+          status: filming ? "Filming the video. It downloads when it is done." : "",
+          filming,
+          onFilm: () => undefined,
+        }}
+      />,
+    );
+
+  it("shows the video as it is made: where it stands, and how far, as a progress bar", () => {
+    const filming = html(
+      <FilmPreview
+        state={{ kind: "filming", percent: 41.6, step: "STEP 3 / 8" }}
+        frame={<canvas />}
+      />,
+    );
+    expect(filming).toContain('role="progressbar"');
+    expect(filming).toContain('aria-valuenow="42"');
+    expect(filming).toContain("STEP 3 / 8 · 42 %");
+    const saved = html(
+      <FilmPreview state={{ kind: "saved", file: "mch-001-hexagonal.mp4" }} frame={null} />,
+    );
+    expect(saved).toContain("SAVED");
+    expect(saved).toContain("mch-001-hexagonal.mp4");
+    expect(saved).toContain('aria-valuenow="100"');
+  });
+
+  it("offers the video as a button, pressed while it is filmed, and says so out loud", () => {
+    expect(transport(false)).toMatch(
+      /<button[^>]*aria-pressed="false"[^>]*>Download video<\/button>/,
+    );
+    const filming = transport(true);
+    expect(filming).toMatch(/<button[^>]*aria-pressed="true"[^>]*>Cancel · 42 %<\/button>/);
+    expect(filming).toMatch(
+      /aria-live="polite"[^>]*>Filming the video\. It downloads when it is done\./,
+    );
   });
 });
 

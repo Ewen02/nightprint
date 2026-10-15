@@ -23,6 +23,11 @@ export { Breadcrumb, type BreadcrumbItem } from "./molecules/breadcrumb";
 export { DimensionLabel, type DimensionLabelProps } from "./molecules/dimension-label";
 export { DrawingNotes, type DrawingNotesProps } from "./molecules/drawing-notes";
 export { FileGrid, type FileGridProps } from "./molecules/file-grid";
+export {
+  FilmPreview,
+  type FilmPreviewProps,
+  type FilmPreviewState,
+} from "./molecules/film-preview";
 export { FilterChips, type FilterChipsProps, type FilterOption } from "./molecules/filter-chips";
 export { FlowLegend, type FlowLegendProps } from "./molecules/flow-legend";
 export { LogLine, type LogLineProps } from "./molecules/log-line";

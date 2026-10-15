@@ -220,3 +220,19 @@ export function machineOgCard(machine: Machine) {
     ],
   });
 }
+
+/** The import page's preview, which a shared drawing shows too: the offer, over a real project. */
+export function importOgCard(example: Machine) {
+  return ogCard({
+    eyebrow: `${site.name} / Import`,
+    title: "Your repository, drawn as a machine.",
+    lead: "Paste a public GitHub repository: every route between two parts stands on an import its code has.",
+    machine: example,
+    cells: [
+      { term: "Input", value: "owner/name" },
+      { term: "Languages", value: "JS · TS" },
+      { term: "Takes", value: "2–3 min" },
+      { term: "Site", value: new URL(site.url).host },
+    ],
+  });
+}

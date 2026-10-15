@@ -53,10 +53,28 @@ interface Reply {
     readonly model: string;
     readonly machine: MachineInput;
     /** The drafter's plan: its parts say which units each one stands for. */
-    readonly blueprint?: { readonly parts: readonly SketchPart[] };
+    readonly blueprint?: {
+      readonly parts: readonly SketchPart[];
+      /** The composition it chose, and why; absent from drawings made before it chose. */
+      readonly layout?: Layout;
+    };
   };
   /** The repository has moved on since this drawing: its latest commit, and how far ahead. */
   readonly newer?: Newer;
+}
+
+/** How the drafter composed the machine, in its words. */
+interface Layout {
+  readonly kind: string;
+  readonly why: string;
+}
+
+/** "Drawn as a hub. Most of the code leans on the engine." */
+function composition(layout: Layout | undefined): string[] {
+  if (!layout || layout.why === "") {
+    return [];
+  }
+  return [`Drawn as ${layout.kind === "hub" ? "a hub" : "bands"}. ${layout.why}`];
 }
 
 interface Newer {
@@ -70,6 +88,7 @@ interface Drawn {
   readonly model: string;
   readonly machine: Machine;
   readonly parts: readonly SketchPart[];
+  readonly layout?: Layout | undefined;
   readonly newer?: Newer | undefined;
 }
 
@@ -114,6 +133,7 @@ function accept(reply: Reply): { drawing: Drawn } | { error: string } {
         model,
         machine: defineMachine(reply.result.machine),
         parts: reply.result.blueprint?.parts ?? [],
+        layout: reply.result.blueprint?.layout,
         newer: reply.newer,
       },
     };
@@ -397,6 +417,7 @@ export function ImportView() {
                 eyebrow="Drawn from code"
                 title={`${drawing.repo} at ${short}.`}
                 lead={[
+                  ...composition(drawing.layout),
                   "Every route between two parts stands on an import in the code at this commit, and its arrowhead runs the way the import does.",
                   `The grouping and the words are a language model's (${drawing.model}), checked against the code's imports but not read by a person: a scenario says which part calls which, not what the code does in detail.`,
                   ...(drawing.newer

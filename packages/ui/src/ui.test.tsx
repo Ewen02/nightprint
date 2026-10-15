@@ -608,6 +608,26 @@ describe("drawing set", () => {
     expect(plan).toMatch(/^<svg role="img" aria-label="Hexagonal architecture, seen from above"/);
     expect(plan).toContain('stroke="#7BE38A"');
   });
+
+  it("draws what a what-if switch breaks in vermillon, whatever flow travels it", () => {
+    const plan = html(
+      <PlanView
+        label="Nightprint, the UI kit importing the engine"
+        box={{ x: 0, y: 0, width: 10, height: 5 }}
+        zones={[]}
+        parts={[
+          { id: "ui", shape: "circle", cx: 1, cy: 1, r: 0.5, glass: false, flag: "violation" },
+        ]}
+        routes={[
+          { id: "v", points: "0,0 1,1", kind: "pipe", flow: "write", flag: "violation" },
+          { id: "w", points: "0,1 1,2", kind: "pipe", flow: "write" },
+        ]}
+      />,
+    );
+    // The vermillon of the error flow, on the part and on its route; the other route keeps its flow.
+    expect(plan.match(/stroke="#FF5A36"/g)).toHaveLength(2);
+    expect(plan).toContain('stroke="#7BE38A"');
+  });
 });
 
 describe("footer", () => {

@@ -11,6 +11,8 @@ interface PlanShapeBase {
   readonly id: string;
   /** Drawn as an outline only, dashed: the glass boundary of the application. */
   readonly glass: boolean;
+  /** A what-if switch makes this part break the pattern: outlined in vermillon. */
+  readonly flag?: "violation" | undefined;
 }
 
 export type PlanPart =
@@ -49,6 +51,8 @@ export interface PlanRoute {
   readonly flow: FlowName | null;
   /** The arrowhead at the end the other depends on: "x,y x,y x,y", a triangle. */
   readonly arrow?: string;
+  /** A what-if switch added it against the pattern: drawn in vermillon, whatever travels it. */
+  readonly flag?: "violation" | undefined;
 }
 
 /** A numbered disc on a part, as on an assembly drawing. */
@@ -167,7 +171,12 @@ export function PlanView({
       {parts.map((part) => {
         const paint = {
           fill: part.glass ? "none" : neutral.raised,
-          stroke: part.glass ? neutral.ring : neutral.textFaint,
+          stroke:
+            part.flag === "violation"
+              ? flowColour.error
+              : part.glass
+                ? neutral.ring
+                : neutral.textFaint,
           strokeWidth: 0.035,
           strokeDasharray: part.glass ? "0.16 0.1" : undefined,
         };
@@ -207,8 +216,13 @@ export function PlanView({
             />
           );
         }
-        const colour = route.flow ? flowColour[route.flow] : neutral.ring;
-        if (!(flowing && route.flow)) {
+        const violation = route.flag === "violation";
+        const colour = violation
+          ? flowColour.error
+          : route.flow
+            ? flowColour[route.flow]
+            : neutral.ring;
+        if (!(flowing && (route.flow || violation))) {
           return <polyline key={route.id} {...line} stroke={colour} strokeWidth={0.06} />;
         }
         return (
@@ -227,7 +241,11 @@ export function PlanView({
       {routes.map(
         (route) =>
           route.arrow && (
-            <polygon key={`${route.id}-arrow`} points={route.arrow} fill={neutral.textBody} />
+            <polygon
+              key={`${route.id}-arrow`}
+              points={route.arrow}
+              fill={route.flag === "violation" ? flowColour.error : neutral.textBody}
+            />
           ),
       )}
       {dimensions.map((dimension) => (

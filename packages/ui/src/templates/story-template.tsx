@@ -67,13 +67,6 @@ export function StoryTemplate({
       </div>
       {/* Transparent to the pointer except over the beats: the stage takes drags beside them. */}
       <div className="pointer-events-none relative z-10">
-        {ruler && (
-          // Zero height, so it takes no room: it only rides the top of the screen,
-          // inside the sheet's frame (8 or 12 px in, plus the frame's 1 px border).
-          <div className="sticky top-0 z-20 hidden h-0 lg:block">
-            <div className="absolute inset-x-[13px] top-[13px]">{ruler}</div>
-          </div>
-        )}
         <div className="mx-auto max-w-300 px-4 sm:px-6">
           <div ref={columnRef} className="flex flex-col pt-[min(40dvh,72vw)] lg:pt-0">
             {before.map((beat, index) => (
@@ -104,6 +97,16 @@ export function StoryTemplate({
           </div>
         </div>
       </div>
+      {ruler && (
+        // Above the beats, so the text scrolls under it, in a layer as tall as the section
+        // like the sheet's: it rides the top of the screen as long as the sheet does, then
+        // leaves with it. It sits inside the sheet's frame (12 px in, plus its 1 px border).
+        <div className="pointer-events-none absolute inset-0 z-20 hidden lg:block">
+          <div className="sticky top-0 h-dvh">
+            <div className="absolute inset-x-[13px] top-[13px]">{ruler}</div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

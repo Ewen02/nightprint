@@ -17,12 +17,14 @@ export const siteFooter: SiteFooterProps = {
     next: sheets.find((sheet) => !sheet.live),
     follow: { label: "Follow on X", href: site.author.url },
   },
-  // From any page, back to the sections of the home page.
+  // From any page, back to the sections of the home page, then to drawing a repository.
   links: [
     { label: "The run", href: "/#run" },
     { label: "Machines", href: "/#machines" },
+    { label: "Projects", href: "/#projects" },
     { label: "Legend", href: "/#legend" },
     { label: "Build log", href: "/#build-log" },
+    { label: "Draw a repository", href: "/import/" },
   ],
   credit: { name: site.author.name, href: site.author.url, year: "2026" },
 };

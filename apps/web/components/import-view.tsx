@@ -15,7 +15,6 @@ import {
   SurveySketch,
 } from "@nightprint/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { takeDrawingRequest } from "./draw-request";
 import { ImportHero } from "./import-hero";
 import { ImportClose, ImportStages, ImportWhatIf } from "./import-sections";
 import { MachineView } from "./machine-view";
@@ -327,13 +326,11 @@ export function ImportView() {
   }, [noteCount]);
 
   // A shared address opens its drawing; a repository alone only fills the form, since
-  // drawing it anew costs the drafter's time and the site's budget. It starts only when a
-  // form on another page asked for it, in this tab.
+  // drawing it anew costs the drafter's time and the site's budget.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const repo = params.get("repo");
     const sha = params.get("sha");
-    const asked = takeDrawingRequest();
     if (repo) {
       setInput(repo);
     }
@@ -346,14 +343,12 @@ export function ImportView() {
           arrive(accepted.drawing);
         }
       });
-    } else if (repo && asked === repo) {
-      void draw(repo);
     }
     return () => {
       window.clearTimeout(polling.current);
       window.clearTimeout(closingTimer.current);
     };
-  }, [arrive, draw]);
+  }, [arrive]);
 
   // Both forms on the page share the address and say why the last drawing failed.
   const form = {

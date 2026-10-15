@@ -3,11 +3,10 @@
 import type { Player } from "@nightprint/engine";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useRef, useState } from "react";
-import { PCFShadowMap } from "three";
-import { WebGPURenderer } from "three/webgpu";
 import type { AssemblyPhase } from "./assembly";
 import { createLabelRegistry, LabelLayer, type StageCallout } from "./labels";
 import { MachineScene } from "./machine-scene";
+import { CAMERA, MEASURE, NO_SHADOWS, rendererFactory } from "./stage-canvas";
 import { filterThreeConsole } from "./three-console";
 
 // Before any Canvas exists: R3F creates its deprecated Clock with the store.
@@ -42,32 +41,7 @@ export interface MachineStageProps {
   readonly className?: string;
 }
 
-/**
- * WebGPU first: WebGPURenderer uses its WebGL2 backend by itself when
- * WebGPU is missing. Only built-in and node materials are used, so the
- * scene renders the same on both backends.
- */
-async function createRenderer({ canvas }: { canvas: unknown }) {
-  if (!(canvas instanceof HTMLCanvasElement)) {
-    throw new Error("Nightprint needs a browser canvas");
-  }
-  const renderer = new WebGPURenderer({ canvas, antialias: true });
-  await renderer.init();
-  return renderer;
-}
-
-/**
- * No shadows. R3F sets PCFSoftShadowMap even when shadows are off, and WebGPURenderer warns that
- * it no longer exists: give it the type it supports.
- */
-const NO_SHADOWS = { enabled: false, type: PCFShadowMap };
-
-/**
- * R3F re-measures the canvas on every page scroll by default, to keep its page
- * offset. Nothing here needs it (pointer events use offsetX/Y), and each new
- * measure re-renders the scene: measure on resize only.
- */
-const MEASURE = { scroll: false } as const;
+const createRenderer = rendererFactory();
 
 /** Frames drawn before the stage shows: by then every material has compiled once. */
 const FRAMES_BEFORE_SHOWING = 3;
@@ -121,7 +95,7 @@ export function MachineStage({
         flat
         shadows={NO_SHADOWS}
         dpr={[1, 2]}
-        camera={{ position: [30, 30, 30], zoom: 40, near: 0.1, far: 200 }}
+        camera={{ ...CAMERA, position: [...CAMERA.position] }}
         gl={createRenderer}
         resize={MEASURE}
         onPointerMissed={() => onSelect?.(null)}

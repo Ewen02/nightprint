@@ -153,6 +153,17 @@ export async function resolveGitHub(
   };
 }
 
+const languageBytes = z.record(z.string(), z.number());
+
+/** The languages GitHub finds in a repository, in bytes of code: one API call. */
+export async function languagesOf(
+  repo: GitHubRepo,
+  options: GitHubOptions = {},
+): Promise<Readonly<Record<string, number>>> {
+  const { api } = githubApi(options);
+  return api(repo, "/languages", languageBytes);
+}
+
 const compareInfo = z.object({ ahead_by: z.number() });
 
 /** How many commits `commit` is ahead of an older one: one API call, undefined when unknown. */

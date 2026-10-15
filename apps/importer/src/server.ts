@@ -17,12 +17,15 @@ import { type Drawing, type DrawingStore, dayOf, type Ledger } from "./store";
  *   GET  /api/drawings/<owner>/<name>/<sha>  a cached drawing, for a shared link
  *
  * A new drawing costs model tokens: each visitor starts a few a day, and all of them
- * together stay under a daily budget. A drawing that fails before the model is given back.
+ * together stay under a daily budget. A repository in a language the survey does not read
+ * is refused before either; a drawing that fails before the model is given back.
  */
 
 export interface ImporterDeps {
   readonly resolve: (repo: GitHubRepo) => Promise<GitHubCommit>;
   readonly draw: (commit: GitHubCommit, report: Reporter<ProgressEvent>) => Promise<Drawing>;
+  /** The languages GitHub finds in a repository, in bytes; no check when left out. */
+  readonly languages?: (repo: GitHubRepo) => Promise<Readonly<Record<string, number>>>;
   /** How many commits `commit` is ahead of an older one, when GitHub can tell. */
   readonly commitsSince?: (commit: GitHubCommit, base: string) => Promise<number | undefined>;
   readonly store: DrawingStore;
@@ -78,6 +81,19 @@ async function readBody(request: IncomingMessage): Promise<unknown> {
   }
 }
 
+/** The languages, as GitHub names them, whose files the survey reads. */
+const READ = new Set(["JavaScript", "TypeScript", "TSX"]);
+
+/** Each language's share of the code, to two decimals, largest first: for the log. */
+function shares(languages: Readonly<Record<string, number>>): Record<string, number> {
+  const total = Object.values(languages).reduce((sum, bytes) => sum + bytes, 0) || 1;
+  return Object.fromEntries(
+    Object.entries(languages)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, bytes]) => [name, Math.round((bytes / total) * 100) / 100]),
+  );
+}
+
 /** The visitor, as Caddy saw it: the container is reachable through Caddy alone. */
 function visitorOf(request: IncomingMessage): string {
   const real = request.headers["x-real-ip"];
@@ -127,6 +143,21 @@ export function createImporter(deps: ImporterDeps) {
         body: { stage: "done", result: last, newer: { sha: commit.sha, commits } },
       };
     }
+    // One call to GitHub saves a visitor's drawing and a queue slot: a repository with no
+    // code the survey reads is refused here. Should GitHub not answer, the survey says it.
+    const languages = await deps
+      .languages?.({ owner: commit.owner, name: commit.name })
+      .catch(() => undefined);
+    if (languages && !Object.keys(languages).some((name) => READ.has(name))) {
+      const [main] = Object.keys(shares(languages));
+      log({ event: "refused", repo: key, sha: commit.sha, languages: shares(languages) });
+      throw new HttpError(
+        422,
+        main
+          ? `This repository is written in ${main}; Nightprint reads JavaScript and TypeScript only for now.`
+          : "No JavaScript or TypeScript code to draw in it.",
+      );
+    }
     const spent = await deps.ledger.spent(dayOf(now()));
     if (spent + (deps.queue.pending + 1) * deps.estimate > deps.dailyBudget) {
       throw new HttpError(503, "Today's drawing budget is spent; cached drawings still open.");
@@ -163,7 +194,13 @@ export function createImporter(deps: ImporterDeps) {
       },
     );
     inFlight.set(`${key}@${commit.sha}`, id);
-    log({ event: "queued", repo: key, sha: commit.sha, id });
+    log({
+      event: "queued",
+      repo: key,
+      sha: commit.sha,
+      id,
+      ...(languages ? { languages: shares(languages) } : {}),
+    });
     return { status: 202, body: deps.queue.get(id) };
   };
 

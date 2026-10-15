@@ -215,6 +215,30 @@ describe("the importer's API", () => {
     expect((await visit("acme/two", "203.0.113.2")).status).toBe(202);
   });
 
+  it("refuses a repository in a language it does not read, at once and without a drawing", async () => {
+    const events: Record<string, unknown>[] = [];
+    await start({
+      visitors: new VisitorLimit(1, 86_400_000),
+      languages: async (repo): Promise<Record<string, number>> =>
+        repo.name === "python" ? { Python: 9600, Dockerfile: 400 } : { TypeScript: 100 },
+      log: (event) => events.push(event),
+    });
+    const refused = await post("acme/python");
+    expect(refused.status).toBe(422);
+    expect((await read(refused)).error).toBe(
+      "This repository is written in Python; Nightprint reads JavaScript and TypeScript only for now.",
+    );
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        event: "refused",
+        repo: "acme/python",
+        languages: { Python: 0.96, Dockerfile: 0.04 },
+      }),
+    );
+    // The visitor's one drawing of the day is still there.
+    expect((await post("acme/tiny")).status).toBe(202);
+  });
+
   it("gives a visitor's drawing back when the code cannot be read, before any model", async () => {
     await start({ visitors: new VisitorLimit(1, 86_400_000) });
     const failed = await settle((await read(await post("acme/empty"))).id);

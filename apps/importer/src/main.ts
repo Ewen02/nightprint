@@ -4,7 +4,7 @@ import { drawRepository } from "./drawing";
 import { JobQueue, VisitorLimit } from "./jobs";
 import type { ProgressEvent } from "./progress";
 import { createImporter } from "./server";
-import { commitsSince, readGitHubAt, resolveGitHub } from "./sources";
+import { commitsSince, languagesOf, readGitHubAt, resolveGitHub } from "./sources";
 import { type Drawing, fileDrawingStore, fileLedger } from "./store";
 
 /**
@@ -31,6 +31,7 @@ const log = (event: Record<string, unknown>) =>
 
 const handler = createImporter({
   resolve: (repo) => resolveGitHub(repo, github),
+  languages: (repo) => languagesOf(repo, github),
   commitsSince: (commit, base) => commitsSince(commit, base, github),
   draw: drawRepository({
     read: (commit, onProgress) => readGitHubAt(commit, github, onProgress),

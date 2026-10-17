@@ -60,6 +60,13 @@ const BUILD_LOG_SHOWN = 8;
 /** Newest first. Posted on X as it happens. */
 const buildLog: readonly BuildLogEntry[] = [
   {
+    key: "mch-004",
+    date: "17 OCT",
+    flow: "response",
+    tag: "SHIP",
+    text: "MCH-004 is out: domain-driven design. An order's root holds its limit; then go around the root, drop the version, or call Shipping mid-transaction.",
+  },
+  {
     key: "video",
     date: "15 OCT",
     flow: "response",

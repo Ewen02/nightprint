@@ -6,7 +6,7 @@ import {
   validateMachine,
 } from "@nightprint/engine";
 import { describe, expect, it } from "vitest";
-import { hexagonal, machines, projects, upcoming } from "./index";
+import { ddd, hexagonal, machines, projects, upcoming } from "./index";
 
 describe("catalogue", () => {
   it("has unique codes and slugs, real projects included", () => {
@@ -146,6 +146,32 @@ describe("MCH-001 hexagonal architecture", () => {
     if (token?.kind === "travel" && postgres) {
       const end = token.points.at(-1);
       expect(end?.[2]).toBeCloseTo(postgres.position[2] + postgres.socket[2], 6);
+    }
+  });
+});
+
+describe("MCH-004 domain-driven design", () => {
+  const travelled = (actions: string[]) =>
+    resolveMachine(ddd, actions).scenarios.flatMap((s) =>
+      s.steps.flatMap((step) => step.tokens.flatMap((t) => (t.kind === "travel" ? t.routes : []))),
+    );
+
+  it("reaches the lines only through the root, unless the switch goes behind it", () => {
+    for (const actions of actionCombinations(ddd)) {
+      const label = actions.join("+") || "no action";
+      const behind = actions.includes("behind-the-root");
+      expect(travelled(actions).includes("service-lines"), label).toBe(behind);
+      expect(travelled(actions).includes("order-lines"), label).toBe(!behind);
+    }
+  });
+
+  it("crosses into Shipping through the relay alone, unless Sales calls it", () => {
+    for (const actions of actionCombinations(ddd)) {
+      const label = actions.join("+") || "no action";
+      const call = actions.includes("call-shipping");
+      const routes = travelled(actions);
+      expect(routes.includes("service-shipping"), label).toBe(call);
+      expect(routes.includes("relay-shipping"), label).toBe(!call);
     }
   });
 });

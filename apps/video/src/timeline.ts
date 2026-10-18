@@ -24,6 +24,8 @@ export type TimelineStep = {
   readonly number: number;
   readonly count: number;
   readonly title: string;
+  /** The step in one sentence, when the site shows one under the title. */
+  readonly lead?: string;
   readonly flow: FlowName;
 };
 
@@ -128,6 +130,7 @@ export function readTimeline(json: unknown): Timeline {
     if (typeof s.from !== "number" || typeof s.number !== "number" || typeof s.count !== "number")
       fail("a step lacks from, number or count");
     if (typeof s.title !== "string") fail("a step lacks its title");
+    if (s.lead !== undefined && typeof s.lead !== "string") fail("a step's lead is not text");
     if (!FLOWS.includes(s.flow as FlowName)) fail(`unknown flow "${String(s.flow)}"`);
   }
   if (!Array.isArray(clicks)) fail("no clicks");

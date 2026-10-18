@@ -183,6 +183,11 @@ const readCaption = () =>
       /^Step\s+\d+\s*\/\s*\d+$/i.test(el.textContent?.trim() ?? ""),
     );
     const title = label?.nextElementSibling;
+    // A step with a lead shows it right under its title; its body waits behind "More".
+    const lead =
+      title?.nextElementSibling?.nextElementSibling?.tagName === "BUTTON"
+        ? title.nextElementSibling.textContent?.trim()
+        : undefined;
     const match = label?.textContent?.match(/(\d+)\s*\/\s*(\d+)/);
     if (!label || !title || !match) return null;
     const colour = getComputedStyle(label).color;
@@ -192,6 +197,7 @@ const readCaption = () =>
       number: Number(match[1]),
       count: Number(match[2]),
       title: title.textContent?.trim() ?? "",
+      ...(lead ? { lead } : {}),
       flow,
     };
   }, flowByColour);

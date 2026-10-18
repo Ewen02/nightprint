@@ -113,6 +113,7 @@ const askStep = variants("ask", [BIG, TWO_HOP], (on) => {
       ? `An analyst asks: “${question(f)}” The question goes to RAG and KAG. CAG has no cache to answer from.`
       : `An analyst asks: “${question(f)}” The same question goes to all three.`,
     focus: ["user", "rag-find", "kag-find", ...(f.big ? [] : ["cag-llm"])],
+    states: { user: f.twoHop ? "Where is P-7's supplier?" : "Who supplies part P-7?" },
     tokens: [
       { flow: "request", path: ["rag-ask"] },
       ...(f.big ? [] : [{ flow: "request" as const, path: ["cag-ask"] }]),
@@ -216,6 +217,11 @@ const answerStep = variants("answer", [BIG, TWO_HOP, BAD_EDGE], (on) => {
         : `KAG answers ${kag}, from the steps its planner ran on the graph.`,
     ].join(" "),
     focus: ["user", "rag-llm", "kag-llm", ...(f.big ? [] : ["cag-llm"])],
+    states: {
+      "rag-llm": f.twoHop ? "S-12, city unknown" : "answers S-12",
+      "cag-llm": f.big ? "no cache, no answer" : `answers ${right}`,
+      "kag-llm": `answers ${kag}`,
+    },
     tokens: [
       { flow: f.twoHop ? "error" : "response", path: ["rag-feed", "rag-answer"] },
       ...(f.big ? [] : [{ flow: "response" as const, path: ["cag-ask"], reverse: true }]),

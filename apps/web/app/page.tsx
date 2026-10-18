@@ -91,6 +91,13 @@ function sheetCount(count: number): string {
 /** Newest first. Posted on X as it happens. */
 const buildLog: readonly BuildLogEntry[] = [
   {
+    key: "series",
+    date: "18 OCT",
+    flow: "response",
+    tag: "SHIP",
+    text: "Three series join the machines: BEN-001 runs RAG, CAG and KAG on one question, FMD-001 replays a retry storm, PRT-001 counts a TLS 1.3 handshake in round trips.",
+  },
+  {
     key: "mch-004",
     date: "17 OCT",
     flow: "response",

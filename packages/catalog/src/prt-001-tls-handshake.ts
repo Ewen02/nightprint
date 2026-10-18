@@ -253,8 +253,8 @@ export const tlsHandshake = defineMachine({
           focus: ["browser", "client-keys"],
           states: { "client-keys": "fresh pair · share sent" },
           tokens: [
-            { flow: "write", path: ["client-keys"], reverse: true, label: "KS" },
             { flow: "request", path: ["wire"], label: "CH" },
+            { flow: "write", path: ["client-keys"], reverse: true, label: "KS" },
           ],
           log: [
             {
@@ -272,8 +272,8 @@ export const tlsHandshake = defineMachine({
           focus: ["browser", "client-keys", "ticket"],
           states: { ticket: "none for this server", "client-keys": "fresh pair · share sent" },
           tokens: [
-            { flow: "write", path: ["client-keys"], reverse: true, label: "KS" },
             { flow: "request", path: ["wire"], label: "CH" },
+            { flow: "write", path: ["client-keys"], reverse: true, label: "KS" },
           ],
           log: [
             {
@@ -291,8 +291,8 @@ export const tlsHandshake = defineMachine({
           focus: ["browser", "ticket"],
           states: { ticket: "pre-shared key" },
           tokens: [
-            { flow: "write", path: ["ticket-browser"], label: "PSK" },
             { flow: "request", path: ["wire"], label: "GET" },
+            { flow: "write", path: ["ticket-browser"], label: "PSK" },
           ],
           log: [
             {
@@ -310,9 +310,9 @@ export const tlsHandshake = defineMachine({
           focus: ["server", "server-keys", "certificate"],
           states: { "server-keys": "fresh pair · secret shared", server: "TLS 1.3" },
           tokens: [
+            { flow: "response", path: ["wire"], reverse: true, label: "SH" },
             { flow: "write", path: ["server-keys"], reverse: true, label: "KS" },
             { flow: "write", path: ["server-cert"], reverse: true },
-            { flow: "response", path: ["wire"], reverse: true, label: "SH" },
           ],
           log: [
             {
@@ -392,8 +392,8 @@ export const tlsHandshake = defineMachine({
           focus: ["server", "server-keys", "browser"],
           states: { server: "early data accepted" },
           tokens: [
-            { flow: "write", path: ["server-keys"], reverse: true, label: "KS" },
             { flow: "response", path: ["wire"], reverse: true, label: "200" },
+            { flow: "write", path: ["server-keys"], reverse: true, label: "KS" },
           ],
           log: [
             {
@@ -420,8 +420,8 @@ export const tlsHandshake = defineMachine({
           focus: ["server", "certificate"],
           states: { server: "TLS 1.2" },
           tokens: [
-            { flow: "write", path: ["server-cert"], reverse: true },
             { flow: "response", path: ["wire"], reverse: true, label: "SH" },
+            { flow: "write", path: ["server-cert"], reverse: true },
           ],
           log: [
             {
@@ -439,8 +439,8 @@ export const tlsHandshake = defineMachine({
           focus: ["browser", "client-keys"],
           states: { browser: "server checked", "client-keys": "secret shared" },
           tokens: [
-            { flow: "write", path: ["client-keys"], reverse: true, label: "KS" },
             { flow: "request", path: ["wire"], label: "CKE" },
+            { flow: "write", path: ["client-keys"], reverse: true, label: "KS" },
           ],
           log: [
             {

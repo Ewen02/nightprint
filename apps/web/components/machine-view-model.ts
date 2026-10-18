@@ -135,7 +135,12 @@ export function transportData(
     scenario: scenario.title,
     steps: stepDotItems(scenario),
     current: state.stepIndex,
-    caption: { title: step.step.title, body: step.step.body, flow: step.flow },
+    caption: {
+      title: step.step.title,
+      body: step.step.body,
+      lead: step.step.lead,
+      flow: step.flow,
+    },
     playing: state.mode === "playing",
     finished,
   };

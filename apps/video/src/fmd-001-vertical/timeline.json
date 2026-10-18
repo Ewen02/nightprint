@@ -1,0 +1,116 @@
+{
+  "source": "https://nightprint.dev/m/retry-storm/",
+  "footage": {
+    "frames": 850,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "scale": 2
+  },
+  "steps": [
+    {
+      "from": 0,
+      "number": 1,
+      "count": 7,
+      "title": "Orders flow",
+      "lead": "250 orders a second reach a database that can take 300.",
+      "flow": "request"
+    },
+    {
+      "from": 80,
+      "number": 2,
+      "count": 7,
+      "title": "A report slows the database",
+      "lead": "A report's heavy query makes every query wait: 1.5 s instead of 20 ms.",
+      "flow": "error"
+    },
+    {
+      "from": 160,
+      "number": 3,
+      "count": 7,
+      "title": "The service gives up after 1 s",
+      "lead": "After 1 s the service gives up, and so does every layer above it.",
+      "flow": "error"
+    },
+    {
+      "from": 240,
+      "number": 4,
+      "count": 7,
+      "title": "Every layer retries, at once",
+      "lead": "Every layer retries 3 times: one click becomes up to 64 attempts on the database.",
+      "flow": "error"
+    },
+    {
+      "from": 320,
+      "number": 5,
+      "count": 7,
+      "title": "The database drowns",
+      "lead": "Queries pile up faster than the database answers: every one times out.",
+      "flow": "error"
+    },
+    {
+      "from": 400,
+      "number": 6,
+      "count": 7,
+      "title": "The cause is gone, the outage is not",
+      "lead": "The report stops, but the retries alone keep the database above capacity.",
+      "flow": "error"
+    },
+    {
+      "from": 500,
+      "number": 4,
+      "count": 7,
+      "title": "Every layer retries, at once",
+      "lead": "Every layer retries 3 times: one click becomes up to 64 attempts on the database.",
+      "flow": "error"
+    },
+    {
+      "from": 508,
+      "number": 4,
+      "count": 7,
+      "title": "One layer retries, within a budget",
+      "lead": "Only the service retries, within a 10% budget: the database sees 1.1 times the load.",
+      "flow": "write"
+    },
+    {
+      "from": 588,
+      "number": 5,
+      "count": 7,
+      "title": "Slow, but not buried",
+      "lead": "The database is still slow, but no longer buried under retries.",
+      "flow": "write"
+    },
+    {
+      "from": 668,
+      "number": 6,
+      "count": 7,
+      "title": "The report stops, the database catches up",
+      "lead": "The report stops, and with the load near normal the database catches up.",
+      "flow": "response"
+    },
+    {
+      "from": 748,
+      "number": 7,
+      "count": 7,
+      "title": "Orders flow again",
+      "lead": "Orders flow again: 250 a second, answered in 20 ms.",
+      "flow": "response"
+    }
+  ],
+  "clicks": [
+    {
+      "frame": 508,
+      "name": "Retry at one layer, within a budget",
+      "box": {
+        "x": 1584,
+        "y": 273.96875,
+        "w": 312,
+        "h": 145.78125
+      },
+      "at": {
+        "x": 1615,
+        "y": 296.96875
+      }
+    }
+  ]
+}

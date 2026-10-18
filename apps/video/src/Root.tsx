@@ -4,6 +4,7 @@ import { StepCaption } from "./components/StepCaption";
 import { TitleCard } from "./components/TitleCard";
 import { ViolationFrame } from "./components/ViolationFrame";
 import { WhatIfCard } from "./components/WhatIfCard";
+import { FMD001_VERTICAL_FRAMES, Fmd001Vertical } from "./fmd-001-vertical/Fmd001Vertical";
 import { MCH001_FRAMES, Mch001 } from "./mch-001/Mch001";
 import { MCH002_FRAMES, Mch002 } from "./mch-002/Mch002";
 import { MCH003_FRAMES, Mch003 } from "./mch-003/Mch003";
@@ -44,6 +45,14 @@ export function RemotionRoot() {
         fps={30}
         width={1920}
         height={1080}
+      />
+      <Composition
+        id="FMD-001-9x16"
+        component={Fmd001Vertical}
+        durationInFrames={FMD001_VERTICAL_FRAMES}
+        fps={30}
+        width={1080}
+        height={1920}
       />
       <Composition
         id="PRJ-001"

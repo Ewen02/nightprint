@@ -1,0 +1,77 @@
+{
+  "url": "https://nightprint.dev/m/retry-storm/",
+  "frames": 850,
+  "scale": 2,
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "setup": [
+    {
+      "kind": "toggle",
+      "name": "Event log"
+    }
+  ],
+  "actions": [
+    {
+      "frame": 0,
+      "kind": "button",
+      "name": "Step 1:"
+    },
+    {
+      "frame": 80,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 160,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 240,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 320,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 400,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 500,
+      "kind": "button",
+      "name": "Previous step"
+    },
+    {
+      "frame": 500,
+      "kind": "button",
+      "name": "Previous step"
+    },
+    {
+      "frame": 508,
+      "kind": "switch",
+      "name": "Retry at one layer, within a budget"
+    },
+    {
+      "frame": 588,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 668,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 748,
+      "kind": "button",
+      "name": "Next step"
+    }
+  ]
+}

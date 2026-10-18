@@ -231,6 +231,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "syn",
           title: "TCP first: SYN",
+          lead: "TCP first: the browser's SYN takes 25 ms to cross the network.",
           body: "Before any TLS, TCP opens the connection. The browser sends SYN; it takes 25 ms to cross the network.",
           focus: ["browser", "server"],
           states: { browser: "connecting", server: "listening" },
@@ -240,6 +241,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "syn-ack",
           title: "SYN-ACK",
+          lead: "SYN-ACK comes back: one round trip, 50 ms.",
           body: "The server answers SYN-ACK. One round trip so far, 50 ms, and the client may now send data.",
           focus: ["browser", "server"],
           tokens: [{ flow: "response", path: ["wire"], reverse: true, label: "S/A" }],
@@ -248,6 +250,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "hello",
           title: "ACK and ClientHello",
+          lead: "ClientHello leaves with the browser's key share, in plaintext.",
           body: "The browser completes TCP and sends its ClientHello in the same flight: the TLS versions and ciphers it supports, and a key share, the public half of a key pair it has just made. The ClientHello travels in plaintext.",
           when: { none: [ZERO] },
           focus: ["browser", "client-keys"],
@@ -267,6 +270,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "hello-no-ticket",
           title: "No ticket to resume with",
+          lead: "A TLS 1.2 server never gave out a TLS 1.3 ticket: a plain ClientHello leaves.",
           body: "A TLS 1.2 server never issued a TLS 1.3 ticket, so there is nothing to resume and no early data. The browser completes TCP and sends a plain ClientHello, with its versions, its ciphers and a fresh key share.",
           when: { all: [ZERO, TLS12] },
           focus: ["browser", "client-keys", "ticket"],
@@ -286,6 +290,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "hello-early",
           title: "ClientHello, and the request with it",
+          lead: "With a ticket, the request leaves together with the ClientHello.",
           body: "With a ticket from an earlier TLS 1.3 connection to this server, the browser resumes: its ClientHello carries the ticket's pre-shared key and an early_data flag, and right behind it goes the request, GET /orders, encrypted with keys derived from that key. It leaves at 50 ms, right after TCP.",
           when: { all: [ZERO], none: [TLS12] },
           focus: ["browser", "ticket"],
@@ -305,6 +310,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "server-hello",
           title: "ServerHello, then everything encrypted",
+          lead: "ServerHello and its key share: from here on, everything is encrypted.",
           body: "The server picks TLS 1.3 and answers with its own key share. From the two shares, both sides compute the same secret, so everything after ServerHello is encrypted: the certificate, a signature over the handshake with the certificate's private key (CertificateVerify), and Finished, a MAC over the whole handshake.",
           when: { none: [TLS12, ZERO] },
           focus: ["server", "server-keys", "certificate"],
@@ -325,6 +331,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "check",
           title: "The browser checks the server",
+          lead: "The browser checks the certificate's name, its signature and Finished.",
           body: "The certificate names shop.example and chains to an authority the browser trusts; the signature matches the certificate's key; Finished matches the handshake the browser saw. The server is who it claims to be.",
           when: { none: [TLS12, ZERO, WRONG] },
           focus: ["browser"],
@@ -341,6 +348,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "check-wrong",
           title: "The name does not match",
+          lead: "The certificate names other.example, not shop.example.",
           body: "The certificate is valid, but for other.example: shop.example is not among its names. The browser must not go on with this server.",
           when: { all: [WRONG], none: [TLS12, ZERO] },
           focus: ["browser", "certificate"],
@@ -357,6 +365,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "finished",
           title: "Finished, and the first request",
+          lead: "Finished, and the first request leaves at 100 ms.",
           body: "The browser sends its Finished and, in the same flight, the first request, GET /orders, encrypted with the application keys. It leaves 100 ms after the first SYN: one round trip for TCP, one for TLS.",
           when: { none: [TLS12, ZERO, WRONG] },
           focus: ["browser", "server"],
@@ -366,6 +375,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "response",
           title: "The response",
+          lead: "200 OK: the page's first byte arrives at 150 ms.",
           body: "The server answers 200 OK. The first byte of the page arrives 150 ms after the first SYN.",
           when: { none: [TLS12, ZERO, WRONG] },
           focus: ["server", "browser"],
@@ -375,6 +385,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "alert",
           title: "Alert, and close",
+          lead: "A bad_certificate alert, and the connection closes: no request was sent.",
           body: "The browser sends a bad_certificate alert, encrypted under the handshake keys, and closes the connection. It sent no request: nothing reached a server it could not identify.",
           when: { all: [WRONG], none: [TLS12, ZERO] },
           focus: ["browser", "server"],
@@ -387,6 +398,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "early-server",
           title: "The answer in the server's first flight",
+          lead: "The server answers in its first flight: 200 OK at 100 ms.",
           body: "The server accepts the early data and answers in its first flight: ServerHello, its encrypted extensions and Finished, then 200 OK. No certificate is sent on a resumption: the pre-shared key stands for the one checked last time. The response arrives at 100 ms.",
           when: { all: [ZERO], none: [TLS12] },
           focus: ["server", "server-keys", "browser"],
@@ -406,6 +418,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "early-finished",
           title: "Fast, and replayable",
+          lead: "Faster, but early data can be replayed: only safe requests go in it.",
           body: "The browser ends its early data and sends its Finished. The request it sent early had a price: it is not forward secret, and nothing stops it being replayed on another connection. That is why RFC 8470 lets only safe requests, like this GET, go in early data.",
           when: { all: [ZERO], none: [TLS12] },
           focus: ["browser", "server"],
@@ -415,6 +428,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "server-hello-12",
           title: "A TLS 1.2 answer, in plaintext",
+          lead: "A TLS 1.2 answer, the certificate in plaintext.",
           body: "This server speaks only TLS 1.2. It answers the same ClientHello with a TLS 1.2 ServerHello, its certificate, its signed key exchange parameters and ServerHelloDone, all in plaintext: in TLS 1.2 the certificate is not encrypted.",
           when: { all: [TLS12] },
           focus: ["server", "certificate"],
@@ -434,6 +448,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "key-exchange-12",
           title: "The client's key exchange",
+          lead: "The browser sends its key exchange: the keys are agreed only now.",
           body: "The browser checks the certificate and the signed parameters, then sends its own key share (ClientKeyExchange), ChangeCipherSpec and an encrypted Finished. The keys are only now agreed.",
           when: { all: [TLS12], none: [WRONG] },
           focus: ["browser", "client-keys"],
@@ -453,6 +468,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "finished-12",
           title: "The server's Finished",
+          lead: "The server's Finished: the handshake completes at 150 ms.",
           body: "The server replies with its ChangeCipherSpec and Finished. Only now is the handshake complete: TLS 1.2 sends no application data before.",
           when: { all: [TLS12], none: [WRONG] },
           focus: ["server", "browser"],
@@ -462,6 +478,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "request-12",
           title: "The first request, a round trip later",
+          lead: "The first request leaves at 150 ms, a round trip later than TLS 1.3.",
           body: "GET /orders leaves 150 ms after the first SYN, one round trip later than with TLS 1.3.",
           when: { all: [TLS12], none: [WRONG] },
           focus: ["browser", "server"],
@@ -471,6 +488,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "response-12",
           title: "The response",
+          lead: "200 OK: the first byte arrives at 200 ms.",
           body: "200 OK. The first byte of the page arrives 200 ms after the first SYN.",
           when: { all: [TLS12], none: [WRONG] },
           focus: ["server", "browser"],
@@ -480,6 +498,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "check-wrong-12",
           title: "The name does not match",
+          lead: "The certificate, in plaintext, names other.example.",
           body: "The certificate, readable by anyone on the path in TLS 1.2, is for other.example: shop.example is not among its names. The browser must not go on.",
           when: { all: [TLS12, WRONG] },
           focus: ["browser", "certificate"],
@@ -496,6 +515,7 @@ export const tlsHandshake = defineMachine({
         {
           id: "alert-12",
           title: "Alert, and close",
+          lead: "A bad_certificate alert, and the connection closes: no request was sent.",
           body: "The browser sends a bad_certificate alert and closes the connection. It sent no request.",
           when: { all: [TLS12, WRONG] },
           focus: ["browser", "server"],

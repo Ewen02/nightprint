@@ -175,3 +175,19 @@ describe("MCH-004 domain-driven design", () => {
     }
   });
 });
+
+describe("benches, failure modes and protocols", () => {
+  it("say every step in one short line first, under every combination of switches", () => {
+    for (const machine of machines.filter((m) => !m.code.startsWith("MCH-"))) {
+      for (const actions of actionCombinations(machine)) {
+        for (const scenario of resolveMachine(machine, actions).scenarios) {
+          for (const { step } of scenario.steps) {
+            const label = `${machine.code} ${step.id}`;
+            expect(step.lead, label).toBeDefined();
+            expect(step.lead?.split(/\s+/).length, label).toBeLessThanOrEqual(18);
+          }
+        }
+      }
+    }
+  });
+});

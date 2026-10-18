@@ -84,6 +84,13 @@ const buildStep = variants("build", [BIG, BAD_EDGE], (on) => {
   ];
   return {
     title: "Before any question",
+    lead: f.big
+      ? f.badEdge
+        ? "40,000 documents: CAG cannot fit them in its context, and KAG extracts one relation wrong."
+        : "40,000 documents: RAG and KAG index them, CAG cannot fit them in its context."
+      : f.badEdge
+        ? "Each one prepares the documents its own way; KAG's extraction gets one relation wrong."
+        : "Before any question, each one prepares the same documents its own way.",
     body: [
       `Each system prepares the same ${docs} documents (orders, a parts catalogue, supplier sheets) before any question.`,
       "RAG cuts them into chunks and stores one vector per chunk.",
@@ -109,6 +116,9 @@ const askStep = variants("ask", [BIG, TWO_HOP], (on) => {
   const f = flags(on);
   return {
     title: "One question, three systems",
+    lead: f.big
+      ? `“${question(f)}” goes to RAG and KAG; CAG has no cache.`
+      : `“${question(f)}” goes to all three.`,
     body: f.big
       ? `An analyst asks: “${question(f)}” The question goes to RAG and KAG. CAG has no cache to answer from.`
       : `An analyst asks: “${question(f)}” The same question goes to all three.`,
@@ -134,6 +144,17 @@ const findStep = variants("find", [BIG, TWO_HOP, BAD_EDGE], (on) => {
   const kagWrong = f.badEdge;
   return {
     title: "Find what to read",
+    lead: `${[
+      f.twoHop ? "RAG's closest chunks never mention the city" : "RAG finds the chunk naming S-12",
+      f.big ? "" : "CAG reads its cache",
+      kagWrong
+        ? "KAG's graph returns the wrong supplier"
+        : f.twoHop
+          ? "KAG follows two steps in its graph"
+          : "KAG asks its graph",
+    ]
+      .filter(Boolean)
+      .join("; ")}.`,
     body: [
       f.twoHop
         ? "RAG takes the 3 chunks closest to the question: all three are about P-7 and its supplier. The sheet that says where S-12 is based never mentions P-7, so it is not among them."
@@ -199,12 +220,29 @@ const findStep = variants("find", [BIG, TWO_HOP, BAD_EDGE], (on) => {
   };
 });
 
+/** The answers in one line: who is right, then how the others fail. */
+function answerLead(f: Flags, right: string, kag: string): string {
+  const correct = [!f.twoHop && "RAG", !f.big && "CAG", !f.badEdge && "KAG"].filter(
+    (lane): lane is string => typeof lane === "string",
+  );
+  const named = correct.length === 3 ? "All three" : correct.join(" and ");
+  return `${[
+    correct.length > 0 ? `${named} answer${correct.length === 1 ? "s" : ""} ${right}` : "",
+    f.twoHop ? "RAG cannot say where S-12 is" : "",
+    f.big ? "CAG has no answer" : "",
+    f.badEdge ? `KAG answers ${kag}, wrongly` : "",
+  ]
+    .filter(Boolean)
+    .join("; ")}.`;
+}
+
 const answerStep = variants("answer", [BIG, TWO_HOP, BAD_EDGE], (on) => {
   const f = flags(on);
   const right = f.twoHop ? "Lyon" : "S-12";
   const kag = f.twoHop ? (f.badEdge ? "Turin" : "Lyon") : f.badEdge ? "S-9" : "S-12";
   return {
     title: f.big ? "Two answers" : "Three answers",
+    lead: answerLead(f, right, kag),
     body: [
       f.twoHop
         ? "RAG names S-12 but cannot say where it is based: no passage it was given says so."

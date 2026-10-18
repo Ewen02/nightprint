@@ -34,6 +34,7 @@ const retryStep = variants("retries", [BUDGET, JITTER], (on): StepBody => {
       title: "One layer retries, within a budget",
       body: `Only the orders service retries, the layer right above the database, and only while retries stay under 10% of its requests; the API and the app pass the failure on.${on(JITTER) ? " Each retry first waits a random, growing time." : ""} The database sees about 1.1 times the load: 275 queries a second instead of 250.`,
       focus: ["service", "db"],
+      meter: 275,
       states: { db: "slow · 275 queries/s" },
       tokens: [{ flow: "write", path: ["service-db"], label: "10%" }],
       log: [
@@ -51,6 +52,7 @@ const retryStep = variants("retries", [BUDGET, JITTER], (on): StepBody => {
       ? "The service retries its query 3 times, the API retries the service 3 times, the app retries the API 3 times. Each retry first waits a random time, up to a cap that doubles with every attempt, so retries stop arriving in waves. There are just as many: up to 64 attempts on the database for one click."
       : "The service retries its query 3 times, the API retries the service 3 times, the app retries the API 3 times. One click becomes up to 64 attempts on the database, 4 × 4 × 4, and the failed ones come back at the same moments.",
     focus: ["app", "api", "service", "db"],
+    meter: 16000,
     states: { db: "up to 64× the load" },
     // One click, retried at each layer: 4 attempts on the API, 16 on the service, 64 on the database.
     tokens: [
@@ -76,6 +78,7 @@ const databaseStep = variants("database", [BREAKER, BUDGET], (on): StepBody => {
       title: "The breaker opens",
       body: `After 5 failures in a row, the breaker opens. Calls now fail at once, without reaching the database: shoppers get an error straight away instead of a long wait, and the database only has the report to finish.${on(BUDGET) ? "" : " The layers above still retry, and every attempt stops at the breaker."}`,
       focus: ["service", "breaker", "db"],
+      meter: 0,
       states: { breaker: "open", db: "only the report" },
       tokens: [{ flow: "error", path: ["service-breaker"], label: "5" }],
       log: [{ flow: "error", tag: "OPEN", text: "5 failures → breaker open · calls fail fast" }],
@@ -86,6 +89,7 @@ const databaseStep = variants("database", [BREAKER, BUDGET], (on): StepBody => {
       title: "Slow, but not buried",
       body: "The database is still slow while the report runs, and some orders still time out. But the load on it stays near normal: it is not buried under retries.",
       focus: ["db"],
+      meter: 275,
       states: { db: "slow · not overloaded" },
       tokens: [{ flow: "write", at: "db", label: "275" }],
       log: [{ flow: "write", tag: "DB", text: "275 queries/s on a slow database · some timeouts" }],
@@ -95,6 +99,7 @@ const databaseStep = variants("database", [BREAKER, BUDGET], (on): StepBody => {
     title: "The database drowns",
     body: "Queries arrive far faster than the slowed database answers them. Every one now times out, orders that never needed a retry included, and each timeout sends more retries.",
     focus: ["db"],
+    meter: 16000,
     states: { db: "overloaded · 0 orders/s" },
     tokens: [{ flow: "error", at: "db", label: "×64" }],
     log: [
@@ -109,6 +114,7 @@ const causeGoneStep = variants("cause-gone", [BREAKER, BUDGET, JITTER], (on): St
       title: "A trial call, then the breaker closes",
       body: "Someone stops the report. After its pause the breaker lets one trial call through: it is answered in 20 ms, so the breaker closes and calls reach the database again.",
       focus: ["service", "breaker", "db"],
+      meter: 250,
       states: { breaker: "closed", db: "20 ms again", report: "stopped" },
       tokens: [{ flow: "response", path: ["service-db"], label: "1" }],
       log: [
@@ -125,6 +131,7 @@ const causeGoneStep = variants("cause-gone", [BREAKER, BUDGET, JITTER], (on): St
       title: "The report stops, the database catches up",
       body: "Someone stops the report. With the load near normal, the database drains its queue and answers in 20 ms again.",
       focus: ["db"],
+      meter: 250,
       states: { db: "20 ms again", report: "stopped" },
       tokens: [{ flow: "response", at: "db" }],
       log: [{ flow: "response", tag: "DB", text: "report stopped · queue drained · 20 ms again" }],
@@ -134,6 +141,7 @@ const causeGoneStep = variants("cause-gone", [BREAKER, BUDGET, JITTER], (on): St
     title: "The cause is gone, the outage is not",
     body: `Someone stops the report, and the database is as fast as before. It stays overloaded: the retries already sent, and the ones their timeouts trigger, keep it above 300 queries a second. The retries now keep the failure going on their own.${on(JITTER) ? " Jitter spread them out; it did not make them fewer." : ""}`,
     focus: ["db"],
+    meter: 16000,
     states: { db: "still overloaded", report: "stopped" },
     tokens: [{ flow: "error", at: "db", label: "×64" }],
     log: [
@@ -151,6 +159,7 @@ const endStep = variants(
           title: "Orders flow again",
           body: "250 orders a second, answered in 20 ms. The fix did not stop the slow query; it kept the slowdown from turning into an outage that outlives it.",
           focus: ["app", "api", "service", "db"],
+          meter: 250,
           states: { db: "250 / 300 queries/s" },
           tokens: [
             { flow: "response", path: ["app-api", "api-service", "service-db"], reverse: true },
@@ -161,6 +170,7 @@ const endStep = variants(
           title: "Still down",
           body: "Getting out takes what the research on these failures calls a strong push: cut the load well below normal, or stop the retries. Until then, no order gets through.",
           focus: ["app", "db"],
+          meter: 16000,
           states: { app: "every order fails" },
           tokens: [
             { flow: "error", path: ["app-api", "api-service", "service-db"], reverse: true },
@@ -188,6 +198,8 @@ export const retryStorm = defineMachine({
   revision: "A",
   revised: "2026-10-18",
   flowLabels: { request: "Order", write: "Retry", response: "Answer", error: "Timeout, flood" },
+  // Modelled: 250 orders a second against a 300-query capacity, up to 64 times that in the storm.
+  meter: { label: "Load on the database", unit: "queries/s", capacity: 300 },
   sources: [
     {
       label: "SRE book, Addressing Cascading Failures",
@@ -404,6 +416,7 @@ export const retryStorm = defineMachine({
           title: "Orders flow",
           body: "Shoppers place orders through the shop app. Each one goes through the API and the orders service to the database, which answers in 20 ms and can take 300 queries a second. It gets 250.",
           focus: ["app", "api", "service", "db"],
+          meter: 250,
           states: { db: "250 / 300 queries/s", report: "idle", app: "orders go through" },
           tokens: [{ flow: "request", path: ["app-api", "api-service", "service-db"] }],
           log: [
@@ -419,6 +432,7 @@ export const retryStorm = defineMachine({
           title: "A report slows the database",
           body: "A report job starts a heavy query on the same database. Every query now waits behind it: answers take 1.5 s instead of 20 ms.",
           focus: ["report", "db"],
+          meter: 250,
           states: { db: "slow · 1.5 s a query", report: "heavy query" },
           tokens: [{ flow: "error", path: ["report-db"] }],
           log: [
@@ -436,6 +450,7 @@ export const retryStorm = defineMachine({
           // Modelled: the service's timeout.
           takesMs: 1000,
           focus: ["service", "db"],
+          meter: 250,
           tokens: [{ flow: "error", path: ["service-db"], label: "1s" }],
           log: [
             { flow: "error", tag: "TIME", text: "orders service → database: timeout after 1 s" },

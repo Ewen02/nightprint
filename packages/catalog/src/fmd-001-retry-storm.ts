@@ -108,7 +108,7 @@ const causeGoneStep = variants("cause-gone", [BREAKER, BUDGET, JITTER], (on): St
     return {
       title: "A trial call, then the breaker closes",
       body: "Someone stops the report. After its pause the breaker lets one trial call through: it is answered in 20 ms, so the breaker closes and calls reach the database again.",
-      focus: ["service", "breaker", "db", "report"],
+      focus: ["service", "breaker", "db"],
       states: { breaker: "closed", db: "20 ms again", report: "stopped" },
       tokens: [{ flow: "response", path: ["service-db"], label: "1" }],
       log: [
@@ -124,7 +124,7 @@ const causeGoneStep = variants("cause-gone", [BREAKER, BUDGET, JITTER], (on): St
     return {
       title: "The report stops, the database catches up",
       body: "Someone stops the report. With the load near normal, the database drains its queue and answers in 20 ms again.",
-      focus: ["db", "report"],
+      focus: ["db"],
       states: { db: "20 ms again", report: "stopped" },
       tokens: [{ flow: "response", at: "db" }],
       log: [{ flow: "response", tag: "DB", text: "report stopped · queue drained · 20 ms again" }],
@@ -133,7 +133,7 @@ const causeGoneStep = variants("cause-gone", [BREAKER, BUDGET, JITTER], (on): St
   return {
     title: "The cause is gone, the outage is not",
     body: `Someone stops the report, and the database is as fast as before. It stays overloaded: the retries already sent, and the ones their timeouts trigger, keep it above 300 queries a second. The retries now keep the failure going on their own.${on(JITTER) ? " Jitter spread them out; it did not make them fewer." : ""}`,
-    focus: ["db", "report"],
+    focus: ["db"],
     states: { db: "still overloaded", report: "stopped" },
     tokens: [{ flow: "error", at: "db", label: "×64" }],
     log: [

@@ -1,5 +1,5 @@
 import type { Part, Vec3 } from "@nightprint/engine";
-import { BoxGeometry, type BufferGeometry, CylinderGeometry } from "three";
+import { BoxGeometry, type BufferGeometry, CylinderGeometry, Quaternion, Vector3 } from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { createShapeGeometry } from "./geometry";
 
@@ -10,7 +10,8 @@ import { createShapeGeometry } from "./geometry";
  * socket set in the glass wall, the core sits on a plinth, an actor is a terminal, a
  * module of a project's code a stepped block, a store a stack of disks or frames. Every
  * adapter shares one form factor, so a swap reads as unplugging one module and plugging
- * another.
+ * another. A store with a `form` is drawn as what it holds: an index of vectors, a model's
+ * memory, a knowledge graph.
  */
 
 /** Round details: enough sides that no facet crease reaches the edge threshold. */
@@ -96,7 +97,7 @@ function portPieces(size: Vec3, socket: Vec3): BufferGeometry[] {
 }
 
 /** What the drawn model depends on: not the position, so a moved part keeps its geometry. */
-export type PartModelSpec = Pick<Part, "kind" | "shape" | "socket">;
+export type PartModelSpec = Pick<Part, "kind" | "shape" | "socket" | "form">;
 
 function corePieces(part: PartModelSpec): BufferGeometry[] {
   const body = createShapeGeometry(part.shape);
@@ -223,7 +224,117 @@ function diskPieces(radius: number, height: number): BufferGeometry[] {
   );
 }
 
+/** Uneven heights for a grid's bars, read row by row: numbers side by side, not a pattern. */
+const BARS = [0.9, 0.45, 0.7, 0.35, 0.55, 1, 0.4, 0.8, 0.5, 0.75, 0.3, 0.95];
+
+/** An index of vectors: a slab carrying rows of bars of uneven height, numbers side by side. */
+function gridPieces(size: Vec3): BufferGeometry[] {
+  const [w, h, d] = size;
+  const base = h * 0.3;
+  const columns = 4;
+  const rows = 3;
+  const pitchX = w / columns;
+  const pitchZ = d / rows;
+  const pieces = [box([w, base, d], [0, -h / 2 + base / 2, 0])];
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      const tall = (h - base) * (BARS[row * columns + column] ?? 1);
+      pieces.push(
+        box(
+          [pitchX * 0.55, tall, pitchZ * 0.55],
+          [
+            -w / 2 + pitchX * (column + 0.5),
+            -h / 2 + base + tall / 2,
+            -d / 2 + pitchZ * (row + 0.5),
+          ],
+        ),
+      );
+    }
+  }
+  return pieces;
+}
+
+/**
+ * A model's memory: a board standing on a plinth, a row of chips on its front face and
+ * its contacts along the bottom, like the module it is kept in.
+ */
+function memoryPieces(size: Vec3): BufferGeometry[] {
+  const [w, h, d] = size;
+  const board = 0.12;
+  const tall = h - PLINTH;
+  const front = board / 2;
+  const pieces = [
+    box([w, PLINTH, d], [0, -h / 2 + PLINTH / 2, 0]),
+    box([w * 0.92, tall, board], [0, -h / 2 + PLINTH + tall / 2, 0]),
+  ];
+  for (const x of [-0.33, -0.11, 0.11, 0.33]) {
+    pieces.push(
+      box([w * 0.17, tall * 0.42, 0.05], [x * w, -h / 2 + PLINTH + tall * 0.58, front + 0.025]),
+    );
+  }
+  // The contacts: one strip along the bottom of the front face.
+  pieces.push(box([w * 0.8, tall * 0.12, 0.03], [0, -h / 2 + PLINTH + tall * 0.12, front + 0.015]));
+  return pieces;
+}
+
+/** A link of a graph: a thin rod from `a` to `b`. */
+function link(a: Vec3, b: Vec3): BufferGeometry {
+  const from = new Vector3(...a);
+  const along = new Vector3(...b).sub(from);
+  const rod = new CylinderGeometry(0.035, 0.035, along.length(), 8);
+  rod.applyQuaternion(
+    new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), along.clone().normalize()),
+  );
+  const middle = from.addScaledVector(along, 0.5);
+  return rod.translate(middle.x, middle.y, middle.z);
+}
+
+/**
+ * Where a graph's nodes sit, as shares of the footprint (x, z) and of the height above the
+ * base (y), and which pairs are linked: the facts and the relations between them.
+ */
+const NODES: readonly Vec3[] = [
+  [-0.34, 0.1, -0.22],
+  [-0.02, 0.65, -0.3],
+  [0.32, 0.3, -0.05],
+  [-0.12, 0.35, 0.28],
+  [0.26, 0.9, 0.3],
+];
+const LINKS: readonly (readonly [number, number])[] = [
+  [0, 1],
+  [1, 2],
+  [0, 3],
+  [3, 2],
+  [2, 4],
+  [3, 4],
+];
+
+/** A knowledge graph: nodes held at different heights over a base, linked by rods. */
+function graphPieces(size: Vec3): BufferGeometry[] {
+  const [w, h, d] = size;
+  const base = h * 0.15;
+  const node = 0.14;
+  const room = h - base - node;
+  const at = NODES.map(([x, y, z]): Vec3 => [x * w, -h / 2 + base + node / 2 + y * room, z * d]);
+  const pieces = [box([w, base, d], [0, -h / 2 + base / 2, 0])];
+  for (const point of at) {
+    pieces.push(new CylinderGeometry(0.15, 0.15, node, ROUND).translate(...point));
+  }
+  for (const [a, b] of LINKS) {
+    const from = at[a];
+    const to = at[b];
+    if (from && to) {
+      pieces.push(link(from, to));
+    }
+  }
+  return pieces;
+}
+
 function pieces(part: PartModelSpec): BufferGeometry[] {
+  if (part.form && part.shape.type === "box") {
+    const forms = { grid: gridPieces, memory: memoryPieces, graph: graphPieces };
+    return forms[part.form](part.shape.size);
+  }
   if (part.kind === "queue" && part.shape.type === "box") {
     return queuePieces(part.shape.size);
   }

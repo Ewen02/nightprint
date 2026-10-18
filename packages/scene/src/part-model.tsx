@@ -118,10 +118,10 @@ export function PartModel({
     }
   });
   const glass = part.material === "glass";
-  const { kind, shape, socket } = part;
+  const { kind, shape, socket, form } = part;
   const geometry = useMemo(
-    () => createPartGeometry({ kind, shape, socket }),
-    [kind, shape, socket],
+    () => createPartGeometry({ kind, shape, socket, form }),
+    [kind, shape, socket, form],
   );
   const top = useMemo(() => partTop(geometry), [geometry]);
   const material = useMemo(() => {

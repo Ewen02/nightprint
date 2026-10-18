@@ -57,6 +57,37 @@ const project = projects.at(-1);
 /** Rows the build log shows: the rest is on GitHub. */
 const BUILD_LOG_SHOWN = 8;
 
+const NUMBERS = [
+  "No",
+  "One",
+  "Two",
+  "Three",
+  "Four",
+  "Five",
+  "Six",
+  "Seven",
+  "Eight",
+  "Nine",
+  "Ten",
+];
+const TEENS = [
+  "Eleven",
+  "Twelve",
+  "Thirteen",
+  "Fourteen",
+  "Fifteen",
+  "Sixteen",
+  "Seventeen",
+  "Eighteen",
+  "Nineteen",
+  "Twenty",
+];
+
+/** How many sheets the register holds, written out as the heading reads it: "Eleven". */
+function sheetCount(count: number): string {
+  return NUMBERS[count] ?? TEENS[count - 11] ?? String(count);
+}
+
 /** Newest first. Posted on X as it happens. */
 const buildLog: readonly BuildLogEntry[] = [
   {
@@ -334,8 +365,8 @@ export default function HomePage() {
       <PageSection id="machines" entrance="rise">
         <HomeRegister
           eyebrow="Drawing register"
-          title="Eight machines on the drawing board."
-          lead="One is issued each week, and you can say which one comes next on X. Pick a sheet to pull it from the drawer."
+          title={`${sheetCount(registerSheets().length)} sheets on the drawing board.`}
+          lead="A machine is issued each week, with benches, failure modes and protocols between them. Say which one comes next on X, or pick a sheet to pull it from the drawer."
           sheets={registerSheets()}
           action={{ label: "Suggest the next one on X", href: site.poll }}
           families={Object.entries(familyLabels).map(([id, label]) => ({ id, label }))}

@@ -59,7 +59,7 @@ export function MachineScene({
   exploded = false,
 }: MachineSceneProps) {
   const { resolved, step, state, finished } = usePlayerSnapshot(player);
-  const { plate } = resolved.machine.stage;
+  const { plate, view } = resolved.machine.stage;
 
   // The first display assembles the machine: parts set down in balloon order, then the
   // routes, then the labels, then the scenario runs. Read from the system, not the
@@ -144,6 +144,7 @@ export function MachineScene({
       <hemisphereLight args={[neutral.textBody, scene.background, scene.light.ambient]} />
       <directionalLight position={[...scene.light.keyPosition]} intensity={scene.light.key} />
       <CameraRig
+        direction={view === "front" ? scene.frontDirection : scene.isoDirection}
         size={plate.size}
         center={plate.center}
         follow={follow}
@@ -153,7 +154,12 @@ export function MachineScene({
         insetTop={insetTop}
       />
       <Plate size={plate.size} center={plate.center} />
-      <Zones zones={resolved.machine.stage.zones} centreX={plate.center[0]} labels={labels} />
+      <Zones
+        zones={resolved.machine.stage.zones}
+        centreX={plate.center[0]}
+        view={view}
+        labels={labels}
+      />
       {pipes.map(({ route, points, present }) => (
         <Pipe
           key={route.id}

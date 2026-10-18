@@ -14,9 +14,6 @@ const ARRIVAL_ZOOM = 0.9;
 const MARGIN = 1.08;
 /** Highest point drawn above the plate, balloons included. */
 const TOP = 1.6;
-const ISO = new Vector3(...scene.isoDirection).normalize();
-const ISO_AZIMUTH = Math.atan2(ISO.x, ISO.z);
-const ISO_POLAR = Math.acos(ISO.y);
 
 interface Fit {
   /** Point the camera orbits: the plate centre, shifted so the drawing is centred on screen. */
@@ -30,15 +27,16 @@ interface Fit {
   readonly view: { readonly width: number; readonly height: number };
 }
 
-/** Isometric framing of the plate: where to aim and how far to zoom so the whole machine fits. */
-function fitIsometric(
+/** Framing of the plate seen from `direction`: where to aim and how far to zoom so it all fits. */
+function fitPlate(
   camera: OrthographicCamera,
+  direction: Vector3,
   size: readonly [number, number],
   center: readonly [number, number],
   viewport: { readonly width: number; readonly height: number },
 ): Fit {
   const target = new Vector3(center[0], 0, center[1]);
-  camera.position.copy(target).addScaledVector(ISO, DISTANCE);
+  camera.position.copy(target).addScaledVector(direction, DISTANCE);
   camera.lookAt(target);
   camera.updateMatrixWorld();
 
@@ -110,6 +108,8 @@ function followFraming(
 }
 
 export interface CameraRigProps {
+  /** Where the camera looks from, towards the plate: the isometric direction, or a bench's front. */
+  readonly direction: readonly [number, number, number];
   readonly size: readonly [number, number];
   readonly center: readonly [number, number];
   /** What the current step is about, in world space; null for the whole machine. */
@@ -133,8 +133,8 @@ interface Insets {
 }
 
 /**
- * The isometric camera, framed on the plate, that the visitor can turn a little
- * and zoom. Bounded: never far from the isometric view the drawing is made for.
+ * The camera, framed on the plate from its direction, that the visitor can turn a little
+ * and zoom. Bounded: never far from the view the drawing is made for.
  * The wheel alone scrolls the page; pinch or ctrl/⌘ + wheel zooms. On touch, one
  * finger scrolls the page and two fingers turn and zoom. Double-click resets.
  *
@@ -143,6 +143,7 @@ interface Insets {
  * machine when the scenario ends. Never with reduced motion.
  */
 export function CameraRig({
+  direction,
   size,
   center,
   follow,
@@ -153,6 +154,8 @@ export function CameraRig({
 }: CameraRigProps) {
   const camera = useThree((s) => s.camera);
   const element = useThree((s) => s.gl.domElement);
+  const [dx, dy, dz] = direction;
+  const view = useMemo(() => new Vector3(dx, dy, dz).normalize(), [dx, dy, dz]);
   // Width and height only: R3F's size also carries the canvas' page offset, and a
   // new offset must not re-frame the camera.
   const width = useThree((s) => s.size.width);
@@ -181,13 +184,15 @@ export function CameraRig({
     const { azimuth, elevationMin, elevationMax } = scene.orbit;
     orbit.enablePan = false;
     orbit.rotateSpeed = 0.5;
-    orbit.minAzimuthAngle = ISO_AZIMUTH - MathUtils.degToRad(azimuth);
-    orbit.maxAzimuthAngle = ISO_AZIMUTH + MathUtils.degToRad(azimuth);
-    orbit.minPolarAngle = ISO_POLAR - MathUtils.degToRad(elevationMax);
-    orbit.maxPolarAngle = ISO_POLAR - MathUtils.degToRad(elevationMin);
+    const viewAzimuth = Math.atan2(view.x, view.z);
+    const viewPolar = Math.acos(view.y);
+    orbit.minAzimuthAngle = viewAzimuth - MathUtils.degToRad(azimuth);
+    orbit.maxAzimuthAngle = viewAzimuth + MathUtils.degToRad(azimuth);
+    orbit.minPolarAngle = viewPolar - MathUtils.degToRad(elevationMax);
+    orbit.maxPolarAngle = viewPolar - MathUtils.degToRad(elevationMin);
     orbit.touches = { ONE: null, TWO: TOUCH.DOLLY_ROTATE };
     return orbit;
-  }, [camera, element]);
+  }, [camera, element, view]);
 
   useEffect(() => {
     controls.enableDamping = !reducedMotion;
@@ -255,10 +260,10 @@ export function CameraRig({
     }
     const reset = () => {
       const inset = rig.current.inset;
-      const fit = fitIsometric(probe, size, center, free(inset));
+      const fit = fitPlate(probe, view, size, center, free(inset));
       applyInset(inset);
       controls.target.copy(fit.target);
-      camera.position.copy(fit.target).addScaledVector(ISO, DISTANCE);
+      camera.position.copy(fit.target).addScaledVector(view, DISTANCE);
       // On arrival the camera starts a little wide and the follow loop eases it in. Read
       // from the system, not the player: its reduced-motion flag lands after mount.
       const settle =
@@ -275,7 +280,7 @@ export function CameraRig({
     reset();
     element.addEventListener("dblclick", reset);
     return () => element.removeEventListener("dblclick", reset);
-  }, [camera, controls, element, probe, applyInset, free, size, center]);
+  }, [camera, controls, element, probe, applyInset, free, size, center, view]);
 
   const goal = useMemo(() => new Vector3(), []);
   const step = useMemo(() => new Vector3(), []);
@@ -298,13 +303,13 @@ export function CameraRig({
       };
       rig.current.inset = inset;
       applyInset(inset);
-      const fit = fitIsometric(probe, size, center, free(inset));
+      const fit = fitPlate(probe, view, size, center, free(inset));
       rig.current.fit = fit;
       controls.minZoom = fit.zoom * scene.orbit.zoomMin;
       controls.maxZoom = fit.zoom * scene.orbit.zoomMax;
       if (reducedMotion && rig.current.following && camera instanceof OrthographicCamera) {
         controls.target.copy(fit.target);
-        camera.position.copy(fit.target).addScaledVector(ISO, DISTANCE);
+        camera.position.copy(fit.target).addScaledVector(view, DISTANCE);
         camera.zoom = fit.zoom;
       }
       if (camera instanceof OrthographicCamera) {

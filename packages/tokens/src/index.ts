@@ -177,6 +177,11 @@ export const scene = {
   /** Camera direction for a true isometric view (y up). */
   isoDirection: [1, 1, 1],
   /**
+   * Camera direction for a three-quarter view from the front, for a bench: its lanes run
+   * along x and read as rows, left to right, stacked from back to front.
+   */
+  frontDirection: [0.35, 1, 1],
+  /**
    * Transitions between steps. `fade`: damping rate of a part lighting up or going out
    * (higher is faster; 8 settles in about a third of a second). `trail`: the same for a
    * pipe's lit stretch after its token has left.

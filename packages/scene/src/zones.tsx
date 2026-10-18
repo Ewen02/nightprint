@@ -79,6 +79,8 @@ export interface ZonesProps {
   readonly zones: readonly Zone[];
   /** Plate centre on x: zones right of it are labelled from their outer end. */
   readonly centreX: number;
+  /** Seen from the front, a zone is a lane: named before its start, like a row. */
+  readonly view: "isometric" | "front";
   readonly labels: LabelRegistry;
 }
 
@@ -118,6 +120,22 @@ function labelPoint(
   return [past < x1 ? past : x, 0, z0 - LABEL_OUT];
 }
 
+/** How far a lane's name stands before its start, and back from its middle, in world units. */
+const LANE_NAME = { before: 0.3, back: 0.35 } as const;
+
+/**
+ * Seen from the front, where a lane's name is pinned: just before its start, about halfway
+ * across it, like the heading of a table's row. The name ends there and reads before the
+ * parts, on the ground the plate keeps clear on the left. A little back from the middle:
+ * the first balloon of the lane in front stands just below its end.
+ */
+function lanePoint(zone: Zone): [number, number, number] {
+  const x0 = Math.min(zone.from[0], zone.to[0]);
+  const z0 = Math.min(zone.from[1], zone.to[1]);
+  const z1 = Math.max(zone.from[1], zone.to[1]);
+  return [x0 - LANE_NAME.before, 0, (z0 + z1) / 2 - LANE_NAME.back];
+}
+
 /** The zones wholly behind `zone` that share some of its width: its name would cross them. */
 function zonesBehind(zone: Zone, zones: readonly Zone[]): Zone[] {
   const x0 = Math.min(zone.from[0], zone.to[0]);
@@ -149,7 +167,7 @@ function within(inner: Zone, outer: Zone): boolean {
  * The named regions of the plate: a dashed outline each, and an anchor past the
  * plate's back edge where the page pins the zone's name (see `labelPoint`).
  */
-export function Zones({ zones, centreX, labels }: ZonesProps) {
+export function Zones({ zones, centreX, view, labels }: ZonesProps) {
   return (
     <>
       {zones.map((zone) => (
@@ -158,12 +176,16 @@ export function Zones({ zones, centreX, labels }: ZonesProps) {
           <LabelAnchor
             labels={labels}
             id={zoneLabelId(zone.id)}
-            position={labelPoint(
-              zone,
-              centreX,
-              zones.some((other) => other !== zone && within(zone, other)),
-              zonesBehind(zone, zones),
-            )}
+            position={
+              view === "front"
+                ? lanePoint(zone)
+                : labelPoint(
+                    zone,
+                    centreX,
+                    zones.some((other) => other !== zone && within(zone, other)),
+                    zonesBehind(zone, zones),
+                  )
+            }
           />
         </group>
       ))}

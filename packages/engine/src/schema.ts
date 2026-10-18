@@ -279,6 +279,11 @@ export const machineSchema = z.object({
       center: z.tuple([z.number(), z.number()]).default([0, 0]),
     }),
     zones: z.array(zoneSchema).default([]),
+    /**
+     * `front`: a three-quarter view from the front, for lanes laid along x and read as rows,
+     * each named at its start. Every other machine is drawn isometric.
+     */
+    view: z.enum(["isometric", "front"]).default("isometric"),
   }),
   parts: z.array(partSchema).min(1),
   routes: z.array(routeSchema).default([]),

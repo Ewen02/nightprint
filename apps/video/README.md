@@ -30,7 +30,7 @@ pnpm --filter @nightprint/video capture mch-001 --from http://localhost:4173
 
 | File | Role |
 | --- | --- |
-| `src/<id>/shots.json` | What to capture: the page, how many frames, which buttons and switches to click when; `"cursor": true` records a button's click for the cursor, as a switch's always is. |
+| `src/<id>/shots.json` | What to capture: the page, how many frames, which buttons and switches to click when; `"cursor": true` records a button's click for the cursor, as a switch's always is. `setup` clicks before the run starts: `{ "kind": "toggle", "name": "Event log" }` folds the log away, so the drawing keeps one size as lines come in. |
 | `scripts/capture.mjs` | Freezes the page's animation time, advances it one video frame per screenshot, writes the images and `timeline.json` (step captions, and the clicks the cursor goes to, frame by frame). Always draws with WebGL2: it waits for the GPU by reading a pixel back. |
 | `src/<id>/timeline.json` | What happened in the footage. The composition times its captions and cursor from it. |
 | `src/<id>/<Id>.tsx` | The video: camera keyframes, then the overlays, placed on the timeline. Every moment is read from `timeline.json` (a click, a step), never typed as a frame number, so a new capture keeps them in place. |

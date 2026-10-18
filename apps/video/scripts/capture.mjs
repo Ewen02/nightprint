@@ -120,6 +120,8 @@ page.on("console", (message) => {
 });
 await page.addInitScript(freezeAnimationTime);
 await page.goto(url, { waitUntil: "load" });
+// Before the run, on the page's own clock: a panel folded away so the drawing keeps one size.
+for (const action of shots.setup ?? []) await click(action.kind, action.name);
 // Frame 0 is the machine assembled, its labels shown and every fade over, however long a slow
 // GPU takes to get there.
 await page.waitForSelector("[data-assembly='done']", { timeout: 120_000 });
@@ -138,15 +140,15 @@ await page.waitForFunction(
 const cdp = await page.context().newCDPSession(page);
 
 /**
- * Clicks a transport button or a what-if switch by its accessible name. Returns the switch's box
- * and the centre of its toggle (its first decorative child), where a pointer would press.
+ * Clicks a transport button, a what-if switch or a folding panel's heading ("toggle") by its
+ * accessible name. Returns the box and the centre of its toggle (its first decorative child),
+ * where a pointer would press.
  */
-const click = (kind, name) =>
-  page.evaluate(
+function click(kind, name) {
+  return page.evaluate(
     ([kind, name]) => {
-      const candidates = [
-        ...document.querySelectorAll(kind === "switch" ? "[role='switch']" : "button"),
-      ];
+      const selector = { switch: "[role='switch']", toggle: "summary" }[kind] ?? "button";
+      const candidates = [...document.querySelectorAll(selector)];
       const element = candidates.find((el) =>
         (el.getAttribute("aria-label") || el.textContent || "").trim().startsWith(name),
       );
@@ -163,6 +165,7 @@ const click = (kind, name) =>
     },
     [kind, name],
   );
+}
 
 /**
  * Each flow by the colour the site paints it in, as the browser computes it. From the tokens, not

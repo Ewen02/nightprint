@@ -70,10 +70,15 @@ const shared = (a: DOMRect, b: DOMRect) =>
   Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) *
   Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
 
-/** How much of a label is lost: under the other labels, or past the stage's edge. */
+/**
+ * How much of a label is lost: under the other labels, or past the stage's edge. Words cut
+ * by the edge cannot be read, while a balloon a name covers only hides its number for a
+ * moment: what falls off the stage counts this many times over. On a phone a part's name
+ * opens on the side where it stays whole.
+ */
+const OFF_STAGE = 4;
 const lost = (box: DOMRect, others: readonly DOMRect[], stage: DOMRect) =>
-  box.width * box.height -
-  shared(box, stage) +
+  (box.width * box.height - shared(box, stage)) * OFF_STAGE +
   others.reduce((sum, other) => sum + shared(box, other), 0);
 
 /**

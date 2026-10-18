@@ -81,6 +81,7 @@ export {
 export {
   DrawingRegister,
   type DrawingRegisterProps,
+  type RegisterGroup,
   type RegisterRow,
 } from "./organisms/drawing-register";
 export { DrawingSheet, type DrawingSheetProps } from "./organisms/drawing-sheet";

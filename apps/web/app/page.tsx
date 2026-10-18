@@ -13,7 +13,7 @@ import {
   SiteFooter,
 } from "@nightprint/ui";
 import type { Metadata } from "next";
-import { familyLabels, registerSheets } from "../components/catalogue-cards";
+import { registerSeries, registerSheets } from "../components/catalogue-cards";
 import { HomeLegend } from "../components/home/home-legend";
 import { HomeRegister } from "../components/home/home-register";
 import { ProjectSheet } from "../components/home/project-sheet";
@@ -374,9 +374,8 @@ export default function HomePage() {
           eyebrow="Drawing register"
           title={`${sheetCount(registerSheets().length)} sheets on the drawing board.`}
           lead="A machine is issued each week, with benches, failure modes and protocols between them. Say which one comes next on X, or pick a sheet to pull it from the drawer."
-          sheets={registerSheets()}
+          groups={registerSeries()}
           action={{ label: "Suggest the next one on X", href: site.poll }}
-          families={Object.entries(familyLabels).map(([id, label]) => ({ id, label }))}
         />
       </PageSection>
 

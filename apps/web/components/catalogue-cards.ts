@@ -8,6 +8,7 @@ import type {
 } from "@nightprint/ui";
 import { planView } from "./plan-view-model";
 import { site } from "./seo";
+import { type Series, series, seriesAnchor, seriesOf } from "./series";
 
 /** How families read, in filter order. */
 export const familyLabels = {
@@ -93,4 +94,24 @@ export function registerSheets(): RegisterSheet[] {
       },
     })),
   ];
+}
+
+/** A series in the register: its group's heading and its sheets, in catalogue order. */
+export interface RegisterSeries {
+  readonly id: string;
+  readonly code: Series["id"];
+  readonly label: string;
+  readonly rule: string;
+  readonly sheets: readonly RegisterSheet[];
+}
+
+/** The register's sheets grouped by series, in series order; a series with no sheet is left out. */
+export function registerSeries(): RegisterSeries[] {
+  const sheets = registerSheets();
+  return series.flatMap((of) => {
+    const own = sheets.filter((sheet) => seriesOf(sheet).id === of.id);
+    return own.length === 0
+      ? []
+      : [{ id: seriesAnchor(of), code: of.id, label: of.label, rule: of.rule, sheets: own }];
+  });
 }

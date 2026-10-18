@@ -566,16 +566,31 @@ describe("drawing set", () => {
         eyebrow="Drawing register"
         title="Eight machines."
         lead="One a week."
-        rows={[
+        groups={[
           {
-            code: "MCH-001",
-            title: "Hexagonal",
-            family: "Backend",
-            status: "issued",
-            revision: "A",
-            href: "/m/hex/",
+            id: "series-mch",
+            code: "MCH",
+            label: "Machines",
+            rule: "One concept",
+            rows: [
+              {
+                code: "MCH-001",
+                title: "Hexagonal",
+                family: "Backend",
+                status: "issued",
+                revision: "A",
+                href: "/m/hex/",
+              },
+              { code: "MCH-002", title: "Event loop", family: "Frontend", status: "draft" },
+            ],
           },
-          { code: "MCH-002", title: "Event loop", family: "Frontend", status: "draft" },
+          {
+            id: "series-fmd",
+            code: "FMD",
+            label: "Failure modes",
+            rule: "Replayed, then repaired",
+            rows: [{ code: "FMD-001", title: "Retry storm", family: "Infra", status: "issued" }],
+          },
         ]}
         filters={[{ id: "all", label: "All" }]}
         filter="all"
@@ -585,6 +600,11 @@ describe("drawing set", () => {
     );
     expect(register).toContain("<caption");
     expect(register.match(/<th scope="col"/g)).toHaveLength(5);
+    // One row group per series, named by a header the links of its sheets' pages point at.
+    expect(register.match(/<tbody /g)).toHaveLength(2);
+    expect(register).toContain('id="series-fmd"');
+    expect(register.match(/<th scope="rowgroup"/g)).toHaveLength(2);
+    expect(register).toContain("FMD · Failure modes");
     expect(register).toContain('href="/m/hex/"');
     expect(register.match(/<a /g)).toHaveLength(1);
     expect(register).toContain("In draft");
@@ -600,7 +620,15 @@ describe("drawing set", () => {
         eyebrow="Drawing register"
         title="Eight machines."
         lead="One a week."
-        rows={[{ code: "MCH-002", title: "Event loop", family: "Frontend", status: "draft" }]}
+        groups={[
+          {
+            id: "series-mch",
+            code: "MCH",
+            label: "Machines",
+            rule: "One concept",
+            rows: [{ code: "MCH-002", title: "Event loop", family: "Frontend", status: "draft" }],
+          },
+        ]}
         filters={[{ id: "all", label: "All" }]}
         filter="all"
         selected="MCH-002"

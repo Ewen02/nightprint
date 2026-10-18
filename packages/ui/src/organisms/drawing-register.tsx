@@ -16,12 +16,27 @@ export interface RegisterRow {
   readonly href?: string;
 }
 
+/** A series of sheets, as a drawing set groups its sheets by discipline. */
+export interface RegisterGroup {
+  /** The group's anchor: "series-fmd". */
+  readonly id: string;
+  /** The series' code prefix: "FMD". */
+  readonly code: string;
+  /** "Failure modes". */
+  readonly label: string;
+  /** What a sheet of the series is: "A failure replayed, then repaired". */
+  readonly rule: string;
+  /** Issued sheets first, then drafts. */
+  readonly rows: readonly RegisterRow[];
+}
+
 export interface DrawingRegisterProps {
   readonly eyebrow: string;
   readonly title: string;
   readonly lead: string;
-  /** Issued sheets first, then drafts, already filtered. */
-  readonly rows: readonly RegisterRow[];
+  /** The series shown, already filtered, each with its sheets. */
+  readonly groups: readonly RegisterGroup[];
+  /** One per series, and "All". */
   readonly filters: readonly FilterOption[];
   /** Id of the pressed filter. */
   readonly filter: string;
@@ -45,14 +60,15 @@ const COLUMNS = [
 ] as const;
 
 /**
- * The catalogue as the register of a drawing set: one row per sheet, issued or in
- * draft, and the sheet pointed at shown beside it, as if pulled from the plan chest.
+ * The catalogue as the register of a drawing set: the sheets grouped by series, one row
+ * per sheet, issued or in draft, and the sheet pointed at shown beside it, as if pulled
+ * from the plan chest.
  */
 export function DrawingRegister({
   eyebrow,
   title,
   lead,
-  rows,
+  groups,
   filters,
   filter,
   onFilterChange,
@@ -73,7 +89,7 @@ export function DrawingRegister({
           )}
         </div>
         <FilterChips
-          label="Filter by family"
+          label="Filter by series"
           options={filters}
           value={filter}
           onChange={onFilterChange}
@@ -99,90 +115,108 @@ export function DrawingRegister({
               ))}
             </tr>
           </thead>
-          <tbody>
-            {rows.map((row) => {
-              const active = row.code === selected;
-              const issued = row.status === "issued";
-              return (
-                <Fragment key={row.code}>
-                  <tr
-                    // Pointing only previews the sheet: the row's link does it on focus, and the
-                    // register itself holds everything the preview shows.
-                    onMouseEnter={() => onSelect?.(row.code)}
-                    className={cx(
-                      "border-b border-line-muted transition-colors duration-200 ease-machine",
-                      active && "bg-surface",
-                    )}
-                  >
-                    <td
+          {groups.map((group) => (
+            <tbody key={group.id} id={group.id} className="scroll-mt-8">
+              <tr>
+                <th
+                  scope="rowgroup"
+                  colSpan={COLUMNS.length}
+                  className="border-b border-line-muted pt-7 pb-2.5 pl-3 text-left font-normal"
+                >
+                  <span className="mono-label text-text">
+                    {group.code} · {group.label}
+                  </span>
+                  <span className="ml-3 text-small text-text-faint max-sm:block max-sm:ml-0 max-sm:pt-1">
+                    {group.rule}
+                  </span>
+                </th>
+              </tr>
+              {group.rows.map((row) => {
+                const active = row.code === selected;
+                const issued = row.status === "issued";
+                return (
+                  <Fragment key={row.code}>
+                    <tr
+                      // Pointing only previews the sheet: the row's link does it on focus, and the
+                      // register itself holds everything the preview shows.
+                      onMouseEnter={() => onSelect?.(row.code)}
                       className={cx(
-                        "border-l-2 py-4 pr-4 pl-2.5 font-mono text-micro tracking-[0.08em] whitespace-nowrap",
-                        active ? "border-text text-text" : "border-transparent text-text-secondary",
+                        "border-b border-line-muted transition-colors duration-200 ease-machine",
+                        active && "bg-surface",
                       )}
                     >
-                      {row.code}
-                    </td>
-                    <td className="py-4 pr-4">
-                      {row.href ? (
-                        <a
-                          href={row.href}
-                          onFocus={() => onSelect?.(row.code)}
-                          className="text-heading text-text underline decoration-transparent underline-offset-4 transition-colors hover:decoration-text"
-                        >
-                          {row.title}
-                        </a>
-                      ) : (
-                        // A draft has no page yet: its title pulls its sheet, for a tap or a key.
-                        <button
-                          type="button"
-                          aria-expanded={active}
-                          onClick={() => onSelect?.(row.code)}
-                          onFocus={() => onSelect?.(row.code)}
-                          className={cx(
-                            "text-left text-heading transition-colors hover:text-text",
-                            active ? "text-text" : "text-text-secondary",
-                          )}
-                        >
-                          {row.title}
-                        </button>
-                      )}
-                    </td>
-                    <td className="mono-label py-4 pr-4 text-text-faint max-sm:hidden">
-                      {row.family}
-                    </td>
-                    <td className="py-4 pr-4">
-                      <span
+                      <td
                         className={cx(
-                          "mono-label flex items-center gap-2 whitespace-nowrap",
-                          issued ? "text-text" : "text-text-faint",
+                          "border-l-2 py-4 pr-4 pl-2.5 font-mono text-micro tracking-[0.08em] whitespace-nowrap",
+                          active
+                            ? "border-text text-text"
+                            : "border-transparent text-text-secondary",
                         )}
                       >
+                        {row.code}
+                      </td>
+                      <td className="py-4 pr-4">
+                        {row.href ? (
+                          <a
+                            href={row.href}
+                            onFocus={() => onSelect?.(row.code)}
+                            className="text-heading text-text underline decoration-transparent underline-offset-4 transition-colors hover:decoration-text"
+                          >
+                            {row.title}
+                          </a>
+                        ) : (
+                          // A draft has no page yet: its title pulls its sheet, for a tap or a key.
+                          <button
+                            type="button"
+                            aria-expanded={active}
+                            onClick={() => onSelect?.(row.code)}
+                            onFocus={() => onSelect?.(row.code)}
+                            className={cx(
+                              "text-left text-heading transition-colors hover:text-text",
+                              active ? "text-text" : "text-text-secondary",
+                            )}
+                          >
+                            {row.title}
+                          </button>
+                        )}
+                      </td>
+                      <td className="mono-label py-4 pr-4 text-text-faint max-sm:hidden">
+                        {row.family}
+                      </td>
+                      <td className="py-4 pr-4">
                         <span
-                          aria-hidden="true"
                           className={cx(
-                            "size-2 flex-none rounded-full border",
-                            issued ? "border-text bg-text" : "border-ring",
+                            "mono-label flex items-center gap-2 whitespace-nowrap",
+                            issued ? "text-text" : "text-text-faint",
                           )}
-                        />
-                        {issued ? "Issued" : "In draft"}
-                      </span>
-                    </td>
-                    <td className="py-4 pr-4 font-mono text-micro text-text-body max-sm:hidden">
-                      {row.revision ?? "—"}
-                    </td>
-                  </tr>
-                  {/* Below wide screens there is no room beside the register: the sheet opens under its row. */}
-                  {active && preview && (
-                    <tr className="lg:hidden">
-                      <td colSpan={COLUMNS.length} className="pt-1 pb-6">
-                        {preview}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={cx(
+                              "size-2 flex-none rounded-full border",
+                              issued ? "border-text bg-text" : "border-ring",
+                            )}
+                          />
+                          {issued ? "Issued" : "In draft"}
+                        </span>
+                      </td>
+                      <td className="py-4 pr-4 font-mono text-micro text-text-body max-sm:hidden">
+                        {row.revision ?? "—"}
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
+                    {/* Below wide screens there is no room beside the register: the sheet opens under its row. */}
+                    {active && preview && (
+                      <tr className="lg:hidden">
+                        <td colSpan={COLUMNS.length} className="pt-1 pb-6">
+                          {preview}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          ))}
         </table>
       </div>
     </section>

@@ -24,6 +24,7 @@ import type {
   WhatIfItem,
 } from "@nightprint/ui";
 import { momentQuery } from "./machine-link";
+import { seriesOf } from "./series";
 
 /**
  * Maps the engine's snapshot to the plain props of the UI organisms.
@@ -119,6 +120,7 @@ export function cartoucheProps(machine: Machine): CartoucheProps {
   return {
     title: machine.title,
     code: machine.code,
+    series: seriesOf(machine).one,
     scale: machine.scale,
     revision: machine.revision,
     source: machine.sources[0],

@@ -25,6 +25,7 @@ import { SurveySketch } from "./molecules/survey-sketch";
 import { WhatIfSwitch } from "./molecules/what-if-switch";
 import { BillOfParts } from "./organisms/bill-of-parts";
 import { BuildLog } from "./organisms/build-log";
+import { Cartouche } from "./organisms/cartouche";
 import { CodeListing } from "./organisms/code-listing";
 import { ConceptArticle } from "./organisms/concept-article";
 import { DrawingLegend } from "./organisms/drawing-legend";
@@ -965,5 +966,15 @@ describe("survey", () => {
     const grid = html(<FileGrid total={10} done={4} label="4 of 10 files read." />);
     expect(grid).toMatch(/role="img" aria-label="4 of 10 files read."/);
     expect(grid.match(/<rect/g)).toHaveLength(10);
+  });
+});
+
+describe("title block", () => {
+  it("names the sheet's series when it has one", () => {
+    const props = { title: "Retry storm", code: "FMD-001", scale: "NTS", revision: "A" };
+    expect(html(<Cartouche {...props} series="Failure mode" />)).toContain(
+      '<dt class="text-text-faint">SERIES</dt><dd>Failure mode</dd>',
+    );
+    expect(html(<Cartouche {...props} />)).not.toContain("SERIES");
   });
 });

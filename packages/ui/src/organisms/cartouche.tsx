@@ -3,6 +3,8 @@ import { cx } from "../cx";
 export interface CartoucheProps {
   readonly title: string;
   readonly code: string;
+  /** The series the sheet belongs to, as read: "Failure mode". */
+  readonly series?: string | undefined;
   /** "NTS" (not to scale) for every machine so far. */
   readonly scale: string;
   readonly revision: string;
@@ -12,8 +14,16 @@ export interface CartoucheProps {
 
 const cell = "px-2.5 py-1.5";
 
-/** The title block of a technical drawing: title, code, scale, revision, source. */
-export function Cartouche({ title, code, scale, revision, source, className }: CartoucheProps) {
+/** The title block of a technical drawing: title, code, scale, revision, series, source. */
+export function Cartouche({
+  title,
+  code,
+  series,
+  scale,
+  revision,
+  source,
+  className,
+}: CartoucheProps) {
   return (
     <div
       className={cx(
@@ -42,6 +52,12 @@ export function Cartouche({ title, code, scale, revision, source, className }: C
           <dt className="text-text-faint">REV</dt>
           <dd>{revision}</dd>
         </div>
+        {series && (
+          <div className={cx(cell, "col-span-3 border-t border-frame")}>
+            <dt className="text-text-faint">SERIES</dt>
+            <dd>{series}</dd>
+          </div>
+        )}
         {source && (
           <div className={cx(cell, "col-span-3 border-t border-frame")}>
             <dt className="text-text-faint">SOURCE</dt>

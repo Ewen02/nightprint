@@ -362,6 +362,17 @@ export function scenarioEnding(
   );
   // A run that ends on an error did not finish well: it froze, or it left something wrong.
   const stuck = snapshot.step.flow === "error";
+  // A bench ends on each lane's answer, not on whichever lane happened to log last.
+  const bench = benchScore(snapshot);
+  if (bench) {
+    const right = bench.lanes.filter((lane) => lane.verdict === "right").length;
+    return {
+      count: snapshot.stepCount,
+      title: `${right} of ${bench.lanes.length} right`,
+      result: bench.lanes.map((lane) => `${lane.label} ${lane.verdict ?? ""}`).join(" · "),
+      suggestions,
+    };
+  }
   // A real project's machine models no time: its run says how it ended, not after how long.
   const ms = last?.atMs ?? 0;
   const title =

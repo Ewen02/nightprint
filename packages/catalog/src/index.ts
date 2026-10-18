@@ -1,4 +1,5 @@
 import type { Machine } from "@nightprint/engine";
+import { ragCagKag } from "./ben-001-rag-cag-kag";
 import { hexagonal } from "./mch-001-hexagonal";
 import { eventLoop } from "./mch-002-event-loop";
 import { cacheAside } from "./mch-003-cache-aside";
@@ -6,7 +7,7 @@ import { ddd } from "./mch-004-ddd";
 import { nightprint } from "./prj-001-nightprint";
 
 /** Published machines, in catalogue order. */
-export const machines: readonly Machine[] = [hexagonal, eventLoop, cacheAside, ddd];
+export const machines: readonly Machine[] = [hexagonal, eventLoop, cacheAside, ddd, ragCagKag];
 
 /** Real projects drawn from their repositories (PRJ), apart from the concept series. */
 export const projects: readonly Machine[] = [nightprint];
@@ -29,4 +30,4 @@ export function getMachine(slug: string): Machine | undefined {
   return [...machines, ...projects].find((m) => m.slug === slug);
 }
 
-export { cacheAside, ddd, eventLoop, hexagonal, nightprint };
+export { cacheAside, ddd, eventLoop, hexagonal, nightprint, ragCagKag };

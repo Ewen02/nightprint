@@ -1,0 +1,601 @@
+import { defineMachine, type MachineInput } from "@nightprint/engine";
+import { type LogInput, type TokenInput, variants } from "./variants";
+
+/**
+ * BEN-001 — RAG vs CAG vs KAG: three ways of giving a language model knowledge it was not
+ * trained on, run side by side on the same documents and the same question.
+ * References: P. Lewis et al., "Retrieval-Augmented Generation for Knowledge-Intensive NLP
+ * Tasks", NeurIPS 2020; B. J. Chan et al., "Don't Do RAG: When Cache-Augmented Generation
+ * is All You Need for Knowledge Tasks", 2024; L. Liang et al., "KAG: Boosting LLMs in
+ * Professional Domains via Knowledge Augmented Generation", 2024.
+ *
+ * Layout (y up, plate top at y = 0, pipes at y = 0.3): one lane per system, RAG on the left,
+ * CAG in the middle, KAG on the right. Each lane reads its copy of the documents at the back
+ * and answers the analyst at the front. CAG has no retrieval step: its third row is empty.
+ */
+
+const PIPE_Y = 0.3;
+const RAG_X = -3.35;
+const KAG_X = 3.35;
+/** The rows, back to front: documents, what builds the knowledge, where it is kept, what finds in it, the model. */
+const DOCS_Z = -3.7;
+const BUILD_Z = -2.2;
+const STORE_Z = -0.7;
+const FIND_Z = 0.8;
+const LLM_Z = 2.3;
+const USER_Z = 3.9;
+/** Where a side lane's question goes back and its answer comes forward, beside its parts. */
+const RAG_LANE_X = -1.95;
+const KAG_LANE_X = 1.95;
+
+const BIG = "big-corpus";
+const TWO_HOP = "two-hop";
+const BAD_EDGE = "bad-extraction";
+
+const DOCS = { type: "box", size: [1.4, 0.9, 0.8] } as const;
+const BUILDER = { type: "box", size: [1.4, 0.6, 0.8] } as const;
+const FINDER = { type: "box", size: [1.3, 0.6, 0.8] } as const;
+const MODEL = { type: "prism", sides: 8, radius: 0.45, height: 0.6 } as const;
+
+/** Which switches are on, for the steps that read differently under them. */
+interface Flags {
+  readonly big: boolean;
+  readonly twoHop: boolean;
+  readonly badEdge: boolean;
+}
+const flags = (on: (action: string) => boolean): Flags => ({
+  big: on(BIG),
+  twoHop: on(TWO_HOP),
+  badEdge: on(BAD_EDGE),
+});
+
+const question = (f: Flags) =>
+  f.twoHop ? "Where is the supplier of part P-7 based?" : "Who supplies part P-7?";
+/** What KAG's graph answers: the right relation, or the one extracted wrong. */
+const kagFinds = (f: Flags) =>
+  f.twoHop ? (f.badEdge ? "S-9, then Turin" : "S-12, then Lyon") : f.badEdge ? "S-9" : "S-12";
+
+const buildStep = variants("build", [BIG, BAD_EDGE], (on) => {
+  const f = flags(on);
+  const docs = f.big ? "40,000" : "40";
+  const tokens: TokenInput[] = [
+    { flow: "write", path: ["rag-read", "rag-write"] },
+    f.big
+      ? { flow: "error", path: ["cag-read"] }
+      : { flow: "write", path: ["cag-read", "cag-write"] },
+    f.badEdge
+      ? { flow: "error", path: ["kag-read", "kag-write"], label: "S9" }
+      : { flow: "write", path: ["kag-read", "kag-write"] },
+  ];
+  const log: LogInput[] = [
+    {
+      flow: "write",
+      tag: "RAG",
+      text: f.big
+        ? "chunk + embed 40,000 docs → 300,000 vectors"
+        : "chunk + embed 40 docs → 300 vectors",
+    },
+    f.big
+      ? { flow: "error", tag: "CAG", text: "prefill: millions of tokens > 128,000-token window" }
+      : { flow: "write", tag: "CAG", text: "prefill 30,000 tokens → KV cache saved" },
+    f.badEdge
+      ? { flow: "error", tag: "KAG", text: "extract → (P-7) supplied by (S-9)" }
+      : { flow: "write", tag: "KAG", text: "extract → (P-7) supplied by (S-12)" },
+  ];
+  return {
+    title: "Before any question",
+    body: [
+      `Each system prepares the same ${docs} documents (orders, a parts catalogue, supplier sheets) before any question.`,
+      "RAG cuts them into chunks and stores one vector per chunk.",
+      f.big
+        ? "CAG cannot: so many documents run to millions of tokens, and the whole corpus has to fit in the model's context window."
+        : "CAG runs the model once over all of them and keeps its KV cache.",
+      f.badEdge
+        ? "KAG has a model extract entities and relations into a graph, and one relation comes out wrong: P-7 supplied by S-9."
+        : "KAG has a model extract entities and relations into a graph, each linked to the passage it came from.",
+    ].join(" "),
+    focus: ["rag-build", "rag-store", "cag-build", "cag-store", "kag-build", "kag-store"],
+    states: {
+      "rag-store": f.big ? "300,000 vectors" : "300 chunks · 300 vectors",
+      "cag-store": f.big ? "empty: corpus too big" : "30,000 tokens cached",
+      "kag-store": f.badEdge ? "P-7 → S-9 · S-12 → Lyon" : "P-7 → S-12 · S-12 → Lyon",
+    },
+    tokens,
+    log,
+  };
+});
+
+const askStep = variants("ask", [BIG, TWO_HOP], (on) => {
+  const f = flags(on);
+  return {
+    title: "One question, three systems",
+    body: f.big
+      ? `An analyst asks: “${question(f)}” The question goes to RAG and KAG. CAG has no cache to answer from.`
+      : `An analyst asks: “${question(f)}” The same question goes to all three.`,
+    focus: ["user", "rag-find", "kag-find", ...(f.big ? [] : ["cag-llm"])],
+    tokens: [
+      { flow: "request", path: ["rag-ask"] },
+      ...(f.big ? [] : [{ flow: "request" as const, path: ["cag-ask"] }]),
+      { flow: "request", path: ["kag-ask"] },
+    ],
+    log: [
+      {
+        flow: "request",
+        tag: "ASK",
+        text: `“${question(f)}” → ${f.big ? "RAG, KAG" : "RAG, CAG, KAG"}`,
+      },
+    ],
+  };
+});
+
+const findStep = variants("find", [BIG, TWO_HOP, BAD_EDGE], (on) => {
+  const f = flags(on);
+  const kagWrong = f.badEdge;
+  return {
+    title: "Find what to read",
+    body: [
+      f.twoHop
+        ? "RAG takes the 3 chunks closest to the question: all three are about P-7 and its supplier. The sheet that says where S-12 is based never mentions P-7, so it is not among them."
+        : "RAG embeds the question and takes the 3 chunks closest to it. One says S-12 supplies P-7.",
+      f.big ? "" : "CAG looks nothing up: the question is appended to the cached corpus.",
+      f.twoHop
+        ? `KAG's planner writes two steps, the supplier of P-7, then that supplier's city, and runs them on the graph: ${kagFinds(f)}.`
+        : `KAG's planner writes one step, the supplier of P-7, and runs it on the graph: ${kagFinds(f)}.`,
+    ]
+      .filter(Boolean)
+      .join(" "),
+    focus: [
+      "rag-find",
+      "rag-store",
+      ...(f.big ? [] : ["cag-store", "cag-llm"]),
+      "kag-find",
+      "kag-store",
+    ],
+    states: {
+      "rag-find": f.twoHop ? "3 chunks · none on Lyon" : "3 chunks · S-12 in one",
+      "kag-find": f.twoHop ? "supplier(P-7) → city(·)" : "supplier(P-7)",
+    },
+    tokens: [
+      {
+        flow: f.twoHop ? "error" : "response",
+        path: ["rag-query"],
+        reverse: true,
+        label: "×3",
+      },
+      ...(f.big ? [] : [{ flow: "write" as const, path: ["cag-load"] }]),
+      {
+        flow: kagWrong ? "error" : "response",
+        path: ["kag-query"],
+        reverse: true,
+        label: kagWrong ? "S9" : "S12",
+      },
+    ],
+    log: [
+      {
+        flow: f.twoHop ? "error" : "response",
+        tag: "RAG",
+        text: f.twoHop
+          ? "top-3 by similarity → 3 chunks on P-7, none on S-12's city"
+          : "top-3 by similarity → 3 chunks, one names S-12",
+      },
+      ...(f.big
+        ? []
+        : [
+            {
+              flow: "write" as const,
+              tag: "CAG",
+              text: "no retrieval · question appended to the cache",
+            },
+          ]),
+      {
+        flow: kagWrong ? "error" : "response",
+        tag: "KAG",
+        text: f.twoHop
+          ? `supplier(P-7) → ${kagWrong ? "S-9" : "S-12"} · city → ${kagWrong ? "Turin" : "Lyon"}`
+          : `supplier(P-7) → ${kagWrong ? "S-9" : "S-12"}`,
+      },
+    ],
+  };
+});
+
+const answerStep = variants("answer", [BIG, TWO_HOP, BAD_EDGE], (on) => {
+  const f = flags(on);
+  const right = f.twoHop ? "Lyon" : "S-12";
+  const kag = f.twoHop ? (f.badEdge ? "Turin" : "Lyon") : f.badEdge ? "S-9" : "S-12";
+  return {
+    title: f.big ? "Two answers" : "Three answers",
+    body: [
+      f.twoHop
+        ? "RAG names S-12 but cannot say where it is based: no passage it was given says so."
+        : "RAG answers S-12, from the question and its 3 chunks.",
+      f.big
+        ? "CAG gives no answer: it never had a cache."
+        : `CAG answers ${right}, from the whole corpus in its cache; the question is then cut off the cache, ready for the next one.`,
+      f.badEdge
+        ? `KAG answers ${kag}, as confidently as a right answer: the mistake was made when the graph was built.`
+        : `KAG answers ${kag}, from the steps its planner ran on the graph.`,
+    ].join(" "),
+    focus: ["user", "rag-llm", "kag-llm", ...(f.big ? [] : ["cag-llm"])],
+    tokens: [
+      { flow: f.twoHop ? "error" : "response", path: ["rag-feed", "rag-answer"] },
+      ...(f.big ? [] : [{ flow: "response" as const, path: ["cag-ask"], reverse: true }]),
+      { flow: f.badEdge ? "error" : "response", path: ["kag-feed", "kag-answer"] },
+    ],
+    log: [
+      f.twoHop
+        ? { flow: "error", tag: "RAG", text: "“S-12 supplies P-7; the passages don't say where.”" }
+        : { flow: "response", tag: "RAG", text: "“S-12”" },
+      f.big
+        ? { flow: "error", tag: "CAG", text: "no cache, no answer" }
+        : { flow: "response", tag: "CAG", text: `“${right}”` },
+      { flow: f.badEdge ? "error" : "response", tag: "KAG", text: `“${kag}”` },
+    ],
+  };
+});
+
+/** A lane's copy of the corpus, its builder and its store: the same three rows in each. */
+function laneParts(
+  lane: "rag" | "cag" | "kag",
+  x: number,
+  refs: readonly [number, number, number],
+  build: { readonly label: string; readonly description: string },
+  store: {
+    readonly label: string;
+    readonly role: string;
+    readonly shape: MachineInput["parts"][number]["shape"];
+    readonly y: number;
+    readonly socket: readonly [number, number, number];
+    readonly description: string;
+  },
+): MachineInput["parts"] {
+  return [
+    {
+      id: `${lane}-docs`,
+      ref: refs[0],
+      label: "Documents",
+      role: "CORPUS",
+      kind: "store",
+      shape: DOCS,
+      position: [x, 0.45, DOCS_Z],
+      socket: [0, -0.15, 0],
+      description:
+        "The same documents in every lane: orders, a parts catalogue and supplier sheets.",
+    },
+    {
+      id: `${lane}-build`,
+      ref: refs[1],
+      label: build.label,
+      role: "BUILDS",
+      kind: "module",
+      shape: BUILDER,
+      position: [x, 0.3, BUILD_Z],
+      description: build.description,
+    },
+    {
+      id: `${lane}-store`,
+      ref: refs[2],
+      label: store.label,
+      role: store.role,
+      kind: "store",
+      shape: store.shape,
+      position: [x, store.y, STORE_Z],
+      socket: store.socket,
+      description: store.description,
+    },
+  ];
+}
+
+/** Straight runs inside a lane: documents to builder, builder to store. */
+function laneRoutes(lane: "rag" | "cag" | "kag"): NonNullable<MachineInput["routes"]> {
+  return [
+    { id: `${lane}-read`, from: `${lane}-docs`, to: `${lane}-build` },
+    { id: `${lane}-write`, from: `${lane}-build`, to: `${lane}-store` },
+  ];
+}
+
+export const ragCagKag = defineMachine({
+  code: "BEN-001",
+  slug: "rag-vs-cag-vs-kag",
+  title: "RAG vs CAG vs KAG",
+  aliases: [
+    "retrieval-augmented generation",
+    "cache-augmented generation",
+    "knowledge-augmented generation",
+  ],
+  summary:
+    "The same question goes to three ways of giving a language model outside knowledge: retrieve passages, preload a cache, or plan over a graph.",
+  family: "ai",
+  category: "COMPARISON",
+  scale: "NTS",
+  revision: "A",
+  revised: "2026-10-18",
+  flowLabels: {
+    request: "Question",
+    write: "Knowledge",
+    response: "Answer",
+    error: "Wrong, missing",
+  },
+  sources: [
+    {
+      label: "P. Lewis et al., RAG, 2020",
+      url: "https://arxiv.org/abs/2005.11401",
+    },
+    {
+      label: "B. J. Chan et al., CAG, 2024",
+      url: "https://arxiv.org/abs/2412.15605",
+    },
+    {
+      label: "L. Liang et al., KAG, 2024",
+      url: "https://arxiv.org/abs/2409.13731",
+    },
+  ],
+  article: [
+    "RAG, CAG and KAG are three ways of giving a large language model knowledge it was not trained on. Retrieval-augmented generation (RAG) looks passages up when a question arrives; cache-augmented generation (CAG) has the model read all the knowledge ahead of time and keeps its state; knowledge-augmented generation (KAG) builds a knowledge graph and plans the question over it. This bench sends the same documents and the same question through all three.",
+    "RAG, introduced by Patrick Lewis and colleagues in 2020, splits the documents into passages, stores one vector per passage, and retrieves the passages closest to each question. In the original paper the generator reads the question with each retrieved passage and combines the results. The index can be replaced without retraining the model, which is how its knowledge is updated.",
+    "CAG, proposed by Brian Chan and colleagues in 2024, drops retrieval when the knowledge is small enough. The whole corpus is fed to the model once, and the resulting KV cache is kept and reused for every question, cut back to the corpus after each answer. It removes the retrieval step, not generation: in their test with an 8-billion-parameter model, answering took 0.85 s with a 21,000-token corpus and 2.26 s with 85,000. The authors note it becomes impractical for much larger datasets.",
+    "KAG, from Lei Liang and colleagues in 2024, has a model extract entities and relations from the documents into a graph whose nodes point back to the passages they came from. A planner rewrites each question as logical-form steps, retrieves through the graph and the passages, and checks whether the question is answered. On multi-hop benchmarks the authors report a higher F1 than a multi-step retrieval baseline, at the price of several model calls to build and to answer; errors made while building the graph lead to wrong answers.",
+    "None of the three wins everywhere. CAG needs the corpus to fit in the context window. Retrieval in one step returns passages similar to the question and can miss the one that leads to the answer. KAG's answers are only as right as the graph it extracted. Each switch here triggers one of these limits.",
+  ],
+  glossary: [
+    {
+      term: "Chunk",
+      definition: "A short passage cut from a document: what RAG indexes and retrieves.",
+      parts: ["rag-build", "rag-store"],
+    },
+    {
+      term: "Embedding",
+      definition:
+        "A vector that stands for a passage's meaning. RAG compares the question's vector with each chunk's to find the closest.",
+      parts: ["rag-store", "rag-find"],
+    },
+    {
+      term: "Top-k",
+      definition: "The k chunks most similar to the question, here 3. Only they reach the model.",
+      parts: ["rag-find"],
+    },
+    {
+      term: "KV cache",
+      definition:
+        "The model's state after reading a text: keys and values for every token. CAG computes it once for the whole corpus and reuses it.",
+      parts: ["cag-store"],
+    },
+    {
+      term: "Context window",
+      definition: "The most tokens a model reads at once. CAG's whole corpus must fit in it.",
+      parts: ["cag-build", "cag-llm"],
+    },
+    {
+      term: "Knowledge graph",
+      definition:
+        "Entities and the relations between them, extracted from the documents. In KAG each one points back to the passage it came from.",
+      parts: ["kag-build", "kag-store"],
+    },
+    {
+      term: "Logical form",
+      definition:
+        "The question rewritten as steps a program can run: find the supplier of P-7, then that supplier's city.",
+      parts: ["kag-find"],
+    },
+    {
+      term: "Multi-hop question",
+      definition:
+        "A question whose answer joins facts from several places through something in between: P-7 to S-12, S-12 to Lyon.",
+      parts: ["rag-find", "kag-find"],
+    },
+  ],
+  stage: {
+    plate: { size: [10.4, 9.4], center: [0, 0] },
+    zones: [
+      {
+        id: "rag",
+        label: "RAG",
+        note: "Retrieve, then generate",
+        from: [-5.0, -4.5],
+        to: [-1.65, 3.15],
+      },
+      {
+        id: "cag",
+        label: "CAG",
+        note: "Preload, cache, generate",
+        from: [-1.65, -4.5],
+        to: [1.65, 3.15],
+      },
+      { id: "kag", label: "KAG", note: "Plan over a graph", from: [1.65, -4.5], to: [5.0, 3.15] },
+    ],
+  },
+  parts: [
+    {
+      id: "user",
+      ref: 1,
+      label: "Analyst",
+      role: "ASKS",
+      kind: "actor",
+      shape: { type: "box", size: [1.3, 0.7, 1.0] },
+      position: [0, 0.35, USER_Z],
+      socket: [0, -0.05, 0],
+      description: "Asks one question about the documents, sent to all three systems.",
+    },
+    ...laneParts(
+      "rag",
+      RAG_X,
+      [2, 3, 4],
+      {
+        label: "Chunk and embed",
+        description: "Cuts the documents into chunks and turns each into a vector.",
+      },
+      {
+        label: "Vector index",
+        role: "INDEX",
+        shape: { type: "cylinder", radius: 0.5, height: 0.8 },
+        y: 0.4,
+        socket: [0, -0.1, 0],
+        description:
+          "One vector per chunk, searched by similarity. Replaceable without retraining the model.",
+      },
+    ),
+    {
+      id: "rag-find",
+      ref: 5,
+      label: "Retriever",
+      role: "TOP-K",
+      kind: "module",
+      shape: FINDER,
+      position: [RAG_X, 0.3, FIND_Z],
+      description: "Embeds the question and returns the 3 chunks closest to it.",
+    },
+    {
+      id: "rag-llm",
+      ref: 6,
+      label: "LLM",
+      role: "RAG",
+      kind: "core",
+      shape: MODEL,
+      position: [RAG_X, PIPE_Y, LLM_Z],
+      description:
+        "Writes the answer from the question and the retrieved chunks, and nothing else.",
+    },
+    ...laneParts(
+      "cag",
+      0,
+      [7, 8, 9],
+      {
+        label: "Prefill",
+        description:
+          "Runs the model once over the whole corpus. It has to fit in the context window.",
+      },
+      {
+        label: "KV cache",
+        role: "CACHE",
+        shape: { type: "box", size: [1.3, 0.6, 0.8] },
+        y: 0.3,
+        socket: [0, 0, 0],
+        description:
+          "The model's state after reading the corpus, saved to be reused by every question.",
+      },
+    ),
+    {
+      id: "cag-llm",
+      ref: 10,
+      label: "LLM",
+      role: "CAG",
+      kind: "core",
+      shape: MODEL,
+      position: [0, PIPE_Y, LLM_Z],
+      description: "Answers from the question appended to the cache. No retrieval step.",
+    },
+    ...laneParts(
+      "kag",
+      KAG_X,
+      [11, 12, 13],
+      {
+        label: "Extractor",
+        description: "Has a model extract entities and relations from the documents.",
+      },
+      {
+        label: "Knowledge graph",
+        role: "GRAPH",
+        shape: { type: "cylinder", radius: 0.5, height: 0.8 },
+        y: 0.4,
+        socket: [0, -0.1, 0],
+        description: "Entities and relations, each linked to the passage it came from.",
+      },
+    ),
+    {
+      id: "kag-find",
+      ref: 14,
+      label: "Planner",
+      role: "LOGICAL FORM",
+      kind: "module",
+      shape: FINDER,
+      position: [KAG_X, 0.3, FIND_Z],
+      description: "Rewrites the question as steps and runs them on the graph and its passages.",
+    },
+    {
+      id: "kag-llm",
+      ref: 15,
+      label: "LLM",
+      role: "KAG",
+      kind: "core",
+      shape: MODEL,
+      position: [KAG_X, PIPE_Y, LLM_Z],
+      description: "Writes the answer from what the planner's steps found.",
+    },
+  ],
+  routes: [
+    ...laneRoutes("rag"),
+    ...laneRoutes("cag"),
+    ...laneRoutes("kag"),
+    { id: "rag-query", from: "rag-find", to: "rag-store" },
+    { id: "rag-feed", from: "rag-find", to: "rag-llm" },
+    {
+      id: "rag-ask",
+      from: "user",
+      to: "rag-find",
+      via: [
+        [RAG_LANE_X, PIPE_Y, USER_Z],
+        [RAG_LANE_X, PIPE_Y, FIND_Z],
+      ],
+    },
+    {
+      id: "rag-answer",
+      from: "rag-llm",
+      to: "user",
+      via: [
+        [RAG_LANE_X, PIPE_Y, LLM_Z],
+        [RAG_LANE_X, PIPE_Y, USER_Z],
+      ],
+    },
+    { id: "cag-load", from: "cag-store", to: "cag-llm" },
+    { id: "cag-ask", from: "user", to: "cag-llm" },
+    { id: "kag-query", from: "kag-find", to: "kag-store" },
+    { id: "kag-feed", from: "kag-find", to: "kag-llm" },
+    {
+      id: "kag-ask",
+      from: "user",
+      to: "kag-find",
+      via: [
+        [KAG_LANE_X, PIPE_Y, USER_Z],
+        [KAG_LANE_X, PIPE_Y, FIND_Z],
+      ],
+    },
+    {
+      id: "kag-answer",
+      from: "kag-llm",
+      to: "user",
+      via: [
+        [KAG_LANE_X, PIPE_Y, LLM_Z],
+        [KAG_LANE_X, PIPE_Y, USER_Z],
+      ],
+    },
+  ],
+  actions: [
+    {
+      id: BIG,
+      label: "Grow the corpus to 40,000 documents",
+      description:
+        "Millions of tokens, far more than a context window holds. RAG and KAG index them; CAG cannot preload them.",
+      effects: [{ type: "patchPart", part: "cag-build", set: { flag: "violation" } }],
+    },
+    {
+      id: TWO_HOP,
+      label: "Ask a two-hop question",
+      description:
+        "Where is the supplier of part P-7 based? The answer joins two documents through S-12, and only one of them mentions P-7.",
+      effects: [{ type: "patchPart", part: "rag-find", set: { flag: "violation" } }],
+    },
+    {
+      id: BAD_EDGE,
+      label: "Extract one relation wrong",
+      description:
+        "The graph records P-7 as supplied by S-9. KAG plans over the graph, so its answer follows the mistake.",
+      effects: [{ type: "patchPart", part: "kag-store", set: { flag: "violation" } }],
+    },
+  ],
+  scenarios: [
+    {
+      id: "ask",
+      title: "Ask about a part",
+      steps: [...buildStep, ...askStep, ...findStep, ...answerStep],
+    },
+  ],
+});

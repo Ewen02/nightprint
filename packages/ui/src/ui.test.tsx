@@ -157,6 +157,19 @@ describe("molecules", () => {
     expect(full).toContain("Business rules.");
   });
 
+  it("wraps a part's name and state on a phone, narrower than the stage beside its balloon", () => {
+    const named = html(
+      <PartCallout
+        number={5}
+        label="Retriever"
+        status="3 passages · one names S-12"
+        detail="name"
+      />,
+    );
+    expect(named.match(/whitespace-nowrap[^"]*max-sm:whitespace-normal/g)).toHaveLength(2);
+    expect(named).toContain("max-sm:max-w-44");
+  });
+
   it("lists the flow colours under a name", () => {
     const legend = html(
       <FlowLegend

@@ -20,6 +20,8 @@ export interface PartCalloutProps {
  * A part's balloon in the drawing, saying as much as the moment needs. The
  * balloon's centre sits on the anchor point and the text opens to its right, or
  * to its left inside an ancestor marked `data-side="left"` (the right of the stage).
+ * On a phone the text is narrower and wraps: a stage that small has room for less than a
+ * name's full line on either side of its balloon.
  */
 export function PartCallout({
   number,
@@ -40,16 +42,18 @@ export function PartCallout({
       <div
         className={cx(
           "overflow-hidden rounded-xs border bg-bg/90 transition-[opacity,max-width] duration-200 ease-machine motion-reduce:transition-none",
-          open ? "max-w-60 opacity-100" : "max-w-0 border-transparent opacity-0",
+          open ? "max-w-60 opacity-100 max-sm:max-w-44" : "max-w-0 border-transparent opacity-0",
           !accent && "border-line",
         )}
         style={accent && open ? { borderColor: accent } : undefined}
       >
-        <div className="flex w-max max-w-60 flex-col gap-0.5 px-2 py-1">
-          <p className="font-mono text-log whitespace-nowrap text-text">{label}</p>
+        <div className="flex w-max max-w-60 flex-col gap-0.5 px-2 py-1 max-sm:max-w-44">
+          <p className="font-mono text-log whitespace-nowrap text-text max-sm:whitespace-normal">
+            {label}
+          </p>
           {status && (
             <p
-              className="font-mono text-micro whitespace-nowrap text-text-secondary"
+              className="font-mono text-micro whitespace-nowrap text-text-secondary max-sm:whitespace-normal"
               style={accent ? { color: accent } : undefined}
             >
               {status}

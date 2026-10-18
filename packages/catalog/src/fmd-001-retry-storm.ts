@@ -52,7 +52,12 @@ const retryStep = variants("retries", [BUDGET, JITTER], (on): StepBody => {
       : "The service retries its query 3 times, the API retries the service 3 times, the app retries the API 3 times. One click becomes up to 64 attempts on the database, 4 × 4 × 4, and the failed ones come back at the same moments.",
     focus: ["app", "api", "service", "db"],
     states: { db: "up to 64× the load" },
-    tokens: [{ flow: "error", path: ["app-api", "api-service", "service-db"], label: "×64" }],
+    // One click, retried at each layer: 4 attempts on the API, 16 on the service, 64 on the database.
+    tokens: [
+      { flow: "error", path: ["app-api"], label: "×4" },
+      { flow: "error", path: ["api-service"], label: "×16" },
+      { flow: "error", path: ["service-db"], label: "×64" },
+    ],
     log: [
       {
         flow: "error",

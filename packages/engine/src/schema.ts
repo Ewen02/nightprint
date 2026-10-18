@@ -169,6 +169,8 @@ export const stepSchema = z.object({
   output: z.array(z.string().min(1)).default([]),
   /** What a part is doing during the step, by part id: "Microtasks" on the event loop. */
   states: z.record(id, z.string().min(1).max(28)).default({}),
+  /** The machine's meter during the step, in its unit: the load on the database. */
+  meter: z.number().nonnegative().optional(),
   when: conditionSchema.optional(),
 });
 export type Step = z.infer<typeof stepSchema>;
@@ -282,6 +284,17 @@ export const machineSchema = z.object({
   routes: z.array(routeSchema).default([]),
   scenarios: z.array(scenarioSchema).min(1),
   actions: z.array(actionSchema).max(8).default([]),
+  /**
+   * One quantity the run follows step by step and plots against a limit: a failure mode's
+   * load against the capacity it breaks. Each step gives its value in `meter`.
+   */
+  meter: z
+    .object({
+      label: z.string().min(1).max(32),
+      unit: z.string().min(1).max(16),
+      capacity: z.number().positive(),
+    })
+    .optional(),
 });
 
 export type MachineInput = z.input<typeof machineSchema>;

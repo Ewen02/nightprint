@@ -30,6 +30,32 @@ describe("defineMachine", () => {
     expect(() => defineMachine({ ...fixtureInput, code: "ABC-001" })).toThrow(/Invalid machine/);
   });
 
+  it("reads a step's meter only against a meter the machine declares", () => {
+    const [scenario] = fixtureInput.scenarios;
+    const [first, ...rest] = must(scenario).steps;
+    const metered = {
+      ...fixtureInput,
+      scenarios: [
+        {
+          ...must(scenario),
+          steps: [{ ...must(first), meter: 250 }, ...rest.map((step) => ({ ...step, meter: 250 }))],
+        },
+      ],
+    };
+    expect(() => defineMachine(metered)).toThrow(/reads a meter the machine does not declare/);
+    expect(() =>
+      defineMachine({
+        ...fixtureInput,
+        meter: { label: "Load on the database", unit: "queries/s", capacity: 300 },
+      }),
+    ).toThrow(/gives no value to the machine's meter/);
+    const declared = defineMachine({
+      ...metered,
+      meter: { label: "Load on the database", unit: "queries/s", capacity: 300 },
+    });
+    expect(declared.scenarios[0]?.steps[0]?.meter).toBe(250);
+  });
+
   it("rejects duplicate ids and refs", () => {
     const parts = [...fixtureInput.parts, { ...must(fixtureInput.parts[0]), ref: 99 }];
     expect(() => defineMachine({ ...fixtureInput, parts })).toThrow(/duplicate part id "a"/);

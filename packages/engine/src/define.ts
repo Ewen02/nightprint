@@ -108,6 +108,13 @@ export function validateMachine(machine: Machine): string[] {
           issues.push(`step "${step.id}" gives a state to unknown part "${part}"`);
         }
       }
+      if (step.meter !== undefined && machine.meter === undefined) {
+        issues.push(`step "${step.id}" reads a meter the machine does not declare`);
+      }
+      // The meter is plotted step by step: a step without a value would leave a hole.
+      if (step.meter === undefined && machine.meter !== undefined) {
+        issues.push(`step "${step.id}" gives no value to the machine's meter`);
+      }
       for (const a of [...(step.when?.all ?? []), ...(step.when?.none ?? [])]) {
         if (!actionIds.has(a)) {
           issues.push(`step "${step.id}" depends on unknown action "${a}"`);

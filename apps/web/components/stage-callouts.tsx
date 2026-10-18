@@ -16,9 +16,13 @@ export function stageCallouts(
   /** Parts of the step named at once: fewer on a narrow stage, where names collide. */
   namedPerStep = 2,
 ): StageCallout[] {
-  const zones = snapshot.resolved.machine.stage.zones.map((zone) => ({
+  const { zones: regions, view } = snapshot.resolved.machine.stage;
+  const zones = regions.map((zone) => ({
     id: zoneLabelId(zone.id),
-    content: <ZoneLabel label={zone.label} note={zone.note} />,
+    // Seen from the front, the zones are a bench's lanes, named large.
+    content: (
+      <ZoneLabel label={zone.label} note={zone.note} variant={view === "front" ? "lane" : "zone"} />
+    ),
     keepInside: true,
     // A zone's name is read once; a part's name is what the step is about.
     yields: true,

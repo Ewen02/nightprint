@@ -19,6 +19,7 @@ import { PlanView } from "./molecules/plan-view";
 import { RepoForm } from "./molecules/repo-form";
 import { SheetPreview } from "./molecules/sheet-preview";
 import { StageAction } from "./molecules/stage-action";
+import { StepCaption } from "./molecules/step-caption";
 import { StepDots } from "./molecules/step-dots";
 import { StepRuler } from "./molecules/step-ruler";
 import { SurveySketch } from "./molecules/survey-sketch";
@@ -976,5 +977,20 @@ describe("title block", () => {
       '<dt class="text-text-faint">SERIES</dt><dd>Failure mode</dd>',
     );
     expect(html(<Cartouche {...props} />)).not.toContain("SERIES");
+  });
+});
+
+describe("step caption", () => {
+  it("shows a step's lead first and keeps its body behind a button", () => {
+    const props = { index: 0, count: 4, title: "Find what to read", flow: "request" } as const;
+    const short = html(
+      <StepCaption {...props} body="Three sentences of detail." lead="One line." />,
+    );
+    expect(short).toContain("One line.");
+    expect(short).not.toContain("Three sentences of detail.");
+    expect(short).toMatch(/<button type="button" aria-expanded="false"[^>]*>More<\/button>/);
+    const plain = html(<StepCaption {...props} body="Three sentences of detail." />);
+    expect(plain).toContain("Three sentences of detail.");
+    expect(plain).not.toContain("<button");
   });
 });

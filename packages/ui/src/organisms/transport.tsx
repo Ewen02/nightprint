@@ -13,7 +13,13 @@ export interface TransportProps {
   readonly steps: readonly StepDotItem[];
   /** Index of the current step. */
   readonly current: number;
-  readonly caption: { readonly title: string; readonly body: string; readonly flow: FlowName };
+  readonly caption: {
+    readonly title: string;
+    readonly body: string;
+    /** The step in one sentence, shown first; the body waits a click. */
+    readonly lead?: string | undefined;
+    readonly flow: FlowName;
+  };
   readonly playing: boolean;
   /** The last step has played to its end. */
   readonly finished: boolean;
@@ -96,6 +102,7 @@ export function Transport({
           count={steps.length}
           title={caption.title}
           body={caption.body}
+          lead={caption.lead}
           flow={caption.flow}
         />
       )}

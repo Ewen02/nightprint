@@ -18,7 +18,8 @@ import { flow } from "@nightprint/tokens";
 import { chromium } from "playwright";
 
 const FPS = 30;
-const VIEWPORT = { width: 1920, height: 1080 };
+/** The page's size in CSS px; a shot list may ask for another (a vertical video's close crops). */
+const DEFAULT_VIEWPORT = { width: 1920, height: 1080 };
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -31,6 +32,7 @@ if (!id) {
 }
 const pkg = join(dirname(fileURLToPath(import.meta.url)), "..");
 const shots = JSON.parse(readFileSync(join(pkg, "src", id, "shots.json"), "utf8"));
+const VIEWPORT = shots.viewport ?? DEFAULT_VIEWPORT;
 const frames = values.frames ? Number(values.frames) : shots.frames;
 const url = values.from ? new URL(new URL(shots.url).pathname, values.from).href : shots.url;
 const footageDir = values.out ? join(values.out, "footage") : join(pkg, "public", "footage", id);

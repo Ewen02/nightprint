@@ -86,18 +86,22 @@ export function cameraAt(keys: readonly CameraKey[], frame: number): Camera {
   return { x: pick(1), y: pick(2), zoom: pick(3) };
 }
 
-/** The page rectangle the camera shows, kept inside the page. */
+/**
+ * The page rectangle the camera shows, kept inside the page. `window` is the size of what it
+ * fills in the video, the whole frame unless said otherwise: a vertical video crops several.
+ */
 export function viewOf(
   camera: Camera,
   page: { readonly width: number; readonly height: number },
+  window: { readonly width: number; readonly height: number } = page,
 ): {
   readonly left: number;
   readonly top: number;
   readonly width: number;
   readonly height: number;
 } {
-  const width = page.width / camera.zoom;
-  const height = page.height / camera.zoom;
+  const width = window.width / camera.zoom;
+  const height = window.height / camera.zoom;
   return {
     left: Math.min(Math.max(camera.x - width / 2, 0), page.width - width),
     top: Math.min(Math.max(camera.y - height / 2, 0), page.height - height),

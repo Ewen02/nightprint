@@ -8,6 +8,11 @@ type FootageProps = {
   readonly footage: Timeline["footage"];
   readonly camera: readonly CameraKey[];
   readonly style?: React.CSSProperties;
+  /**
+   * The size it fills in the video, in px, when it is not the whole 16:9 frame: a window of a
+   * vertical video. The camera's zoom is then page px to video px.
+   */
+  readonly size?: { readonly width: number; readonly height: number };
   /** Drawn in page px, so they move with the camera (the cursor, click marks). */
   readonly children?: React.ReactNode;
 };
@@ -17,7 +22,7 @@ type FootageProps = {
  * `footage.scale`, so zooming up to that factor stays sharp; a closer key fails the render
  * rather than upscale. Past the last image the page holds.
  */
-export function Footage({ dir, footage, camera, style, children }: FootageProps) {
+export function Footage({ dir, footage, camera, style, size, children }: FootageProps) {
   const closest = Math.max(...camera.map((key) => key[3]));
   if (closest > footage.scale) {
     throw new Error(
@@ -26,8 +31,8 @@ export function Footage({ dir, footage, camera, style, children }: FootageProps)
   }
   const frame = useCurrentFrame();
   const index = Math.min(frame, footage.frames - 1);
-  const view = viewOf(cameraAt(camera, frame), footage);
-  const zoom = footage.width / view.width;
+  const view = viewOf(cameraAt(camera, frame), footage, size);
+  const zoom = (size?.width ?? footage.width) / view.width;
 
   return (
     <AbsoluteFill style={{ overflow: "hidden", ...style }}>

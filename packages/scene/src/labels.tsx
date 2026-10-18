@@ -80,7 +80,7 @@ const lost = (box: DOMRect, others: readonly DOMRect[], stage: DOMRect) =>
  * A part's callout that covers another one (its open name over a neighbour's balloon)
  * opens on its other side, when less of it is lost there. Then a label that yields (a
  * dimension's value) fades out while another label covers it, and comes back once it
- * is clear. Measured on what each label shows, so a part's callout counts its name only
+ * is clear; one that yields to names only (a lane's name) stays among bare balloons. Measured on what each label shows, so a part's callout counts its name only
  * while the name is open.
  */
 function settleOverlaps(labels: LabelRegistry) {
@@ -114,7 +114,11 @@ function settleOverlaps(labels: LabelRegistry) {
       continue;
     }
     const box = boxOf(element);
-    const covered = blockers.some((blocker) => overlaps(blocker, box));
+    const toNames = element.dataset.yields === "names";
+    const covered = blockers.some(
+      (blocker, i) =>
+        (!toNames || fixed[i]?.dataset.raised !== undefined) && overlaps(blocker, box),
+    );
     element.style.opacity = covered ? "0" : "";
   }
 }
@@ -225,8 +229,12 @@ export interface StageCallout {
    * may leave its point. A part's callout never does: it must stay on its part.
    */
   readonly keepInside?: boolean;
-  /** Fades out while another label covers it: for a dimension's value, the least needed. */
-  readonly yields?: boolean;
+  /**
+   * Fades out while another label covers it. `any`: under any label, for a dimension's value,
+   * the least needed. `names`: only under a part's open name, for a lane's name, which the
+   * reader needs the whole run and which a bare balloon beside it must not hide.
+   */
+  readonly yields?: "any" | "names";
   /** Stands above the other labels whatever their depth: for a name being read. */
   readonly raised?: boolean;
 }
@@ -242,7 +250,7 @@ function CalloutSlot({
   readonly labels: LabelRegistry;
   readonly id: string;
   readonly keepInside: boolean;
-  readonly yields: boolean;
+  readonly yields: "any" | "names" | undefined;
   readonly raised: boolean;
   readonly children: ReactNode;
 }) {
@@ -251,7 +259,7 @@ function CalloutSlot({
     <div
       ref={ref}
       data-keep-inside={keepInside || undefined}
-      data-yields={yields || undefined}
+      data-yields={yields}
       data-raised={raised || undefined}
       className="invisible absolute top-0 left-0 transition-opacity duration-200 will-change-transform motion-reduce:transition-none"
     >
@@ -283,7 +291,7 @@ export function LabelLayer({ labels, callouts }: LabelLayerProps) {
           labels={labels}
           id={callout.id}
           keepInside={callout.keepInside ?? false}
-          yields={callout.yields ?? false}
+          yields={callout.yields}
           raised={callout.raised ?? false}
         >
           {callout.content}

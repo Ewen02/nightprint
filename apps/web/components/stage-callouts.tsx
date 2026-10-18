@@ -24,8 +24,9 @@ export function stageCallouts(
       <ZoneLabel label={zone.label} note={zone.note} variant={view === "front" ? "lane" : "zone"} />
     ),
     keepInside: true,
-    // A zone's name is read once; a part's name is what the step is about.
-    yields: true,
+    // A zone's name is read once; a part's name is what the step is about. A lane's name
+    // is read the whole run: only an open name covers it.
+    yields: view === "front" ? ("names" as const) : ("any" as const),
   }));
   const travelled = new Map(
     (snapshot.finished ? [] : snapshot.step.tokens).flatMap((token) =>
@@ -40,7 +41,7 @@ export function stageCallouts(
         <DimensionLabel value={`${route.latencyMs} ms`} flow={travelled.get(route.id) ?? null} />
       ),
       // The least needed label: it gives way to a part's name or a zone's.
-      yields: true,
+      yields: "any" as const,
     }));
   const parts = partCallouts(snapshot, selected, hovered, namedPerStep).map(
     ({ id, ...callout }) => ({

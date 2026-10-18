@@ -6,6 +6,7 @@ import { eventLoop } from "./mch-002-event-loop";
 import { cacheAside } from "./mch-003-cache-aside";
 import { ddd } from "./mch-004-ddd";
 import { nightprint } from "./prj-001-nightprint";
+import { tlsHandshake } from "./prt-001-tls-handshake";
 
 /** Published machines, in catalogue order. */
 export const machines: readonly Machine[] = [
@@ -15,6 +16,7 @@ export const machines: readonly Machine[] = [
   ddd,
   ragCagKag,
   retryStorm,
+  tlsHandshake,
 ];
 
 /** Real projects drawn from their repositories (PRJ), apart from the concept series. */
@@ -38,4 +40,4 @@ export function getMachine(slug: string): Machine | undefined {
   return [...machines, ...projects].find((m) => m.slug === slug);
 }
 
-export { cacheAside, ddd, eventLoop, hexagonal, nightprint, ragCagKag, retryStorm };
+export { cacheAside, ddd, eventLoop, hexagonal, nightprint, ragCagKag, retryStorm, tlsHandshake };

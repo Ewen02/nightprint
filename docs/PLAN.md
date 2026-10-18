@@ -30,6 +30,7 @@ Nightprint (nightprint.dev) est un site où chaque concept d'architecture devien
 - **BEN, banc d'essai** : deux ou trois machines côte à côte, la même entrée envoyée dans chacune ; les interrupteurs montrent où chacune lâche. BEN-001 : RAG, CAG et KAG.
 - **FMD, mode de défaillance** : une panne connue rejouée pas à pas ; ici les interrupteurs réparent. FMD-001 : la tempête de retries.
 - **PRT, protocole** : un échange dans le temps entre des parties, compté en allers-retours. PRT-001 : la poignée de main TLS 1.3.
+- **Lire sans connaître le sujet** (18/10) : chaque étape de BEN, FMD et PRT se dit d'abord en une phrase courte, le texte complet attend derrière « More » ; le résumé pose le problème avant la solution ; les lignes visibles parlent simplement, le terme technique entre parenthèses ; les pièces hors de l'étape s'estompent. Chaque série a son panneau à côté du dessin : le tableau de score (BEN), la courbe de charge (FMD), le chronogramme (PRT). BEN-001 se lit de face, une rangée par système nommée par une analogie, après une étape « le modèle seul ».
 - Candidates, sans date : DET (détail, un seul mécanisme), SEC (coupe d'une requête à travers les couches), XPL (vue éclatée d'un objet : JWT, requête HTTP), REV (le même système en révisions quand la charge monte ; il faudra des pièces qui apparaissent à une étape), PZL (« qu'est-ce que ça affiche ? »). Jamais « Anatomy » comme nom : c'est le site voisin.
 
 ## Buts
@@ -68,8 +69,8 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 | Vidéo de lancement pour X et LinkedIn | v1 | Publiée : `apps/video` filme le site image par image, Remotion monte ; final « Unplug the adapters » ajouté le 13/10 |
 | Site statique sur le VPS, domaine nightprint.dev | v1 | En ligne sur nightprint.dev (12/10), publié à chaque push sur main ; www et l'ancienne adresse sslip.io de préversion redirigent vers l'apex |
 | Machines MCH-002 à MCH-008 | Après le lancement | Une par semaine ; MCH-002 (event loop JavaScript) et MCH-003 (Redis cache-aside) publiées le 13/10, MCH-004 (DDD) le 17/10 |
-| Export vidéo intégré (WebCodecs) | Après le lancement | Fait (15/10) : « Download video » sur chaque machine, dessinée ou du catalogue ; MP4 1080p fait dans la page (assemblage, premier scénario, premier interrupteur, carton final). Les vidéos postées restent celles d'`apps/video` |
-| Séries BEN, FMD et PRT à côté des MCH | Après le lancement | Décidées le 18/10 ; BEN-001, FMD-001 et PRT-001 en cours |
+| Export vidéo intégré (WebCodecs) | Après le lancement | Fait (15/10) : « Download video » sur chaque machine, dessinée ou du catalogue ; MP4 1080p fait dans la page (assemblage, premier scénario, premier interrupteur, carton final), avec la phrase courte de chaque étape sous son titre et les noms de rangée d'un banc (18/10). Les vidéos postées restent celles d'`apps/video` |
+| Séries BEN, FMD et PRT à côté des MCH | Après le lancement | Décidées le 18/10 ; BEN-001, FMD-001 et PRT-001 en ligne le 18/10, en langage simple (voir Séries) ; FMD-001 a sa vidéo verticale 9:16 pour Reels et TikTok |
 | Série PRJ : un vrai dépôt GitHub dessiné en machine, par un visiteur sur /import | Après le lancement | Décidée le 14/10 ; PRJ-001 (Nightprint) en ligne, API et page /import prêtes, voir Vrais projets |
 | Génération d'une machine par IA à partir d'une phrase | v2 | Claude écrit une définition à partir du kit |
 | Éditeur de code intégré (snippet de l'event loop) | v2 | Après le catalogue de base |
@@ -210,10 +211,18 @@ Une décision reste à prendre, sur la série PRJ.
 - [x] **Compte X** : le compte perso, [@ewenlq](https://x.com/ewenlq) (décidé le 12/10). Il signe les pages (auteur, carte X) et le journal de build y renvoie.
 - [x] **Repo** : public sur GitHub, [Ewen02/nightprint](https://github.com/Ewen02/nightprint) (décidé le 12/10). Licence : MIT pour le code, CC BY 4.0 pour le contenu, c'est-à-dire les machines, `art/` et les vidéos (décidé le 12/10).
 - [x] Acheter nightprint.dev (12/10), DNS chez IONOS vers le VPS, certificat Let's Encrypt émis le jour même.
-- [x] Vérifier WebGPU dans Chrome et Safari réels : le moteur de Safari tourne en WebGPU sans erreur ; Chrome avec un vrai GPU laissé de côté, faute de Chrome (13/10).
+- [x] Vérifier WebGPU dans Chrome et Safari réels : le moteur de Safari tourne en WebGPU sans erreur ; Chrome avec un vrai GPU laissé de côté, faute de Chrome (13/10). Depuis le 15/10, les captures et les essais passent par Chrome for Testing sur le GPU (Metal), sans erreur ; le moteur de rendu utilisé (WebGPU ou WebGL2) n'y a pas été vérifié.
 - [x] `git init` et premiers commits, atomiques (12/10).
 - [x] ~~Storyboard Excalidraw de MCH-001~~ : abandonné (13/10), la machine jouable et la vidéo l'ont remplacé.
 - [x] Critères de réussite de la section Buts : adoptés tels quels au lancement (13/10), cochés au fil de l'eau.
+
+Prochaines actions (18/10), dans cet ordre :
+
+- [ ] Posts X et LinkedIn de BEN-001, FMD-001 et PRT-001 ; la vidéo FMD-001 en 9:16 pour Reels et TikTok.
+- [ ] Design system : publier les fiches des 14 composants ajoutés depuis le 13/10 et mettre à jour les 11 qui ont changé. L'artifact vit dans une autre organisation claude.ai : il faut une session connectée à celle-ci.
+- [ ] MCH-005 offline-first, écrite d'emblée en langage simple (phrase courte par étape, analogie).
+- [ ] Langage simple pour MCH-001 à MCH-004, et le test du catalogue étendu aux MCH.
+- [ ] Vidéo 9:16 de BEN-001, sur le gabarit de FMD-001.
 
 ## Démarrer dans le repo
 

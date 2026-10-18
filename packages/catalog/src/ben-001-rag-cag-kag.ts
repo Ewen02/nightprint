@@ -50,7 +50,9 @@ const flags = (on: (action: string) => boolean): Flags => ({
 });
 
 const question = (f: Flags) =>
-  f.twoHop ? "Where is the supplier of part P-7 based?" : "Who supplies part P-7?";
+  f.twoHop
+    ? "Where is the supplier of part P-7, the brake pads, based?"
+    : "Who supplies part P-7, the brake pads?";
 /** What KAG's graph answers: the right relation, or the one extracted wrong. */
 const kagFinds = (f: Flags) =>
   f.twoHop ? (f.badEdge ? "S-9, then Turin" : "S-12, then Lyon") : f.badEdge ? "S-9" : "S-12";
@@ -72,25 +74,37 @@ const buildStep = variants("build", [BIG, BAD_EDGE], (on) => {
       flow: "write",
       tag: "RAG",
       text: f.big
-        ? "chunk + embed 40,000 docs → 300,000 vectors"
-        : "chunk + embed 40 docs → 300 vectors",
+        ? "cuts 40,000 docs into 300,000 passages, indexed by meaning (vectors)"
+        : "cuts 40 docs into 300 passages, indexed by meaning (vectors)",
     },
     f.big
-      ? { flow: "error", tag: "CAG", text: "prefill: millions of tokens > 128,000-token window" }
-      : { flow: "write", tag: "CAG", text: "prefill 30,000 tokens → KV cache saved" },
+      ? {
+          flow: "error",
+          tag: "CAG",
+          text: "millions of tokens: more than the 128,000 it reads at once",
+        }
+      : {
+          flow: "write",
+          tag: "CAG",
+          text: "reads all 40 docs once and keeps what it read (KV cache)",
+        },
     f.badEdge
-      ? { flow: "error", tag: "KAG", text: "extract → (P-7) supplied by (S-9)" }
-      : { flow: "write", tag: "KAG", text: "extract → (P-7) supplied by (S-12)" },
+      ? {
+          flow: "error",
+          tag: "KAG",
+          text: "writes the facts into a graph, one wrong: P-7 supplied by S-9",
+        }
+      : { flow: "write", tag: "KAG", text: "writes the facts into a graph: P-7 supplied by S-12" },
   ];
   return {
     title: "Before any question",
     lead: f.big
       ? f.badEdge
-        ? "40,000 documents: CAG cannot fit them in its context, and KAG extracts one relation wrong."
-        : "40,000 documents: RAG and KAG index them, CAG cannot fit them in its context."
+        ? "40,000 documents: too many for CAG to read first, and KAG maps one fact wrong."
+        : "40,000 documents: RAG and KAG index them; CAG cannot read that many first."
       : f.badEdge
-        ? "Each one prepares the documents its own way; KAG's extraction gets one relation wrong."
-        : "Before any question, each one prepares the same documents its own way.",
+        ? "Each one prepares the documents its own way; KAG maps one fact wrong: P-7 supplied by S-9."
+        : "Before any question, RAG cuts the documents into passages, CAG reads them all, KAG maps their facts.",
     body: [
       `Each system prepares the same ${docs} documents (orders, a parts catalogue, supplier sheets) before any question.`,
       "RAG cuts them into chunks and stores one vector per chunk.",
@@ -103,8 +117,8 @@ const buildStep = variants("build", [BIG, BAD_EDGE], (on) => {
     ].join(" "),
     focus: ["rag-build", "rag-store", "cag-build", "cag-store", "kag-build", "kag-store"],
     states: {
-      "rag-store": f.big ? "300,000 vectors" : "300 chunks · 300 vectors",
-      "cag-store": f.big ? "empty: corpus too big" : "30,000 tokens cached",
+      "rag-store": f.big ? "300,000 passages as vectors" : "300 passages as vectors",
+      "cag-store": f.big ? "empty: too much to read" : "all 40 docs, already read",
       "kag-store": f.badEdge ? "P-7 → S-9 · S-12 → Lyon" : "P-7 → S-12 · S-12 → Lyon",
     },
     tokens,
@@ -117,7 +131,7 @@ const askStep = variants("ask", [BIG, TWO_HOP], (on) => {
   return {
     title: "One question, three systems",
     lead: f.big
-      ? `“${question(f)}” goes to RAG and KAG; CAG has no cache.`
+      ? `“${question(f)}” goes to RAG and KAG only.`
       : `“${question(f)}” goes to all three.`,
     body: f.big
       ? `An analyst asks: “${question(f)}” The question goes to RAG and KAG. CAG has no cache to answer from.`
@@ -145,13 +159,13 @@ const findStep = variants("find", [BIG, TWO_HOP, BAD_EDGE], (on) => {
   return {
     title: "Find what to read",
     lead: `${[
-      f.twoHop ? "RAG's closest chunks never mention the city" : "RAG finds the chunk naming S-12",
-      f.big ? "" : "CAG reads its cache",
+      f.twoHop ? "RAG's 3 passages never give the city" : "RAG looks up 3 passages, one names S-12",
+      f.big ? "" : "CAG has read everything",
       kagWrong
-        ? "KAG's graph returns the wrong supplier"
+        ? "KAG follows a wrong fact"
         : f.twoHop
-          ? "KAG follows two steps in its graph"
-          : "KAG asks its graph",
+          ? "KAG follows two links to Lyon"
+          : "KAG follows the link to S-12",
     ]
       .filter(Boolean)
       .join("; ")}.`,
@@ -174,8 +188,8 @@ const findStep = variants("find", [BIG, TWO_HOP, BAD_EDGE], (on) => {
       "kag-store",
     ],
     states: {
-      "rag-find": f.twoHop ? "3 chunks · none on Lyon" : "3 chunks · S-12 in one",
-      "kag-find": f.twoHop ? "supplier(P-7) → city(·)" : "supplier(P-7)",
+      "rag-find": f.twoHop ? "3 passages · no city" : "3 passages · one names S-12",
+      "kag-find": f.twoHop ? "P-7 → supplier → city" : "P-7 → its supplier",
     },
     tokens: [
       {
@@ -197,8 +211,8 @@ const findStep = variants("find", [BIG, TWO_HOP, BAD_EDGE], (on) => {
         flow: f.twoHop ? "error" : "response",
         tag: "RAG",
         text: f.twoHop
-          ? "top-3 by similarity → 3 chunks on P-7, none on S-12's city"
-          : "top-3 by similarity → 3 chunks, one names S-12",
+          ? "picks the 3 passages most like the question: none gives S-12's city"
+          : "picks the 3 passages most like the question: one names S-12",
       },
       ...(f.big
         ? []
@@ -206,15 +220,15 @@ const findStep = variants("find", [BIG, TWO_HOP, BAD_EDGE], (on) => {
             {
               flow: "write" as const,
               tag: "CAG",
-              text: "no retrieval · question appended to the cache",
+              text: "looks nothing up: it has read everything already",
             },
           ]),
       {
         flow: kagWrong ? "error" : "response",
         tag: "KAG",
         text: f.twoHop
-          ? `supplier(P-7) → ${kagWrong ? "S-9" : "S-12"} · city → ${kagWrong ? "Turin" : "Lyon"}`
-          : `supplier(P-7) → ${kagWrong ? "S-9" : "S-12"}`,
+          ? `follows two links: P-7 → ${kagWrong ? "S-9" : "S-12"} → ${kagWrong ? "Turin" : "Lyon"}`
+          : `follows one link: P-7 → ${kagWrong ? "S-9" : "S-12"}`,
       },
     ],
   };
@@ -257,7 +271,7 @@ const answerStep = variants("answer", [BIG, TWO_HOP, BAD_EDGE], (on) => {
     focus: ["user", "rag-llm", "kag-llm", ...(f.big ? [] : ["cag-llm"])],
     states: {
       "rag-llm": f.twoHop ? "S-12, city unknown" : "answers S-12",
-      "cag-llm": f.big ? "no cache, no answer" : `answers ${right}`,
+      "cag-llm": f.big ? "read nothing: no answer" : `answers ${right}`,
       "kag-llm": `answers ${kag}`,
     },
     tokens: [
@@ -270,7 +284,7 @@ const answerStep = variants("answer", [BIG, TWO_HOP, BAD_EDGE], (on) => {
         ? { flow: "error", tag: "RAG", text: "“S-12 supplies P-7; the passages don't say where.”" }
         : { flow: "response", tag: "RAG", text: "“S-12”" },
       f.big
-        ? { flow: "error", tag: "CAG", text: "no cache, no answer" }
+        ? { flow: "error", tag: "CAG", text: "read nothing: no answer" }
         : { flow: "response", tag: "CAG", text: `“${right}”` },
       { flow: f.badEdge ? "error" : "response", tag: "KAG", text: `“${kag}”` },
     ],
@@ -347,7 +361,7 @@ export const ragCagKag = defineMachine({
     "knowledge-augmented generation",
   ],
   summary:
-    "The same question goes to three ways of giving a language model outside knowledge: retrieve passages, preload a cache, or plan over a graph.",
+    "A language model only knows what it was trained on. To answer from your documents, it can look a few passages up (RAG), read them all first (CAG), or follow facts linked in a graph (KAG).",
   family: "ai",
   category: "COMPARISON",
   scale: "NTS",
@@ -405,7 +419,8 @@ export const ragCagKag = defineMachine({
     },
     {
       term: "Context window",
-      definition: "The most tokens a model reads at once. CAG's whole corpus must fit in it.",
+      definition:
+        "The most tokens, pieces of words, a model reads at once. CAG's whole corpus must fit in it.",
       parts: ["cag-build", "cag-llm"],
     },
     {
@@ -433,18 +448,24 @@ export const ragCagKag = defineMachine({
       {
         id: "rag",
         label: "RAG",
-        note: "Retrieve, then generate",
+        note: "Open book: looks up 3 passages",
         from: [-5.0, -4.5],
         to: [-1.65, 3.15],
       },
       {
         id: "cag",
         label: "CAG",
-        note: "Preload, cache, generate",
+        note: "Reads the whole book first",
         from: [-1.65, -4.5],
         to: [1.65, 3.15],
       },
-      { id: "kag", label: "KAG", note: "Plan over a graph", from: [1.65, -4.5], to: [5.0, 3.15] },
+      {
+        id: "kag",
+        label: "KAG",
+        note: "A map of facts, link by link",
+        from: [1.65, -4.5],
+        to: [5.0, 3.15],
+      },
     ],
   },
   parts: [
@@ -615,23 +636,23 @@ export const ragCagKag = defineMachine({
   actions: [
     {
       id: BIG,
-      label: "Grow the corpus to 40,000 documents",
+      label: "Give them 40,000 documents",
       description:
-        "Millions of tokens, far more than a context window holds. RAG and KAG index them; CAG cannot preload them.",
+        "Millions of tokens, far more than a model reads at once (its context window). RAG and KAG index them; CAG cannot read them all first.",
       effects: [{ type: "patchPart", part: "cag-build", set: { flag: "violation" } }],
     },
     {
       id: TWO_HOP,
-      label: "Ask a two-hop question",
+      label: "Ask what takes two documents",
       description:
-        "Where is the supplier of part P-7 based? The answer joins two documents through S-12, and only one of them mentions P-7.",
+        "Where is P-7's supplier based? One document says S-12 supplies P-7, another that S-12 is in Lyon, and only the first mentions P-7: a two-hop question.",
       effects: [{ type: "patchPart", part: "rag-find", set: { flag: "violation" } }],
     },
     {
       id: BAD_EDGE,
-      label: "Extract one relation wrong",
+      label: "Get one fact wrong in the graph",
       description:
-        "The graph records P-7 as supplied by S-9. KAG plans over the graph, so its answer follows the mistake.",
+        "The graph records P-7 as supplied by S-9. KAG answers from its graph, so its answer repeats the mistake.",
       effects: [{ type: "patchPart", part: "kag-store", set: { flag: "violation" } }],
     },
   ],

@@ -1,4 +1,4 @@
-import type { FilmCue } from "@nightprint/engine";
+import type { FilmCue, Machine } from "@nightprint/engine";
 import type { ScreenPosition } from "@nightprint/scene";
 import { type FlowName, flow, font, neutral, radius } from "@nightprint/tokens";
 import { FILM_SIZE } from "./film-encoder";
@@ -26,7 +26,15 @@ const TYPE = {
 /** Text keeps clear of the edges once X crops or rounds the frame. */
 const SAFE = { x: 64, y: 53 };
 /** Room the caption takes over the stage's top: the machine is framed below it. */
-export const FILM_CAPTION_ROOM = 170;
+const CAPTION_ROOM = 170;
+/** More room when the steps say themselves in a line under their titles: two lines of it. */
+const LEAD_ROOM = 70;
+
+/** How much of the stage's top the caption takes, for this machine's steps. */
+export function filmCaptionRoom(machine: Machine): number {
+  const leads = machine.scenarios.some((scenario) => scenario.steps.some((step) => step.lead));
+  return CAPTION_ROOM + (leads ? LEAD_ROOM : 0);
+}
 /** Margin a label kept inside leaves to the stage's edge, as on the page. */
 const EDGE = 28;
 /** Seconds an overlay takes to come in or go. */
@@ -457,7 +465,7 @@ export function createPainter(ctx: CanvasRenderingContext2D, fonts: FilmFonts) {
     ctx.restore();
   };
 
-  /** The step caption at the top left: the step and its bars, then its title. */
+  /** The step caption at the top left: the step and its bars, its title, then its lead. */
   const paintCaption = (shot: FilmShot, opacity: number) => {
     if (opacity <= 0) {
       return;
@@ -492,11 +500,23 @@ export function createPainter(ctx: CanvasRenderingContext2D, fonts: FilmFonts) {
     }
     const titleY = SAFE.y + TYPE.kicker * 1.35 + 13 + (TYPE.headline * 1.2) / 2;
     const swap = settle((shot.t - caption.at) / 0.4);
+    const max = W - SAFE.x * 2;
+    const lineH = TYPE.headline * 1.3;
+    // The lead fades in under the title once it has come up.
+    if (c.lead) {
+      set(400, TYPE.body, fonts.sans);
+      ctx.fillStyle = neutral.textBody;
+      const leadH = TYPE.body * 1.35;
+      ctx.save();
+      ctx.globalAlpha = opacity * (caption.previous ? swap : 1);
+      wrap(c.lead, max, 2).forEach((line, i) => {
+        ctx.fillText(line, SAFE.x, titleY + lineH / 2 + 6 + leadH / 2 + i * leadH);
+      });
+      ctx.restore();
+    }
     set(600, TYPE.headline, fonts.sans, -0.01);
     ctx.fillStyle = neutral.text;
-    const max = W - SAFE.x * 2;
     // The titles roll through the line's height, one out above as the next comes up.
-    const lineH = TYPE.headline * 1.3;
     ctx.beginPath();
     ctx.rect(0, titleY - lineH / 2, W, lineH);
     ctx.clip();

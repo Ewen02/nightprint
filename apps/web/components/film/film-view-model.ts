@@ -92,6 +92,8 @@ export interface FilmCaption {
   readonly number: number;
   readonly count: number;
   readonly title: string;
+  /** The step in one sentence, under its title, when it has one. */
+  readonly lead?: string;
   readonly flow: FlowName;
   /** Each step's flow, for the bars of the steps already played. */
   readonly flows: readonly FlowName[];
@@ -102,6 +104,7 @@ export function filmCaption(snapshot: PlayerSnapshot): FilmCaption {
     number: snapshot.state.stepIndex + 1,
     count: snapshot.stepCount,
     title: snapshot.step.step.title,
+    ...(snapshot.step.step.lead ? { lead: snapshot.step.step.lead } : {}),
     flow: snapshot.step.flow,
     flows: snapshot.scenario.steps.map((step) => step.flow),
   };

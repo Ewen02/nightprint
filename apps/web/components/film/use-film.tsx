@@ -14,7 +14,7 @@ import dynamic from "next/dynamic";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { canFilm, FILM_SIZE, openEncoder } from "./film-encoder";
 import { FilmFrame } from "./film-frame";
-import { createPainter, FILM_CAPTION_ROOM, loadFilmFonts } from "./film-paint";
+import { createPainter, filmCaptionRoom, loadFilmFonts } from "./film-paint";
 import { filmCaption, filmFileName, filmLabels, filmTitles, filmWhatIf } from "./film-view-model";
 
 // three/webgpu only runs in the browser: the film's stage is never rendered on the server.
@@ -234,7 +234,7 @@ export function useFilm(machine: Machine): FilmControls {
       width={FILM_SIZE.width}
       height={FILM_SIZE.height}
       scale={FILM_SIZE.scale}
-      insetTop={FILM_CAPTION_ROOM}
+      insetTop={filmCaptionRoom(machine)}
       onReady={onReady}
     />
   );

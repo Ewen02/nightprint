@@ -16,8 +16,8 @@ describe("catalogue", () => {
     expect(new Set(all.map((m) => m.slug)).size).toBe(all.length);
   });
 
-  it("numbers concepts MCH and real projects PRJ", () => {
-    expect(machines.every((m) => m.code.startsWith("MCH-"))).toBe(true);
+  it("numbers concepts in their series and real projects PRJ", () => {
+    expect(machines.every((m) => /^(MCH|BEN|FMD|PRT)-/.test(m.code))).toBe(true);
     expect(projects.every((m) => m.code.startsWith("PRJ-"))).toBe(true);
   });
 

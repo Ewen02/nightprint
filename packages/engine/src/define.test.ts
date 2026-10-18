@@ -23,8 +23,10 @@ describe("defineMachine", () => {
     expect(() => defineMachine({ ...fixtureInput, code: "M1" })).toThrow(/Invalid machine M1/);
   });
 
-  it("numbers a real project PRJ, and nothing else", () => {
-    expect(defineMachine({ ...fixtureInput, code: "PRJ-001" }).code).toBe("PRJ-001");
+  it("numbers a sheet in one of the series, and nothing else", () => {
+    for (const code of ["MCH-001", "BEN-001", "FMD-001", "PRT-001", "PRJ-001"]) {
+      expect(defineMachine({ ...fixtureInput, code }).code).toBe(code);
+    }
     expect(() => defineMachine({ ...fixtureInput, code: "ABC-001" })).toThrow(/Invalid machine/);
   });
 

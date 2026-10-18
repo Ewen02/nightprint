@@ -205,8 +205,13 @@ export const actionSchema = z.object({
 export type Action = z.infer<typeof actionSchema>;
 
 export const machineSchema = z.object({
-  /** `MCH-` for a concept, `PRJ-` for a real project drawn from its repository. */
-  code: z.string().regex(/^(MCH|PRJ)-\d{3}$/),
+  /**
+   * The series and the sheet's number. Concepts: `MCH-` a machine, `BEN-` a bench (several
+   * machines run side by side on the same input), `FMD-` a failure mode (the switches
+   * repair), `PRT-` a protocol (an exchange in time between parties). `PRJ-` a real
+   * project drawn from its repository.
+   */
+  code: z.string().regex(/^(MCH|BEN|FMD|PRT|PRJ)-\d{3}$/),
   slug: id,
   title: z.string().min(1),
   /**
@@ -215,7 +220,7 @@ export const machineSchema = z.object({
    */
   aliases: z.array(z.string().min(1)).default([]),
   summary: z.string().min(1),
-  family: z.enum(["backend", "infra", "frontend", "mobile"]),
+  family: z.enum(["backend", "infra", "frontend", "mobile", "ai"]),
   category: z.string().min(1),
   /**
    * What each flow colour means in this machine, for its legend. A flow left out reads

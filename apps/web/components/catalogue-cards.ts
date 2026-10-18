@@ -15,6 +15,7 @@ export const familyLabels = {
   frontend: "Frontend",
   mobile: "Mobile",
   infra: "Infra",
+  ai: "AI",
 } as const satisfies Record<Machine["family"], string>;
 
 /** Every machine as a catalogue card: published ones link to their page, upcoming ones do not. */

@@ -95,6 +95,7 @@ export { type FieldNote, FieldNotes, type FieldNotesProps } from "./organisms/fi
 export { HomeHeader, type HomeHeaderProps } from "./organisms/home-header";
 export { HomeIntro, type HomeIntroProps } from "./organisms/home-intro";
 export { ImportPanel, type ImportPanelProps } from "./organisms/import-panel";
+export { MeterChart, type MeterChartProps, type MeterPoint } from "./organisms/meter-chart";
 export { NextSheet, type NextSheetProps } from "./organisms/next-sheet";
 export {
   type RunScenario,
@@ -104,6 +105,17 @@ export {
   type RunTranscriptProps,
 } from "./organisms/run-transcript";
 export { ScenarioPicker, type ScenarioPickerProps } from "./organisms/scenario-picker";
+export {
+  Scoreboard,
+  type ScoreboardLane,
+  type ScoreboardProps,
+} from "./organisms/scoreboard";
+export {
+  SequenceChart,
+  type SequenceChartProps,
+  type SequenceMark,
+  type SequenceMessage,
+} from "./organisms/sequence-chart";
 export { type SeriesSheet, SiteFooter, type SiteFooterProps } from "./organisms/site-footer";
 export { SiteHeader, type SiteHeaderProps } from "./organisms/site-header";
 export { StoryNote, type StoryNoteProps } from "./organisms/story-note";

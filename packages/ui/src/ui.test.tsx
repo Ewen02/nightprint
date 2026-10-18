@@ -36,9 +36,12 @@ import { FieldNotes } from "./organisms/field-notes";
 import { HomeHeader } from "./organisms/home-header";
 import { HomeIntro } from "./organisms/home-intro";
 import { ImportPanel } from "./organisms/import-panel";
+import { MeterChart } from "./organisms/meter-chart";
 import { NextSheet } from "./organisms/next-sheet";
 import { RunTranscript } from "./organisms/run-transcript";
 import { ScenarioPicker } from "./organisms/scenario-picker";
+import { Scoreboard } from "./organisms/scoreboard";
+import { SequenceChart } from "./organisms/sequence-chart";
 import { SiteFooter } from "./organisms/site-footer";
 import { SiteHeader } from "./organisms/site-header";
 import { StoryNote } from "./organisms/story-note";
@@ -977,6 +980,67 @@ describe("title block", () => {
       '<dt class="text-text-faint">SERIES</dt><dd>Failure mode</dd>',
     );
     expect(html(<Cartouche {...props} />)).not.toContain("SERIES");
+  });
+});
+
+describe("series panels", () => {
+  it("scores a bench lane by lane, and says which got it right once the run is over", () => {
+    const board = html(
+      <Scoreboard
+        title="Bench"
+        lanes={[
+          {
+            label: "RAG",
+            note: "Retrieve, then generate",
+            line: { flow: "error", text: "no city" },
+            verdict: "wrong",
+          },
+          { label: "CAG", note: "Preload, cache, generate", line: null },
+        ]}
+      />,
+    );
+    expect(board).toContain('aria-label="Bench"');
+    expect(board.match(/<li /g)).toHaveLength(2);
+    expect(board).toContain("Wrong");
+    expect(board).not.toContain("Right");
+  });
+
+  it("reads a meter against its capacity, and says the values in words", () => {
+    const chart = html(
+      <MeterChart
+        label="Load on the database"
+        unit="queries/s"
+        capacity={300}
+        steps={4}
+        points={[
+          { value: 250, flow: "request" },
+          { value: 16000, flow: "error" },
+        ]}
+      />,
+    );
+    expect(chart).toContain('role="img"');
+    expect(chart).toContain("250, 16,000. Capacity 300.");
+    // Off the axis, the value is written beside its point.
+    expect(chart).toContain(">16,000</text>");
+  });
+
+  it("draws a protocol as a timing diagram, and lists its messages for screen readers", () => {
+    const chart = html(
+      <SequenceChart
+        parties={["Browser", "Web server"]}
+        messages={[
+          { from: "left", start: 0, end: 25, label: "SYN", flow: "request" },
+          { from: "right", start: 25, end: 50, label: "S/A", flow: "response" },
+        ]}
+        marks={[{ side: "left", at: 50, label: "OK", flow: "response" }]}
+        span={100}
+        tick={50}
+      />,
+    );
+    expect(chart).toContain('aria-label="Timing"');
+    expect(chart).toContain("Browser to Web server, SYN: 0 to 25 ms");
+    expect(chart).toContain("Web server to Browser, S/A: 25 to 50 ms");
+    expect(chart.match(/>\d+ ms<\/text>/g)).toHaveLength(2);
   });
 });
 

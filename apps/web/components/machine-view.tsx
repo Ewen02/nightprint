@@ -10,8 +10,11 @@ import {
   FilmPreview,
   FlowLegend,
   MachineTemplate,
+  MeterChart,
   NavLink,
   ScenarioPicker,
+  Scoreboard,
+  SequenceChart,
   SiteHeader,
   StageAction,
   Transport,
@@ -21,15 +24,18 @@ import { type ReactNode, useEffect, useState } from "react";
 import { filmButton, filmPreview, useFilm } from "./film/use-film";
 import { momentLink } from "./machine-link";
 import {
+  benchScore,
   billOfPartsItems,
   cartoucheProps,
   drawsDependencies,
   eventLogEntries,
   flowLegend,
   hasAdapters,
+  meterChart,
   programListing,
   scenarioEnding,
   stageLabel,
+  timingChart,
   transportData,
   unplugNote,
   whatIfItems,
@@ -127,6 +133,19 @@ export function MachineView({
 
   const { resolved } = snapshot;
   const listing = programListing(snapshot);
+  // Beside the drawing: the program a machine runs, or the panel its series reads best in.
+  const score = benchScore(snapshot);
+  const meter = meterChart(snapshot);
+  const timing = timingChart(snapshot);
+  const panel = listing ? (
+    <CodeListing {...listing} />
+  ) : score ? (
+    <Scoreboard {...score} />
+  ) : meter ? (
+    <MeterChart {...meter} />
+  ) : timing ? (
+    <SequenceChart {...timing} />
+  ) : null;
   const unplug = hasAdapters(machine) && (
     <StageAction
       label={exploded ? "Plug them back" : "Unplug the adapters"}
@@ -172,18 +191,18 @@ export function MachineView({
             // From wide screens up, the title block sits over the stage's top left.
             insetTop={wide ? TITLE_ROOM : 0}
             // The listing stands on the stage's right: the machine is framed beside it.
-            insetRight={wide && listing ? LISTING_ROOM : 0}
+            insetRight={wide && panel ? LISTING_ROOM : 0}
             exploded={exploded}
           />
         }
         tools={
-          (preview || listing || unplug) && (
+          (preview || panel || unplug) && (
             // The video being made first, then the button: they stay in view while the
             // listing gives up height.
             <div className="flex min-h-0 flex-col items-end gap-3">
               {preview && <FilmPreview {...preview} />}
               {unplug}
-              {listing && <CodeListing {...listing} />}
+              {panel}
             </div>
           )
         }

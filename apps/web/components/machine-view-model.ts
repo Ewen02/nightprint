@@ -14,10 +14,13 @@ import type {
   ConceptArticleProps,
   EventLogEntry,
   FlowLegendProps,
+  MeterChartProps,
   PartCalloutProps,
   RunScenario,
   RunStepVariant,
   ScenarioEndProps,
+  ScoreboardProps,
+  SequenceChartProps,
   StepDotItem,
   TermEntryProps,
   TransportProps,
@@ -372,5 +375,120 @@ export function scenarioEnding(
     title,
     result: last?.text ?? "",
     suggestions,
+  };
+}
+
+/**
+ * A bench's score: one lane per zone, whose label is the tag its lane writes in the log
+ * ("RAG"), with the last line it wrote and, once the run is over, whether it was right.
+ * Null for a sheet that is not a bench.
+ */
+export function benchScore(snapshot: PlayerSnapshot): ScoreboardProps | null {
+  const machine = snapshot.resolved.machine;
+  if (seriesOf(machine).id !== "BEN") {
+    return null;
+  }
+  return {
+    title: "Bench",
+    lanes: machine.stage.zones.map((zone) => {
+      const last = snapshot.log.findLast((entry) => entry.tag === zone.label);
+      return {
+        label: zone.label,
+        note: zone.note ?? "",
+        line: last ? { flow: last.flow, text: last.text } : null,
+        // The run ends on each lane's answer: in an error's colour when it is wrong or missing.
+        verdict: snapshot.finished ? (last?.flow === "error" ? "wrong" : "right") : undefined,
+      };
+    }),
+  };
+}
+
+/**
+ * The machine's meter, read step by step up to the current one against its capacity.
+ * Null for a machine without one.
+ */
+export function meterChart(snapshot: PlayerSnapshot): MeterChartProps | null {
+  const meter = snapshot.resolved.machine.meter;
+  if (!meter) {
+    return null;
+  }
+  const { scenario, state } = snapshot;
+  return {
+    label: meter.label,
+    unit: meter.unit,
+    capacity: meter.capacity,
+    steps: scenario.steps.length,
+    points: scenario.steps
+      .slice(0, state.stepIndex + 1)
+      .map((step) => ({ value: step.step.meter ?? 0, flow: step.flow })),
+  };
+}
+
+/** Which of two parts a point stands nearer to, on the plate: where a message leaves from. */
+function nearer(
+  point: readonly [number, number, number] | undefined,
+  left: { readonly position: readonly [number, number, number] },
+  right: { readonly position: readonly [number, number, number] },
+): "left" | "right" {
+  if (!point) {
+    return "left";
+  }
+  const away = (part: typeof left) =>
+    Math.hypot(point[0] - part.position[0], point[2] - part.position[2]);
+  return away(left) <= away(right) ? "left" : "right";
+}
+
+/**
+ * A protocol's timing diagram: its two parties are the ends of the route that takes time
+ * (the network), each token on it a message from when it leaves to when it lands, each
+ * token held on a party a mark. Up to the current step, on an axis as long as the whole run.
+ * Null for a sheet that is not a protocol.
+ */
+export function timingChart(snapshot: PlayerSnapshot): SequenceChartProps | null {
+  const { resolved, scenario, state } = snapshot;
+  if (seriesOf(resolved.machine).id !== "PRT") {
+    return null;
+  }
+  const wire = resolved.routes.reduce<(typeof resolved.routes)[number] | undefined>(
+    (slowest, route) => (route.latencyMs > (slowest?.latencyMs ?? 0) ? route : slowest),
+    undefined,
+  );
+  const left = wire && resolved.partById.get(wire.from);
+  const right = wire && resolved.partById.get(wire.to);
+  if (!wire || !left || !right) {
+    return null;
+  }
+  const messages: SequenceChartProps["messages"][number][] = [];
+  const marks: SequenceChartProps["marks"][number][] = [];
+  let clock = 0;
+  scenario.steps.forEach((step, index) => {
+    if (index <= state.stepIndex) {
+      for (const token of step.tokens) {
+        if (token.kind === "travel" && token.routes.length === 1 && token.routes[0] === wire.id) {
+          messages.push({
+            from: nearer(token.points[0], left, right),
+            start: clock,
+            end: clock + wire.latencyMs,
+            label: token.label,
+            flow: token.flow,
+          });
+        } else if (token.kind === "hold" && (token.part === left.id || token.part === right.id)) {
+          marks.push({
+            side: token.part === left.id ? "left" : "right",
+            at: clock,
+            label: token.label,
+            flow: token.flow,
+          });
+        }
+      }
+    }
+    clock += step.latencyMs;
+  });
+  return {
+    parties: [left.label, right.label],
+    messages,
+    marks,
+    span: clock,
+    tick: wire.latencyMs * 2,
   };
 }

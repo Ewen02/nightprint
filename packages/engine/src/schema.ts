@@ -146,6 +146,11 @@ export const stepSchema = z.object({
   id,
   title: z.string().min(1),
   body: z.string().min(1),
+  /**
+   * The step in one short sentence, shown first under its title; the body waits a click.
+   * For a step that tells several things at once (a bench's three lanes).
+   */
+  lead: z.string().min(1).max(120).optional(),
   /** How long the step's tokens travel. Same default as the `motion.step` token. */
   durationMs: z.number().int().positive().default(1400),
   /**

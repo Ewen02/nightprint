@@ -235,6 +235,40 @@ export function createPainter(ctx: CanvasRenderingContext2D, fonts: FilmFonts) {
     }
   };
 
+  /**
+   * A lane's name, as the page's lane label sets it: large, its right edge and middle on the
+   * anchor, before the row, the note under it in lines of a fixed width.
+   */
+  const paintLane = (
+    label: Extract<FilmLabel, { kind: "zone" | "lane" }>,
+    pos: ScreenPosition,
+    names: readonly Box[],
+  ) => {
+    const gap = 12;
+    set(600, 18, fonts.mono);
+    const nameW = textWidth(label.label);
+    set(500, 11, fonts.mono, 0.12);
+    const lines = label.note ? wrap(label.note, 144, 3) : [];
+    const noteW = Math.max(0, ...lines.map(textWidth));
+    const w = Math.max(nameW, noteW) + gap;
+    const h = 23 + (lines.length > 0 ? 2 + lines.length * 15 : 0);
+    const right = Math.max(pos.x, EDGE + w) - gap;
+    const box = { x: right + gap - w, y: pos.y - h / 2, w, h };
+    if (names.some((b) => overlaps(b, box))) {
+      return;
+    }
+    ctx.textAlign = "right";
+    set(600, 18, fonts.mono);
+    ctx.fillStyle = neutral.text;
+    ctx.fillText(label.label, right, box.y + 11.5);
+    set(500, 11, fonts.mono, 0.12);
+    ctx.fillStyle = neutral.textSecondary;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, right, box.y + 23 + 2 + 7.5 + i * 15);
+    });
+    ctx.textAlign = "left";
+  };
+
   /** The page's label layer, painted: zones, dimensions, balloons and names, token tags. */
   const paintLabels = (shot: FilmShot, opacity: number) => {
     if (opacity <= 0) {
@@ -306,6 +340,10 @@ export function createPainter(ctx: CanvasRenderingContext2D, fonts: FilmFonts) {
       }
     });
     const blockers = fixed.flatMap((item) => item.boxes);
+    // A lane's name is read the whole run: only an open name covers it.
+    const names = fixed.flatMap((item) =>
+      item.label.kind === "part" && item.label.named ? item.boxes : [],
+    );
 
     // Then what gives way: a zone's name and a latency fade out under a balloon or a name.
     for (const label of shot.labels) {
@@ -313,7 +351,9 @@ export function createPainter(ctx: CanvasRenderingContext2D, fonts: FilmFonts) {
       if (!pos) {
         continue;
       }
-      if (label.kind === "zone") {
+      if (label.kind === "lane") {
+        paintLane(label, pos, names);
+      } else if (label.kind === "zone") {
         set(500, 12, fonts.mono, 0.14);
         const name = label.label.toUpperCase();
         const nameW = textWidth(name);

@@ -5,7 +5,13 @@ import { partCallouts } from "../machine-view-model";
 
 /** What the film pins on the stage, as the page's label layer does: plain data to paint. */
 export type FilmLabel =
-  | { readonly kind: "zone"; readonly id: string; readonly label: string; readonly note?: string }
+  | {
+      /** `lane`: a bench's lane seen from the front, named large before its row. */
+      readonly kind: "zone" | "lane";
+      readonly id: string;
+      readonly label: string;
+      readonly note?: string;
+    }
   | {
       readonly kind: "dimension";
       readonly id: string;
@@ -36,9 +42,10 @@ export type FilmLabel =
  * of each token the step moves that has one.
  */
 export function filmLabels(snapshot: PlayerSnapshot): FilmLabel[] {
-  const zones = snapshot.resolved.machine.stage.zones.map(
+  const { zones: regions, view } = snapshot.resolved.machine.stage;
+  const zones = regions.map(
     (zone): FilmLabel => ({
-      kind: "zone",
+      kind: view === "front" ? "lane" : "zone",
       id: zoneLabelId(zone.id),
       label: zone.label,
       ...(zone.note ? { note: zone.note } : {}),

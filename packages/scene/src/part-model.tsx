@@ -52,6 +52,8 @@ function carryAt(t: number): number {
 export interface PartModelProps {
   readonly part: Part;
   readonly focused: boolean;
+  /** The step is about other parts: this one steps back. */
+  readonly dimmed: boolean;
   readonly selected: boolean;
   /** The pointer is on the part, here or on its row in the bill of parts. */
   readonly hovered: boolean;
@@ -76,6 +78,7 @@ const easeOut = (t: number) => 1 - (1 - t) ** 3;
 export function PartModel({
   part,
   focused,
+  dimmed,
   selected,
   hovered,
   flow,
@@ -234,6 +237,8 @@ export function PartModel({
 
   // 0 at rest, 1 lit: eased every frame so a part lights up and goes out smoothly.
   const level = useMemo(() => uniform(0), []);
+  // 0 as drawn, 1 stepped back: eased the same way, so the drawing dims and returns smoothly.
+  const dim = useMemo(() => uniform(0), []);
 
   useEffect(() => {
     if (lit && "emissive" in material) {
@@ -246,6 +251,10 @@ export function PartModel({
     level.value = reducedMotion
       ? target
       : MathUtils.damp(level.value, target, scene.transition.fade, delta);
+    const back = dimmed && !lit ? 1 : 0;
+    dim.value = reducedMotion
+      ? back
+      : MathUtils.damp(dim.value, back, scene.transition.fade, delta);
     if ("emissive" in material) {
       // White (hover, selection) glows half as much as a flow colour: a pointer, not an event.
       material.emissiveIntensity = level.value * scene.litEmissive * (flowLit ? 1 : 0.5);
@@ -284,7 +293,7 @@ export function PartModel({
                 raycast={noRaycast}
                 renderOrder={GLASS_ORDER}
               />
-              <Edges geometry={geometry} rest={rest} renderOrder={GLASS_ORDER + 1} />
+              <Edges geometry={geometry} rest={rest} dim={dim} renderOrder={GLASS_ORDER + 1} />
               <Edges
                 geometry={geometry}
                 rest={GLASS_HIDDEN}
@@ -295,7 +304,7 @@ export function PartModel({
           ) : (
             <>
               <mesh geometry={geometry} material={material} />
-              <Edges geometry={geometry} rest={rest} lit={litStyle} level={level} />
+              <Edges geometry={geometry} rest={rest} lit={litStyle} level={level} dim={dim} />
             </>
           )}
         </group>

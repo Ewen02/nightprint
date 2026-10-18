@@ -142,6 +142,11 @@ export const scene = {
   litEmissive: 0.14,
   edge: neutral.textBody,
   edgeOpacity: { solid: 0.65, glass: 0.5, plate: 0.45, hidden: 0.28 },
+  /**
+   * Share of its edges' opacity a part keeps while the step is about other parts: the
+   * drawing steps back, and the two or three parts that matter stand out.
+   */
+  dimmed: 0.3,
   /** Edge threshold angle in degrees: flatter creases are not drawn. */
   edgeThreshold: 25,
   /** Drawn line widths in CSS px: part edges, lit edges, hidden edges. */

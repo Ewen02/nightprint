@@ -209,6 +209,7 @@ export function MachineScene({
           key={part.id}
           part={part}
           focused={focus.has(part.id)}
+          dimmed={focus.size > 0 && !focus.has(part.id)}
           selected={selected === part.id}
           hovered={hovered === part.id}
           flow={step.flow}

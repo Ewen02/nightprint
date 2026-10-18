@@ -3,7 +3,7 @@ import { useEffect, useMemo } from "react";
 import { type BufferGeometry, Color, EdgesGeometry, GreaterDepth, LessEqualDepth } from "three";
 import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
 import { LineSegments2 } from "three/addons/lines/webgpu/LineSegments2.js";
-import { mix, uniform } from "three/tsl";
+import { float, mix, uniform } from "three/tsl";
 import { Line2NodeMaterial, type UniformNode } from "three/webgpu";
 import { setBloom } from "./materials";
 import { noRaycast, scene } from "./palette";
@@ -29,6 +29,11 @@ export interface EdgesProps {
   /** 0 at rest, 1 lit; the owner animates it. Without it the edges stay at rest. */
   readonly level?: UniformNode<"float", number>;
   /**
+   * 0 as drawn, 1 stepped back while the step is about other parts; the owner animates it.
+   * It fades the rest style only: a lit part is never dimmed.
+   */
+  readonly dim?: UniformNode<"float", number> | undefined;
+  /**
    * `visible` draws the edges in front; `hidden` draws, dashed, only the edges
    * something stands in front of, as a drawing shows edges behind glass.
    */
@@ -46,6 +51,7 @@ export function Edges({
   rest,
   lit,
   level,
+  dim,
   pass = "visible",
   renderOrder = 2,
 }: EdgesProps) {
@@ -81,7 +87,8 @@ export function Edges({
     // blend the line's own antialiased alpha instead.
     material.alphaToCoverage = false;
     material.colorNode = mix(style.restColor, style.litColor, amount);
-    material.opacityNode = mix(style.restOpacity, style.litOpacity, amount);
+    const keep = dim ? mix(float(1), float(scene.dimmed), dim) : float(1);
+    material.opacityNode = mix(style.restOpacity.mul(keep), style.litOpacity, amount);
     setBloom(material, mix(style.restBloom, style.litBloom, amount));
     const segments = new LineSegments2(lines, material);
     if (hidden) {
@@ -89,7 +96,7 @@ export function Edges({
     }
     segments.raycast = noRaycast;
     return segments;
-  }, [geometry, hidden, style, amount]);
+  }, [geometry, hidden, style, amount, dim]);
 
   useEffect(
     () => () => {

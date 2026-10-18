@@ -24,6 +24,7 @@ import { StepDots } from "./molecules/step-dots";
 import { StepRuler } from "./molecules/step-ruler";
 import { SurveySketch } from "./molecules/survey-sketch";
 import { WhatIfSwitch } from "./molecules/what-if-switch";
+import { ZoneLabel } from "./molecules/zone-label";
 import { BillOfParts } from "./organisms/bill-of-parts";
 import { BuildLog } from "./organisms/build-log";
 import { Cartouche } from "./organisms/cartouche";
@@ -1056,5 +1057,18 @@ describe("step caption", () => {
     const plain = html(<StepCaption {...props} body="Three sentences of detail." />);
     expect(plain).toContain("Three sentences of detail.");
     expect(plain).not.toContain("<button");
+  });
+});
+
+describe("zone label", () => {
+  it("names a bench's lane large, and keeps the name on phones", () => {
+    const lane = html(
+      <ZoneLabel label="RAG" note="Open book: looks up 3 passages" variant="lane" />,
+    );
+    expect(lane).toContain('<span class="font-mono text-heading text-text">RAG</span>');
+    expect(lane).not.toMatch(/^<div class="[^"]*max-sm:hidden/);
+    expect(lane).toMatch(/max-sm:hidden">Open book: looks up 3 passages<\/span>/);
+    const zone = html(<ZoneLabel label="Driving side" />);
+    expect(zone).toMatch(/^<div class="[^"]*max-sm:hidden/);
   });
 });

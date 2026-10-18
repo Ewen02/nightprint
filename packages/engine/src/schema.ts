@@ -61,6 +61,12 @@ export const partSchema = z.object({
   /** Where routes attach, relative to `position`. */
   socket: vec3Schema.default([0, 0, 0]),
   material: z.enum(["solid", "glass"]).default("solid"),
+  /**
+   * What a store is drawn as when its kind and shape do not say it: an index of vectors
+   * (`grid`), a model's memory (`memory`), a knowledge graph (`graph`). The footprint stays
+   * its shape's.
+   */
+  form: z.enum(["grid", "memory", "graph"]).optional(),
   flag: z.enum(["violation"]).optional(),
   description: z.string().optional(),
 });

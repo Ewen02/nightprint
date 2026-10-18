@@ -997,13 +997,21 @@ describe("series panels", () => {
             verdict: "wrong",
           },
           { label: "CAG", note: "Preload, cache, generate", line: null },
+          {
+            label: "KAG",
+            note: "A map of facts, link by link",
+            line: { flow: "write", text: "writes the facts into a graph: P-7 supplied by S-12" },
+          },
         ]}
       />,
     );
     expect(board).toContain('aria-label="Bench"');
-    expect(board.match(/<li /g)).toHaveLength(2);
+    expect(board.match(/<li /g)).toHaveLength(3);
     expect(board).toContain("Wrong");
     expect(board).not.toContain("Right");
+    // An identifier does not break at its hyphen at the end of a line.
+    expect(board).toContain('<span class="whitespace-nowrap">P-7</span> supplied by');
+    expect(board).toContain('<span class="whitespace-nowrap">S-12</span>');
   });
 
   it("reads a meter against its capacity, and says the values in words", () => {

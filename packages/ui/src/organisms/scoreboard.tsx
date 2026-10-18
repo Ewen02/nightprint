@@ -5,7 +5,7 @@ import { cx } from "../cx";
 export interface ScoreboardLane {
   /** "RAG". */
   readonly label: string;
-  /** What the lane does: "Retrieve, then generate". */
+  /** What the lane does, in plain words: "Open book: looks up 3 passages". */
   readonly note: string;
   /** What the lane did last, as its log line reads; none before it has done anything. */
   readonly line: { readonly flow: FlowName; readonly text: string } | null;
@@ -52,7 +52,7 @@ export function Scoreboard({ title, lanes }: ScoreboardProps) {
               )}
             </div>
             <div className="flex min-w-0 flex-col gap-1">
-              <span className="text-micro text-text-faint">{lane.note}</span>
+              <span className="text-micro text-text-secondary">{lane.note}</span>
               {lane.line ? (
                 <span className="flex items-baseline gap-2 font-mono text-log">
                   <span className="translate-y-px">
@@ -63,7 +63,7 @@ export function Scoreboard({ title, lanes }: ScoreboardProps) {
                       lane.line.flow === "error" ? "text-flow-error" : "text-text-body",
                     )}
                   >
-                    {lane.line.text}
+                    <Unbroken text={lane.line.text} />
                   </span>
                 </span>
               ) : (
@@ -74,5 +74,19 @@ export function Scoreboard({ title, lanes }: ScoreboardProps) {
         ))}
       </ol>
     </section>
+  );
+}
+
+/** "P-7", "S-12": an identifier stays whole instead of breaking at its hyphen. */
+function Unbroken({ text }: { readonly text: string }) {
+  return text.split(/\b([A-Z]+-\d+)\b/).map((piece, index) =>
+    index % 2 === 1 ? (
+      // biome-ignore lint/suspicious/noArrayIndexKey: the pieces of one fixed string, in order.
+      <span key={index} className="whitespace-nowrap">
+        {piece}
+      </span>
+    ) : (
+      piece
+    ),
   );
 }

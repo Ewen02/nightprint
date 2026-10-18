@@ -24,6 +24,14 @@ Nightprint (nightprint.dev) est un site où chaque concept d'architecture devien
 
 **Catalogue prévu.** Backend (hexagonale, DDD, CQRS + event sourcing), frontend (event loop, rendu React), mobile (offline-first), infra (Redis cache-aside, Kafka).
 
+**Séries** (décidé le 18/10), toutes dans le vocabulaire du dessin technique et lues sur /m/<slug> :
+
+- **MCH, machine** : un concept, ses scénarios, des interrupteurs qui le cassent.
+- **BEN, banc d'essai** : deux ou trois machines côte à côte, la même entrée envoyée dans chacune ; les interrupteurs montrent où chacune lâche. BEN-001 : RAG, CAG et KAG.
+- **FMD, mode de défaillance** : une panne connue rejouée pas à pas ; ici les interrupteurs réparent. FMD-001 : la tempête de retries.
+- **PRT, protocole** : un échange dans le temps entre des parties, compté en allers-retours. PRT-001 : la poignée de main TLS 1.3.
+- Candidates, sans date : DET (détail, un seul mécanisme), SEC (coupe d'une requête à travers les couches), XPL (vue éclatée d'un objet : JWT, requête HTTP), REV (le même système en révisions quand la charge monte ; il faudra des pièces qui apparaissent à une étape), PZL (« qu'est-ce que ça affiche ? »). Jamais « Anatomy » comme nom : c'est le site voisin.
+
 ## Buts
 
 Nightprint sert trois buts, dans cet ordre. Il n'a pas d'objectif de revenu.
@@ -61,7 +69,7 @@ La v1, c'est le moteur et une seule machine excellente, MCH-001. Tout le reste a
 | Site statique sur le VPS, domaine nightprint.dev | v1 | En ligne sur nightprint.dev (12/10), publié à chaque push sur main ; www et l'ancienne adresse sslip.io de préversion redirigent vers l'apex |
 | Machines MCH-002 à MCH-008 | Après le lancement | Une par semaine ; MCH-002 (event loop JavaScript) et MCH-003 (Redis cache-aside) publiées le 13/10, MCH-004 (DDD) le 17/10 |
 | Export vidéo intégré (WebCodecs) | Après le lancement | Fait (15/10) : « Download video » sur chaque machine, dessinée ou du catalogue ; MP4 1080p fait dans la page (assemblage, premier scénario, premier interrupteur, carton final). Les vidéos postées restent celles d'`apps/video` |
-| Planche de concepts : grille de mini-machines animées | À trancher, après MCH-003 | Voir les décisions ouvertes |
+| Séries BEN, FMD et PRT à côté des MCH | Après le lancement | Décidées le 18/10 ; BEN-001, FMD-001 et PRT-001 en cours |
 | Série PRJ : un vrai dépôt GitHub dessiné en machine, par un visiteur sur /import | Après le lancement | Décidée le 14/10 ; PRJ-001 (Nightprint) en ligne, API et page /import prêtes, voir Vrais projets |
 | Génération d'une machine par IA à partir d'une phrase | v2 | Claude écrit une définition à partir du kit |
 | Éditeur de code intégré (snippet de l'event loop) | v2 | Après le catalogue de base |
@@ -193,9 +201,9 @@ Le plus gros risque n'est pas technique : c'est un projet d'apprentissage sans p
 
 ## Décisions ouvertes et prochaines actions
 
-Deux décisions restent à prendre, dont une sur la série PRJ.
+Une décision reste à prendre, sur la série PRJ.
 
-- [ ] **Planche de concepts** : vitrine des 8 machines complètes, ou format à part avec beaucoup de petits concepts (DNS, CDN, load balancer…) dont certains deviennent des machines ? Reportée après MCH-003 (13/10) : rien de neuf tant que le rythme d'une machine par semaine n'est pas tenu.
+- [x] **Planche de concepts** : d'autres séries à côté des machines (décidé le 18/10, voir Séries). Le rythme d'une MCH par semaine reste la règle ; les séries s'y ajoutent sans le remplacer.
 - [x] **Import public** : une vitrine relue (décidé le 15/10). L'accueil liste les PRJ du catalogue, relues contre leur code et indexées sur /p/<slug>, et mène à /import ; les dessins des visiteurs restent hors des moteurs, partagés par leur lien. Budget quotidien : 1 $ pour l'instant.
 - [ ] **PRJ-002** : quel deuxième vrai projet (Sidetown ?) ; c'est lui qui fixera l'abstraction de l'extracteur, comme le veut la règle 2.
 - [x] **Pièces Blender** : hors du lancement (décidé le 12/10). Une pièce générée par le code reste une donnée de la machine : chaque nouvelle machine reste un seul fichier, compatible avec « une par semaine », et ses arêtes restent nettes dans le style dessin technique. Après le lancement, le cœur en verre à l'essai dans Blender.

@@ -1,0 +1,82 @@
+{
+  "url": "https://nightprint.dev/m/domain-driven-design/",
+  "frames": 840,
+  "scale": 1.5,
+  "actions": [
+    {
+      "frame": 0,
+      "kind": "button",
+      "name": "Step 1:"
+    },
+    {
+      "frame": 84,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 159,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 234,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 309,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 384,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 459,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 549,
+      "kind": "button",
+      "name": "Previous step"
+    },
+    {
+      "frame": 549,
+      "kind": "button",
+      "name": "Previous step"
+    },
+    {
+      "frame": 549,
+      "kind": "button",
+      "name": "Previous step"
+    },
+    {
+      "frame": 549,
+      "kind": "button",
+      "name": "Previous step"
+    },
+    {
+      "frame": 549,
+      "kind": "button",
+      "name": "Previous step"
+    },
+    {
+      "frame": 557,
+      "kind": "switch",
+      "name": "Add lines behind the root"
+    },
+    {
+      "frame": 647,
+      "kind": "button",
+      "name": "Next step"
+    },
+    {
+      "frame": 727,
+      "kind": "button",
+      "name": "Next step"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import { WhatIfCard } from "./components/WhatIfCard";
 import { MCH001_FRAMES, Mch001 } from "./mch-001/Mch001";
 import { MCH002_FRAMES, Mch002 } from "./mch-002/Mch002";
 import { MCH003_FRAMES, Mch003 } from "./mch-003/Mch003";
+import { MCH004_FRAMES, Mch004 } from "./mch-004/Mch004";
 import { PRJ001_FRAMES, Prj001 } from "./prj-001/Prj001";
 
 export function RemotionRoot() {
@@ -32,6 +33,14 @@ export function RemotionRoot() {
         id="MCH-003"
         component={Mch003}
         durationInFrames={MCH003_FRAMES}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="MCH-004"
+        component={Mch004}
+        durationInFrames={MCH004_FRAMES}
         fps={30}
         width={1920}
         height={1080}

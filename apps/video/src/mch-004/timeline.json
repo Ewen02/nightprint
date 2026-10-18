@@ -1,0 +1,105 @@
+{
+  "source": "https://nightprint.dev/m/domain-driven-design/",
+  "footage": {
+    "frames": 840,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "scale": 1.5
+  },
+  "steps": [
+    {
+      "from": 0,
+      "number": 1,
+      "count": 8,
+      "title": "A buyer adds a line",
+      "flow": "request"
+    },
+    {
+      "from": 84,
+      "number": 2,
+      "count": 8,
+      "title": "Load the whole order",
+      "flow": "response"
+    },
+    {
+      "from": 159,
+      "number": 3,
+      "count": 8,
+      "title": "Through the root",
+      "flow": "request"
+    },
+    {
+      "from": 234,
+      "number": 4,
+      "count": 8,
+      "title": "The root checks the limit",
+      "flow": "write"
+    },
+    {
+      "from": 309,
+      "number": 5,
+      "count": 8,
+      "title": "Saved as one, version 3 to 4",
+      "flow": "write"
+    },
+    {
+      "from": 384,
+      "number": 6,
+      "count": 8,
+      "title": "One line too many",
+      "flow": "request"
+    },
+    {
+      "from": 459,
+      "number": 7,
+      "count": 8,
+      "title": "The root refuses",
+      "flow": "error"
+    },
+    {
+      "from": 549,
+      "number": 2,
+      "count": 8,
+      "title": "Load the whole order",
+      "flow": "response"
+    },
+    {
+      "from": 557,
+      "number": 2,
+      "count": 4,
+      "title": "Straight to the lines",
+      "flow": "write"
+    },
+    {
+      "from": 647,
+      "number": 3,
+      "count": 4,
+      "title": "One line too many gets in",
+      "flow": "error"
+    },
+    {
+      "from": 727,
+      "number": 4,
+      "count": 4,
+      "title": "201 for an order over its limit",
+      "flow": "error"
+    }
+  ],
+  "clicks": [
+    {
+      "frame": 557,
+      "name": "Add lines behind the root",
+      "box": {
+        "x": 1584,
+        "y": 482.15625,
+        "w": 312,
+        "h": 125.484375
+      },
+      "at": {
+        "x": 1615,
+        "y": 505.15625
+      }
+    }
+  ]
+}

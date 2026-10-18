@@ -1,5 +1,6 @@
 import type { Machine } from "@nightprint/engine";
 import type { Metadata } from "next";
+import { seriesHref, seriesOf } from "./series";
 
 /** What every page's metadata and structured data share. */
 export const site = {
@@ -187,7 +188,13 @@ export function machineJsonLd(machine: Machine) {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: site.name, item: `${site.url}/` },
-          { "@type": "ListItem", position: 2, name: machine.code, item: url },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: seriesOf(machine).label,
+            item: `${site.url}${seriesHref(seriesOf(machine))}`,
+          },
+          { "@type": "ListItem", position: 3, name: machine.code, item: url },
         ],
       },
       { "@type": "WebSite", "@id": ids.website, name: site.name, url: `${site.url}/` },

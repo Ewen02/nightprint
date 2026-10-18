@@ -34,6 +34,7 @@ import {
   unplugNote,
   whatIfItems,
 } from "./machine-view-model";
+import { seriesHref, seriesOf } from "./series";
 import { Stage } from "./stage";
 import { stageCallouts } from "./stage-callouts";
 import { useMediaQuery } from "./use-media-query";
@@ -140,6 +141,7 @@ export function MachineView({
   );
   const inspected = resolved.parts.find((p) => p.id === selected);
   const preview = filmPreview(film);
+  const sheetSeries = seriesOf(machine);
 
   return (
     <>
@@ -147,7 +149,11 @@ export function MachineView({
       <MachineTemplate
         header={
           <SiteHeader
-            breadcrumb={[{ label: "Nightprint", href: "/" }, { label: machine.code }]}
+            breadcrumb={[
+              { label: "Nightprint", href: "/" },
+              { label: sheetSeries.label, href: seriesHref(sheetSeries) },
+              { label: machine.code },
+            ]}
             meta={`${machine.family} · ${machine.category}`}
           />
         }
@@ -231,7 +237,7 @@ export function MachineView({
               onChange={(scenario) => player.dispatch({ type: "setScenario", scenario })}
             />
             <WhatIfPanel
-              description="Flip one: the step replays with the change."
+              description={sheetSeries.whatIf}
               actions={whatIfItems(machine, snapshot)}
               onToggle={(action, active) => player.dispatch({ type: "setAction", action, active })}
             />

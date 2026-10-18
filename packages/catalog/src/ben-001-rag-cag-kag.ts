@@ -9,32 +9,39 @@ import { type LogInput, type TokenInput, variants } from "./variants";
  * is All You Need for Knowledge Tasks", 2024; L. Liang et al., "KAG: Boosting LLMs in
  * Professional Domains via Knowledge Augmented Generation", 2024.
  *
- * Layout (y up, plate top at y = 0, pipes at y = 0.3): one lane per system, RAG on the left,
- * CAG in the middle, KAG on the right. Each lane reads its copy of the documents at the back
- * and answers the analyst at the front. CAG has no retrieval step: its third row is empty.
+ * Layout (y up, plate top at y = 0, pipes at y = 0.3), seen from the front: one lane per
+ * system, each a row read left to right: the documents, what builds the knowledge, where it
+ * is kept, what finds in it, the model. RAG at the back, CAG in the middle, KAG in front.
+ * The analyst stands at the rows' end, and the model alone beyond. CAG has no retrieval
+ * step: its fourth place is empty.
  */
 
 const PIPE_Y = 0.3;
-const RAG_X = -3.35;
-const KAG_X = 3.35;
-/** The rows, back to front: documents, what builds the knowledge, where it is kept, what finds in it, the model. */
-const DOCS_Z = -3.7;
-const BUILD_Z = -2.2;
-const STORE_Z = -0.7;
-const FIND_Z = 0.8;
-const LLM_Z = 2.3;
-const USER_Z = 3.9;
-/** Where a side lane's question goes back and its answer comes forward, beside its parts. */
-const RAG_LANE_X = -1.95;
-const KAG_LANE_X = 1.95;
+/** The lanes, back to front. */
+const RAG_Z = -2.8;
+const CAG_Z = 0;
+const KAG_Z = 2.8;
+/** The places along each row, left to right. */
+const DOCS_X = -5.0;
+const BUILD_X = -3.3;
+const STORE_X = -1.6;
+const FIND_X = 0.1;
+const LLM_X = 1.8;
+const USER_X = 3.9;
+const ALONE_X = 5.9;
+/** Where a side lane's question runs: in the gap between it and the middle lane. */
+const RAG_ASK_Z = -1.4;
+const KAG_ASK_Z = 1.4;
+/** Where a side lane's question leaves the analyst's row, just past the analyst's desk. */
+const TURN_X = USER_X - 0.75;
 
 const BIG = "big-corpus";
 const TWO_HOP = "two-hop";
 const BAD_EDGE = "bad-extraction";
 
-const DOCS = { type: "box", size: [1.4, 0.9, 0.8] } as const;
-const BUILDER = { type: "box", size: [1.4, 0.6, 0.8] } as const;
-const FINDER = { type: "box", size: [1.3, 0.6, 0.8] } as const;
+const DOCS = { type: "box", size: [1.0, 0.9, 1.2] } as const;
+const BUILDER = { type: "box", size: [1.1, 0.6, 1.0] } as const;
+const FINDER = { type: "box", size: [1.1, 0.6, 1.0] } as const;
 const MODEL = { type: "prism", sides: 8, radius: 0.45, height: 0.6 } as const;
 
 /** Which switches are on, for the steps that read differently under them. */
@@ -56,6 +63,44 @@ const question = (f: Flags) =>
 /** What KAG's graph answers: the right relation, or the one extracted wrong. */
 const kagFinds = (f: Flags) =>
   f.twoHop ? (f.badEdge ? "S-9, then Turin" : "S-12, then Lyon") : f.badEdge ? "S-9" : "S-12";
+
+/**
+ * A step takes its colour from its first token, and lights its parts in it: a lane that holds
+ * goes first, so a bench's step is not painted in one lane's failure. The failing lane keeps
+ * its red, on its token and on its flagged part.
+ */
+const holdingFirst = (tokens: readonly TokenInput[]): TokenInput[] => [
+  ...tokens.filter((token) => token.flow !== "error"),
+  ...tokens.filter((token) => token.flow === "error"),
+];
+
+/** The problem first: a model on its own was never shown the documents. */
+const aloneStep = variants("alone", [TWO_HOP], (on) => {
+  const f = flags(on);
+  return {
+    title: "A model alone",
+    lead: f.twoHop
+      ? "Alone, a model never saw your documents: it cannot know where P-7's supplier is."
+      : "Alone, a model never saw your documents: it cannot know who supplies P-7.",
+    body: `The analyst first asks a language model on its own: “${question(f)}” It was trained on public text, never on these orders, catalogues and supplier sheets. It can only say it does not know, or make up a supplier that sounds right. Each system below hands it the documents another way.`,
+    focus: ["user", "alone"],
+    states: {
+      user: f.twoHop ? "Where is P-7's supplier?" : "Who supplies part P-7?",
+      alone: "never saw your documents",
+    },
+    tokens: [
+      { flow: "request", path: ["alone-ask"] },
+      { flow: "error", at: "alone", label: "?" },
+    ],
+    log: [
+      {
+        flow: "error",
+        tag: "LLM",
+        text: "never saw the documents: “I don't know”, or a made-up supplier",
+      },
+    ],
+  };
+});
 
 const buildStep = variants("build", [BIG, BAD_EDGE], (on) => {
   const f = flags(on);
@@ -97,7 +142,7 @@ const buildStep = variants("build", [BIG, BAD_EDGE], (on) => {
       : { flow: "write", tag: "KAG", text: "writes the facts into a graph: P-7 supplied by S-12" },
   ];
   return {
-    title: "Before any question",
+    title: "Three ways to hand over the documents",
     lead: f.big
       ? f.badEdge
         ? "40,000 documents: too many for CAG to read first, and KAG maps one fact wrong."
@@ -191,21 +236,22 @@ const findStep = variants("find", [BIG, TWO_HOP, BAD_EDGE], (on) => {
       "rag-find": f.twoHop ? "3 passages · no city" : "3 passages · one names S-12",
       "kag-find": f.twoHop ? "P-7 → supplier → city" : "P-7 → its supplier",
     },
-    tokens: [
+    // What RAG and KAG find comes back as an answer would; CAG's cache only loads.
+    tokens: holdingFirst([
       {
         flow: f.twoHop ? "error" : "response",
         path: ["rag-query"],
         reverse: true,
         label: "×3",
       },
-      ...(f.big ? [] : [{ flow: "write" as const, path: ["cag-load"] }]),
       {
         flow: kagWrong ? "error" : "response",
         path: ["kag-query"],
         reverse: true,
         label: kagWrong ? "S9" : "S12",
       },
-    ],
+      ...(f.big ? [] : [{ flow: "write" as const, path: ["cag-load"] }]),
+    ]),
     log: [
       {
         flow: f.twoHop ? "error" : "response",
@@ -274,11 +320,11 @@ const answerStep = variants("answer", [BIG, TWO_HOP, BAD_EDGE], (on) => {
       "cag-llm": f.big ? "read nothing: no answer" : `answers ${right}`,
       "kag-llm": `answers ${kag}`,
     },
-    tokens: [
+    tokens: holdingFirst([
       { flow: f.twoHop ? "error" : "response", path: ["rag-feed", "rag-answer"] },
       ...(f.big ? [] : [{ flow: "response" as const, path: ["cag-ask"], reverse: true }]),
       { flow: f.badEdge ? "error" : "response", path: ["kag-feed", "kag-answer"] },
-    ],
+    ]),
     log: [
       f.twoHop
         ? { flow: "error", tag: "RAG", text: "“S-12 supplies P-7; the passages don't say where.”" }
@@ -294,15 +340,14 @@ const answerStep = variants("answer", [BIG, TWO_HOP, BAD_EDGE], (on) => {
 /** A lane's copy of the corpus, its builder and its store: the same three rows in each. */
 function laneParts(
   lane: "rag" | "cag" | "kag",
-  x: number,
+  z: number,
   refs: readonly [number, number, number],
   build: { readonly label: string; readonly description: string },
   store: {
     readonly label: string;
     readonly role: string;
-    readonly shape: MachineInput["parts"][number]["shape"];
-    readonly y: number;
-    readonly socket: readonly [number, number, number];
+    readonly form: "grid" | "memory" | "graph";
+    readonly size: readonly [number, number, number];
     readonly description: string;
   },
 ): MachineInput["parts"] {
@@ -314,7 +359,7 @@ function laneParts(
       role: "CORPUS",
       kind: "store",
       shape: DOCS,
-      position: [x, 0.45, DOCS_Z],
+      position: [DOCS_X, 0.45, z],
       socket: [0, -0.15, 0],
       description:
         "The same documents in every lane: orders, a parts catalogue and supplier sheets.",
@@ -326,7 +371,7 @@ function laneParts(
       role: "BUILDS",
       kind: "module",
       shape: BUILDER,
-      position: [x, 0.3, BUILD_Z],
+      position: [BUILD_X, 0.3, z],
       description: build.description,
     },
     {
@@ -335,9 +380,11 @@ function laneParts(
       label: store.label,
       role: store.role,
       kind: "store",
-      shape: store.shape,
-      position: [x, store.y, STORE_Z],
-      socket: store.socket,
+      shape: { type: "box", size: store.size },
+      form: store.form,
+      position: [STORE_X, store.size[1] / 2, z],
+      // Routes meet it at pipe height.
+      socket: [0, PIPE_Y - store.size[1] / 2, 0],
       description: store.description,
     },
   ];
@@ -443,28 +490,30 @@ export const ragCagKag = defineMachine({
     },
   ],
   stage: {
-    plate: { size: [10.4, 9.4], center: [0, 0] },
+    // Wider on the left than the lanes: their names stand there, before each row.
+    plate: { size: [15.8, 8.0], center: [-1.1, 0] },
+    view: "front",
     zones: [
       {
         id: "rag",
         label: "RAG",
         note: "Open book: looks up 3 passages",
-        from: [-5.0, -4.5],
-        to: [-1.65, 3.15],
+        from: [-5.8, -3.7],
+        to: [2.7, -1.9],
       },
       {
         id: "cag",
         label: "CAG",
         note: "Reads the whole book first",
-        from: [-1.65, -4.5],
-        to: [1.65, 3.15],
+        from: [-5.8, -0.9],
+        to: [2.7, 0.9],
       },
       {
         id: "kag",
         label: "KAG",
         note: "A map of facts, link by link",
-        from: [1.65, -4.5],
-        to: [5.0, 3.15],
+        from: [-5.8, 1.9],
+        to: [2.7, 3.7],
       },
     ],
   },
@@ -476,13 +525,14 @@ export const ragCagKag = defineMachine({
       role: "ASKS",
       kind: "actor",
       shape: { type: "box", size: [1.3, 0.7, 1.0] },
-      position: [0, 0.35, USER_Z],
+      position: [USER_X, 0.35, CAG_Z],
       socket: [0, -0.05, 0],
-      description: "Asks one question about the documents, sent to all three systems.",
+      description:
+        "Asks one question about the documents: first to a model alone, then to all three systems.",
     },
     ...laneParts(
       "rag",
-      RAG_X,
+      RAG_Z,
       [2, 3, 4],
       {
         label: "Chunk and embed",
@@ -491,9 +541,8 @@ export const ragCagKag = defineMachine({
       {
         label: "Vector index",
         role: "INDEX",
-        shape: { type: "cylinder", radius: 0.5, height: 0.8 },
-        y: 0.4,
-        socket: [0, -0.1, 0],
+        form: "grid",
+        size: [1.1, 0.7, 1.0],
         description:
           "One vector per chunk, searched by similarity. Replaceable without retraining the model.",
       },
@@ -505,7 +554,7 @@ export const ragCagKag = defineMachine({
       role: "TOP-K",
       kind: "module",
       shape: FINDER,
-      position: [RAG_X, 0.3, FIND_Z],
+      position: [FIND_X, 0.3, RAG_Z],
       description: "Embeds the question and returns the 3 chunks closest to it.",
     },
     {
@@ -515,13 +564,13 @@ export const ragCagKag = defineMachine({
       role: "RAG",
       kind: "core",
       shape: MODEL,
-      position: [RAG_X, PIPE_Y, LLM_Z],
+      position: [LLM_X, PIPE_Y, RAG_Z],
       description:
         "Writes the answer from the question and the retrieved chunks, and nothing else.",
     },
     ...laneParts(
       "cag",
-      0,
+      CAG_Z,
       [7, 8, 9],
       {
         label: "Prefill",
@@ -531,9 +580,8 @@ export const ragCagKag = defineMachine({
       {
         label: "KV cache",
         role: "CACHE",
-        shape: { type: "box", size: [1.3, 0.6, 0.8] },
-        y: 0.3,
-        socket: [0, 0, 0],
+        form: "memory",
+        size: [1.2, 0.8, 0.9],
         description:
           "The model's state after reading the corpus, saved to be reused by every question.",
       },
@@ -545,12 +593,12 @@ export const ragCagKag = defineMachine({
       role: "CAG",
       kind: "core",
       shape: MODEL,
-      position: [0, PIPE_Y, LLM_Z],
+      position: [LLM_X, PIPE_Y, CAG_Z],
       description: "Answers from the question appended to the cache. No retrieval step.",
     },
     ...laneParts(
       "kag",
-      KAG_X,
+      KAG_Z,
       [11, 12, 13],
       {
         label: "Extractor",
@@ -559,9 +607,8 @@ export const ragCagKag = defineMachine({
       {
         label: "Knowledge graph",
         role: "GRAPH",
-        shape: { type: "cylinder", radius: 0.5, height: 0.8 },
-        y: 0.4,
-        socket: [0, -0.1, 0],
+        form: "graph",
+        size: [1.2, 0.9, 1.1],
         description: "Entities and relations, each linked to the passage it came from.",
       },
     ),
@@ -572,7 +619,7 @@ export const ragCagKag = defineMachine({
       role: "LOGICAL FORM",
       kind: "module",
       shape: FINDER,
-      position: [KAG_X, 0.3, FIND_Z],
+      position: [FIND_X, 0.3, KAG_Z],
       description: "Rewrites the question as steps and runs them on the graph and its passages.",
     },
     {
@@ -582,8 +629,19 @@ export const ragCagKag = defineMachine({
       role: "KAG",
       kind: "core",
       shape: MODEL,
-      position: [KAG_X, PIPE_Y, LLM_Z],
+      position: [LLM_X, PIPE_Y, KAG_Z],
       description: "Writes the answer from what the planner's steps found.",
+    },
+    {
+      id: "alone",
+      ref: 16,
+      label: "LLM alone",
+      role: "NO DOCS",
+      kind: "core",
+      shape: MODEL,
+      position: [ALONE_X, PIPE_Y, CAG_Z],
+      description:
+        "A language model on its own: trained on public text, it has never seen these documents.",
     },
   ],
   routes: [
@@ -597,18 +655,16 @@ export const ragCagKag = defineMachine({
       from: "user",
       to: "rag-find",
       via: [
-        [RAG_LANE_X, PIPE_Y, USER_Z],
-        [RAG_LANE_X, PIPE_Y, FIND_Z],
+        [TURN_X, PIPE_Y, CAG_Z],
+        [TURN_X, PIPE_Y, RAG_ASK_Z],
+        [FIND_X, PIPE_Y, RAG_ASK_Z],
       ],
     },
     {
       id: "rag-answer",
       from: "rag-llm",
       to: "user",
-      via: [
-        [RAG_LANE_X, PIPE_Y, LLM_Z],
-        [RAG_LANE_X, PIPE_Y, USER_Z],
-      ],
+      via: [[USER_X, PIPE_Y, RAG_Z]],
     },
     { id: "cag-load", from: "cag-store", to: "cag-llm" },
     { id: "cag-ask", from: "user", to: "cag-llm" },
@@ -619,19 +675,18 @@ export const ragCagKag = defineMachine({
       from: "user",
       to: "kag-find",
       via: [
-        [KAG_LANE_X, PIPE_Y, USER_Z],
-        [KAG_LANE_X, PIPE_Y, FIND_Z],
+        [TURN_X, PIPE_Y, CAG_Z],
+        [TURN_X, PIPE_Y, KAG_ASK_Z],
+        [FIND_X, PIPE_Y, KAG_ASK_Z],
       ],
     },
     {
       id: "kag-answer",
       from: "kag-llm",
       to: "user",
-      via: [
-        [KAG_LANE_X, PIPE_Y, LLM_Z],
-        [KAG_LANE_X, PIPE_Y, USER_Z],
-      ],
+      via: [[USER_X, PIPE_Y, KAG_Z]],
     },
+    { id: "alone-ask", from: "user", to: "alone" },
   ],
   actions: [
     {
@@ -660,7 +715,7 @@ export const ragCagKag = defineMachine({
     {
       id: "ask",
       title: "Ask about a part",
-      steps: [...buildStep, ...askStep, ...findStep, ...answerStep],
+      steps: [...aloneStep, ...buildStep, ...askStep, ...findStep, ...answerStep],
     },
   ],
 });

@@ -6,6 +6,7 @@ import { PlanView } from "@nightprint/ui";
 import { ImageResponse } from "next/og";
 import { planView } from "./plan-view-model";
 import { site } from "./seo";
+import { seriesOf } from "./series";
 
 /** The size every network shows without cropping. */
 export const ogSize = { width: 1200, height: 630 };
@@ -206,7 +207,7 @@ export function homeOgCard(featured: Machine, live: number, upcoming: number) {
 export function machineOgCard(machine: Machine) {
   const alias = machine.aliases[0];
   return ogCard({
-    eyebrow: `${site.name} / ${machine.code}`,
+    eyebrow: `${site.name} / ${seriesOf(machine).one}`,
     title: machine.title,
     subtitle: alias ? `${alias.charAt(0).toUpperCase()}${alias.slice(1)}` : undefined,
     lead: machine.summary,

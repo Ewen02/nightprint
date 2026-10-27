@@ -51,8 +51,14 @@ export function billOfPartsItems(snapshot: PlayerSnapshot): BillOfPartsItem[] {
 }
 
 /** Simulated time as the log prints it. */
-/** A simulated time: in ms below a second, in seconds from there ("60.01 s"). */
+/**
+ * A simulated time: in ms below a second, in seconds below a minute ("4.27 s"), in minutes
+ * from there ("20.00 min"): a phone offline for twenty minutes, not 1200 seconds.
+ */
 export function formatMs(ms: number): string {
+  if (ms >= 60_000) {
+    return `${(ms / 60_000).toFixed(2)} min`;
+  }
   return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms.toFixed(2)} ms`;
 }
 

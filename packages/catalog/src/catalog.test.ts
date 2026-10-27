@@ -6,7 +6,7 @@ import {
   validateMachine,
 } from "@nightprint/engine";
 import { describe, expect, it } from "vitest";
-import { ddd, hexagonal, machines, projects, upcoming } from "./index";
+import { ddd, hexagonal, machines, offlineFirst, projects, upcoming } from "./index";
 
 describe("catalogue", () => {
   it("has unique codes and slugs, real projects included", () => {
@@ -176,9 +176,44 @@ describe("MCH-004 domain-driven design", () => {
   });
 });
 
-describe("benches, failure modes and protocols", () => {
+describe("MCH-005 offline-first sync", () => {
+  const travels = (actions: string[], scenario: string, route: string) =>
+    (resolveMachine(offlineFirst, actions).scenarios.find((s) => s.id === scenario)?.steps ?? [])
+      .flatMap((step) => step.tokens.flatMap((t) => (t.kind === "travel" ? t.routes : [])))
+      .filter((r) => r === route).length;
+
+  it("reaches the server with the payment, unless the outbox lived in memory", () => {
+    for (const actions of actionCombinations(offlineFirst)) {
+      const label = actions.join("+") || "no action";
+      const sent = travels(actions, "collect-offline", "worker-api") > 0;
+      expect(sent, label).toBe(!actions.includes("outbox-in-memory"));
+    }
+  });
+
+  it("records a payment sent twice once, unless it went without its ID", () => {
+    for (const actions of actionCombinations(offlineFirst)) {
+      const label = actions.join("+") || "no action";
+      const rows = travels(actions, "lost-answer", "api-db");
+      expect(rows, label).toBe(actions.includes("no-change-id") ? 2 : 1);
+    }
+  });
+
+  it("keeps the office's slot, unless the last change to arrive wins", () => {
+    for (const actions of actionCombinations(offlineFirst)) {
+      const label = actions.join("+") || "no action";
+      // The office's change is one write to the server database; the phone's would be a second.
+      const writes = travels(actions, "both-sides", "api-db");
+      expect(writes, label).toBe(actions.includes("last-arrival-wins") ? 2 : 1);
+    }
+  });
+});
+
+/** Written before steps said themselves in one line first; their plain words are still to come. */
+const NOT_YET_PLAIN = new Set(["MCH-001", "MCH-002", "MCH-003", "MCH-004"]);
+
+describe("plain words", () => {
   it("say every step in one short line first, under every combination of switches", () => {
-    for (const machine of machines.filter((m) => !m.code.startsWith("MCH-"))) {
+    for (const machine of machines.filter((m) => !NOT_YET_PLAIN.has(m.code))) {
       for (const actions of actionCombinations(machine)) {
         for (const scenario of resolveMachine(machine, actions).scenarios) {
           for (const { step } of scenario.steps) {

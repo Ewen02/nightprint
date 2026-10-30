@@ -21,7 +21,7 @@ export interface SiteFooterProps {
   };
   /** The sections of the site. */
   readonly links?: readonly { readonly label: string; readonly href: string }[];
-  /** Who made it, linked to where they post, and the year. */
+  /** Who made it, linked to their site, and the year. */
   readonly credit: { readonly name: string; readonly href?: string; readonly year: string };
 }
 

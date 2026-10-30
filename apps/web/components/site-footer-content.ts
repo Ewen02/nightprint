@@ -26,5 +26,6 @@ export const siteFooter: SiteFooterProps = {
     { label: "Build log", href: "/#build-log" },
     { label: "Draw a repository", href: "/import/" },
   ],
-  credit: { name: site.author.name, href: site.author.url, year: "2026" },
+  // The credit leads to the studio where I take freelance work; X stays one line up.
+  credit: { name: "Ewen Le Quéré", href: "https://studio.ewenlq.fr/en", year: "2026" },
 };
